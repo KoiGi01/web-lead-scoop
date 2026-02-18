@@ -1,1 +1,7 @@
 project_id = "yhtvfoessedtvachimqt"
+
+[functions.search-places]
+verify_jwt = false
+
+[functions.extract-contacts]
+verify_jwt = false
