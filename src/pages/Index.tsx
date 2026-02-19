@@ -28,6 +28,7 @@ const Index = () => {
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [radius, setRadius] = useState("");
+  const [maxResults, setMaxResults] = useState("60");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
@@ -47,7 +48,7 @@ const Index = () => {
     try {
       // Step 1: Search places
       const { data: searchData, error: searchError } = await supabase.functions.invoke("search-places", {
-        body: { keyword: keyword.trim(), location: location.trim(), radius: radius ? Number(radius) : undefined },
+        body: { keyword: keyword.trim(), location: location.trim(), radius: radius ? Number(radius) : undefined, maxResults: Number(maxResults) || 60 },
       });
 
       if (searchError || !searchData?.success) {
@@ -188,8 +189,25 @@ const Index = () => {
                 id="radius"
                 type="number"
                 placeholder="50"
+                min="1"
                 value={radius}
                 onChange={(e) => setRadius(e.target.value)}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="maxResults" className="mb-1.5 block text-sm font-medium">
+                Max results <span className="text-muted-foreground">(20–60)</span>
+              </Label>
+              <Input
+                id="maxResults"
+                type="number"
+                min="20"
+                max="60"
+                step="20"
+                value={maxResults}
+                onChange={(e) => setMaxResults(e.target.value)}
                 disabled={isProcessing}
               />
             </div>

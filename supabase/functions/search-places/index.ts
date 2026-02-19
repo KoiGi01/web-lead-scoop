@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { keyword, location, radius } = await req.json();
+    const { keyword, location, radius, maxResults } = await req.json();
 
     if (!keyword || !location) {
       return new Response(
@@ -27,36 +27,54 @@ Deno.serve(async (req) => {
     }
 
     const query = `${keyword} in ${location}`;
-    const radiusMeters = radius ? Math.round(radius * 1000) : 50000;
+    const limit = Math.min(maxResults || 20, 60); // cap at 60 (3 pages)
+    const allPlaces: any[] = [];
+    let pageToken: string | undefined;
 
-    // Use Text Search (New) API
-    const searchUrl = `https://places.googleapis.com/v1/places:searchText`;
-    
-    const response = await fetch(searchUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types',
-      },
-      body: JSON.stringify({
+    // Fetch pages until we have enough results or no more pages
+    while (allPlaces.length < limit) {
+      const remaining = limit - allPlaces.length;
+      const searchUrl = `https://places.googleapis.com/v1/places:searchText`;
+
+      const body: any = {
         textQuery: query,
-        maxResultCount: 20,
-        ...(radius ? { searchAlongRouteParameters: undefined } : {}),
-      }),
-    });
+        maxResultCount: Math.min(remaining, 20),
+      };
 
-    const data = await response.json();
+      if (pageToken) {
+        body.pageToken = pageToken;
+      }
 
-    if (!response.ok) {
-      console.error('Google Places API error:', JSON.stringify(data));
-      return new Response(
-        JSON.stringify({ success: false, error: data.error?.message || 'Google Places API error' }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const response = await fetch(searchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,nextPageToken',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Google Places API error:', JSON.stringify(data));
+        // If we already have some results, return them instead of failing
+        if (allPlaces.length > 0) break;
+        return new Response(
+          JSON.stringify({ success: false, error: data.error?.message || 'Google Places API error' }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const places = data.places || [];
+      allPlaces.push(...places);
+
+      pageToken = data.nextPageToken;
+      if (!pageToken || places.length === 0) break;
     }
 
-    const businesses = (data.places || []).map((place: any) => ({
+    const businesses = allPlaces.map((place: any) => ({
       placeId: place.id,
       name: place.displayName?.text || '',
       address: place.formattedAddress || '',
