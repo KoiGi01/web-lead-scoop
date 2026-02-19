@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Download, Loader2, MapPin, Target } from "lucide-react";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 
 interface Business {
   placeId: string;
@@ -108,27 +108,69 @@ const Index = () => {
   const handleDownload = () => {
     if (!results) return;
 
-    const rows = results.map((r) => ({
-      "Business Name": r.name,
-      Category: r.category,
-      Address: r.address,
-      "Phone (Maps)": r.phone,
-      Website: r.website,
-      Email: r.emails.join(", "),
-      WhatsApp: r.whatsapp.join(", "),
-      "Contact Page Found": r.contactPageFound ? "Yes" : "No",
-    }));
+    const headers = ["Business Name", "Category", "Address", "Phone (Maps)", "Website", "Email", "WhatsApp", "Contact Page Found"];
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    const headerStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
+      fill: { fgColor: { rgb: "2563EB" }, patternType: "solid" as const },
+      alignment: { horizontal: "center" as const, vertical: "center" as const },
+      border: {
+        bottom: { style: "thin" as const, color: { rgb: "1E40AF" } },
+      },
+    };
+
+    const cellStyle = {
+      font: { sz: 10, name: "Calibri" },
+      alignment: { vertical: "center" as const, wrapText: true },
+      border: {
+        bottom: { style: "thin" as const, color: { rgb: "E5E7EB" } },
+      },
+    };
+
+    const altRowStyle = {
+      ...cellStyle,
+      fill: { fgColor: { rgb: "F3F4F6" }, patternType: "solid" as const },
+    };
+
+    const rows = results.map((r) => [
+      r.name,
+      r.category,
+      r.address,
+      r.phone,
+      r.website,
+      r.emails.join(", "),
+      r.whatsapp.join(", "),
+      r.contactPageFound ? "Yes" : "No",
+    ]);
+
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Apply header styles
+    headers.forEach((_, colIdx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+      if (ws[cellRef]) ws[cellRef].s = headerStyle;
+    });
+
+    // Apply row styles
+    rows.forEach((row, rowIdx) => {
+      const style = rowIdx % 2 === 1 ? altRowStyle : cellStyle;
+      row.forEach((_, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx + 1, c: colIdx });
+        if (ws[cellRef]) ws[cellRef].s = style;
+      });
+    });
 
     // Auto-size columns
-    const colWidths = Object.keys(rows[0] || {}).map((key) => ({
-      wch: Math.max(key.length, ...rows.map((r) => String((r as any)[key] || "").length)).toString().length + 5,
-    }));
+    const colWidths = headers.map((h, i) => {
+      const maxLen = Math.max(h.length, ...rows.map((r) => String(r[i] || "").length));
+      return { wch: Math.min(maxLen + 2, 50) };
+    });
     ws["!cols"] = colWidths;
+    ws["!rows"] = [{ hpt: 24 }]; // taller header row
 
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
     XLSX.writeFile(wb, `leads-${keyword}-${location}.xlsx`);
   };
 
