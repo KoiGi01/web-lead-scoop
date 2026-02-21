@@ -7,9 +7,6 @@ const steps = [
     title: "Enter Your Search",
     description: 'Type a business keyword like "plumber" or "dentist" and a target location. Set your radius and max results.',
     detail: "Uses Google Places API under the hood",
-    color: "text-violet-400",
-    bg: "bg-violet-500/10",
-    border: "border-violet-500/20",
   },
   {
     number: "02",
@@ -17,9 +14,6 @@ const steps = [
     title: "We Scan the Web",
     description: "The tool searches Google Maps and the open web for matching businesses, then visits each website to find email addresses and WhatsApp links.",
     detail: "Powered by Firecrawl — handles JS-rendered pages",
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
   },
   {
     number: "03",
@@ -27,64 +21,106 @@ const steps = [
     title: "Download Your Leads",
     description: "Get a clean, styled Excel file with business name, category, address, phone, email, and WhatsApp — ready for outreach.",
     detail: "Styled .xlsx with colored headers & auto-sized columns",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
   },
 ];
 
+/* Pipe connector between steps */
+const Pipe = () => (
+  <div className="hidden md:flex items-center flex-1 px-3">
+    <div
+      className="h-3 w-full rounded-full relative overflow-hidden"
+      style={{
+        background: "#d1d9e6",
+        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.15), inset 0 -1px 0 rgba(255,255,255,0.5)",
+      }}
+    >
+      {/* Pipe highlight */}
+      <div className="absolute top-0.5 left-2 right-2 h-1 rounded-full bg-white/40" />
+      {/* Flowing indicator */}
+      <div className="absolute inset-y-1 left-0 w-8 rounded-full bg-[#ff4757]/30 animate-pulse" />
+    </div>
+  </div>
+);
+
 const HowItWorksSection = () => {
   return (
-    <section id="how-it-works" className="relative bg-secondary/40 py-24 sm:py-32 overflow-hidden">
-      {/* Subtle grid */}
+    <section id="how-it-works" className="relative bg-[#e0e5ec] py-24 sm:py-32 overflow-hidden">
+      {/* Blueprint grid */}
       <div
-        className="absolute inset-0 opacity-[0.025]"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
+          backgroundImage: "linear-gradient(#a3b1c6 1px, transparent 1px), linear-gradient(90deg, #a3b1c6 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+          opacity: 0.08,
         }}
       />
 
-      <div className="relative mx-auto max-w-5xl px-4">
+      <div className="relative mx-auto max-w-5xl px-4 sm:px-6">
+        {/* Header */}
         <div className="mb-16 text-center">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-foreground">
-            Simple Process
-          </p>
-          <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <div
+            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2"
+            style={{ boxShadow: "var(--shadow-recessed)" }}
+          >
+            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#4a5568]">
+              Operation Manual
+            </span>
+          </div>
+          <h2
+            className="text-4xl font-bold tracking-tight text-[#2d3436] sm:text-5xl"
+            style={{ textShadow: "0 1px 0 #ffffff" }}
+          >
             Three Steps to{" "}
-            <span className="gradient-text">Qualified Leads</span>
+            <span className="text-[#ff4757]">Qualified Leads</span>
           </h2>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* Steps — desktop: horizontal with pipe connectors */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-start">
           {steps.map((s, i) => (
-            <div key={s.number} className="relative group">
-              {/* Animated dashed connector */}
-              {i < steps.length - 1 && (
-                <div className="absolute right-0 top-10 hidden h-px w-1/2 translate-x-full md:block overflow-hidden">
-                  <div
-                    className="h-full w-full border-t-2 border-dashed border-primary/30 animate-pulse"
-                    style={{ animationDelay: `${i * 300}ms` }}
-                  />
-                </div>
-              )}
+            <>
+              {/* Card */}
+              <div key={s.number} className="group relative flex-1 rounded-2xl bg-[#e0e5ec] p-6 card-lift">
+                {/* Corner screws */}
+                <span className="absolute top-2 left-2 h-2.5 w-2.5 rounded-full opacity-50 pointer-events-none" style={{ background: "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
+                <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full opacity-50 pointer-events-none" style={{ background: "radial-gradient(circle at 65% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
+                <span className="absolute bottom-2 left-2 h-2.5 w-2.5 rounded-full opacity-50 pointer-events-none" style={{ background: "radial-gradient(circle at 35% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
+                <span className="absolute bottom-2 right-2 h-2.5 w-2.5 rounded-full opacity-50 pointer-events-none" style={{ background: "radial-gradient(circle at 65% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
 
-              <div className={`rounded-2xl border ${s.border} bg-card p-6 h-full transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-primary/10`}>
                 {/* Step header */}
                 <div className="flex items-center gap-3 mb-5">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${s.bg} ${s.color} transition-transform duration-300 group-hover:scale-105`}>
-                    <s.icon className="h-5 w-5" />
+                  {/* Step number badge */}
+                  <div
+                    className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full font-mono-data text-base font-bold text-[#ff4757]"
+                    style={{ boxShadow: "var(--shadow-floating)", border: "2px solid rgba(255,71,87,0.25)" }}
+                  >
+                    {s.number}
                   </div>
-                  <span className={`text-3xl font-black ${s.color} opacity-30`}>{s.number}</span>
+                  {/* Icon housing */}
+                  <div
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105"
+                    style={{ boxShadow: "var(--shadow-recessed)" }}
+                  >
+                    <s.icon className="h-4.5 w-4.5 text-[#4a5568]" strokeWidth={1.5} />
+                  </div>
                 </div>
 
-                <h3 className="mb-2 text-lg font-bold text-foreground">{s.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground mb-4">{s.description}</p>
-                <span className={`inline-block rounded-full ${s.bg} px-3 py-1 text-xs font-medium ${s.color}`}>
+                <h3 className="mb-2 text-base font-bold text-[#2d3436]" style={{ textShadow: "0 1px 0 #ffffff" }}>
+                  {s.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[#4a5568] mb-4">{s.description}</p>
+
+                <span
+                  className="inline-block rounded-full px-3 py-1 font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#4a5568]"
+                  style={{ boxShadow: "var(--shadow-recessed)" }}
+                >
                   {s.detail}
                 </span>
               </div>
-            </div>
+
+              {/* Pipe connector */}
+              {i < steps.length - 1 && <Pipe key={`pipe-${i}`} />}
+            </>
           ))}
         </div>
       </div>
