@@ -1,4 +1,6 @@
 import { Target, Twitter, Github, Linkedin } from "lucide-react";
+import { Link } from "react-router-dom";
+
 
 const FooterSection = () => {
   const currentYear = new Date().getFullYear();
@@ -63,13 +65,10 @@ const FooterSection = () => {
           <div>
             <p className="mb-4 text-sm font-semibold text-foreground">Legal</p>
             <ul className="space-y-2.5">
-              {["Privacy Policy", "Terms of Service", "Refund Policy", "Cookie Policy"].map((l) => (
-                <li key={l}>
-                  <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    {l}
-                  </a>
-                </li>
-              ))}
+              <li><Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link></li>
+              <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Refund Policy</a></li>
+              <li><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
