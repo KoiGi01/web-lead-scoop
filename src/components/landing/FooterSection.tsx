@@ -13,7 +13,7 @@ const FooterSection = () => {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/30">
                 <Target className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-foreground">LeadScoop</span>
+              <span className="font-bold text-foreground">GlobaLeads22</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               The fastest way to build B2B lead lists from Google Maps. Search, extract, export.
@@ -76,7 +76,7 @@ const FooterSection = () => {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {currentYear} LeadScoop. All rights reserved.
+            © {currentYear} GlobaLeads22. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
             Built for outreach teams worldwide 🌍

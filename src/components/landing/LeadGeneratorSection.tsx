@@ -6,9 +6,10 @@ import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
-  Mail, Phone, Globe, ExternalLink, ChevronRight, Sparkles,
+  Mail, Phone, Globe, ExternalLink, ChevronRight, Sparkles, Lock,
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
 
@@ -40,7 +41,12 @@ const STEPS_INIT: Step[] = [
   { label: "Compile Leads", status: "idle" },
 ];
 
-const LeadGeneratorSection = () => {
+interface LeadGeneratorSectionProps {
+  onOpenAuth?: () => void;
+}
+
+const LeadGeneratorSection = ({ onOpenAuth }: LeadGeneratorSectionProps) => {
+  const { user, loading: authLoading } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
   const [radius, setRadius] = useState("");
@@ -251,234 +257,275 @@ const LeadGeneratorSection = () => {
           </p>
         </div>
 
-        {/* Search Form */}
-        <Card className="mb-6 border border-border bg-card p-6 shadow-xl shadow-primary/5">
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="keyword" className="mb-1.5 block text-sm font-medium">
-                  Business keyword
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="keyword"
-                    placeholder='"plumber", "dentist"'
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    className="pl-9"
-                    disabled={isProcessing}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="location" className="mb-1.5 block text-sm font-medium">
-                  Location
-                </Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="location"
-                    placeholder='"Miami, FL", "London, UK"'
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="pl-9"
-                    disabled={isProcessing}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="radius" className="mb-1.5 block text-sm font-medium">
-                  Radius (km) <span className="text-muted-foreground">(optional)</span>
-                </Label>
-                <Input
-                  id="radius"
-                  type="number"
-                  placeholder="50"
-                  min="1"
-                  value={radius}
-                  onChange={(e) => setRadius(e.target.value)}
-                  disabled={isProcessing}
-                />
-              </div>
-              <div>
-                <Label className="mb-1.5 block text-sm font-medium">
-                  Max results: <span className="text-primary font-semibold">{maxResults}</span>
-                </Label>
-                <div className="flex gap-2 mt-2">
-                  {[20, 40, 60].map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setMaxResults(v)}
-                      disabled={isProcessing}
-                      className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${maxResults === v
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                        }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleGenerate}
-              disabled={isProcessing}
-              className="w-full font-semibold shadow-lg shadow-primary/20"
-              size="lg"
-            >
-              {isProcessing ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing…</>
-              ) : (
-                <><Search className="mr-2 h-4 w-4" />Generate Leads</>
-              )}
-            </Button>
+        {/* Auth loading */}
+        {authLoading && (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        </Card>
+        )}
 
-        {/* Progress */}
-        {(isProcessing || (results && progress > 0)) && (
-          <Card className="mb-6 border border-border bg-card p-5">
-            {/* Step indicators */}
-            <div className="flex items-center justify-between mb-4">
-              {STEPS_INIT.map((step, i) => {
-                const current = steps[i];
-                return (
-                  <div key={step.label} className="flex items-center gap-1.5 flex-1">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-all duration-300 ${current.status === "done"
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                      : current.status === "active"
-                        ? "border-2 border-primary text-primary bg-primary/10"
-                        : "border-2 border-border text-muted-foreground"
-                      }`}>
-                      {current.status === "done" ? "✓" : i + 1}
-                    </div>
-                    <span className={`text-xs font-medium hidden sm:inline transition-colors ${current.status === "done" ? "text-primary" : current.status === "active" ? "text-foreground" : "text-muted-foreground"
-                      }`}>
-                      {step.label}
-                    </span>
-                    {i < STEPS_INIT.length - 1 && (
-                      <ChevronRight className="h-3.5 w-3.5 text-border mx-1 flex-shrink-0" />
-                    )}
+        {/* Locked state */}
+        {!authLoading && !user && (
+          <Card className="flex flex-col items-center gap-6 border border-dashed border-border bg-card/60 p-12 text-center shadow-xl shadow-primary/5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <Lock className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Sign in to generate leads</h3>
+              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                Create a free account or sign in to start searching Google Maps and the web for business contacts.
+              </p>
+            </div>
+            <Button size="lg" className="font-semibold shadow-lg shadow-primary/25 animate-pulse-glow" onClick={onOpenAuth}>
+              Sign In / Sign Up Free
+            </Button>
+            <div className="w-full rounded-xl overflow-hidden relative mt-2">
+              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 rounded-xl" />
+              <div className="grid grid-cols-3 gap-2 p-4 pointer-events-none select-none opacity-50">
+                {["Business Name", "Email", "Phone"].map(h => (
+                  <div key={h} className="h-6 rounded bg-primary/20 text-[10px] flex items-center justify-center text-muted-foreground font-medium">{h}</div>
+                ))}
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-5 rounded bg-secondary" />
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Tool — signed in */}
+        {!authLoading && user && (<>
+
+          {/* Search Form */}
+          <Card className="mb-6 border border-border bg-card p-6 shadow-xl shadow-primary/5">
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="keyword" className="mb-1.5 block text-sm font-medium">
+                    Business keyword
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="keyword"
+                      placeholder='"plumber", "dentist"'
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      className="pl-9"
+                      disabled={isProcessing}
+                    />
                   </div>
-                );
-              })}
-            </div>
+                </div>
+                <div>
+                  <Label htmlFor="location" className="mb-1.5 block text-sm font-medium">
+                    Location
+                  </Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="location"
+                      placeholder='"Miami, FL", "London, UK"'
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="pl-9"
+                      disabled={isProcessing}
+                    />
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground truncate max-w-[75%]">{status}</span>
-              <span className="font-semibold text-primary">{progress}%</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="radius" className="mb-1.5 block text-sm font-medium">
+                    Radius (km) <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="radius"
+                    type="number"
+                    placeholder="50"
+                    min="1"
+                    value={radius}
+                    onChange={(e) => setRadius(e.target.value)}
+                    disabled={isProcessing}
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-sm font-medium">
+                    Max results: <span className="text-primary font-semibold">{maxResults}</span>
+                  </Label>
+                  <div className="flex gap-2 mt-2">
+                    {[20, 40, 60].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setMaxResults(v)}
+                        disabled={isProcessing}
+                        className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${maxResults === v
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                          : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleGenerate}
+                disabled={isProcessing}
+                className="w-full font-semibold shadow-lg shadow-primary/20"
+                size="lg"
+              >
+                {isProcessing ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing…</>
+                ) : (
+                  <><Search className="mr-2 h-4 w-4" />Generate Leads</>
+                )}
+              </Button>
             </div>
-            <Progress value={progress} className="h-2" />
           </Card>
-        )}
 
-        {/* Results */}
-        {results && !isProcessing && (
-          <Card className="border border-border bg-card overflow-hidden">
-            {/* Summary bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/50 px-5 py-3.5">
-              <div className="flex gap-4 text-sm">
-                <span className="font-semibold text-foreground">{results.length} businesses</span>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" /> {emailCount} emails
-                </span>
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" /> {whatsappCount} WhatsApp
-                </span>
+          {/* Progress */}
+          {(isProcessing || (results && progress > 0)) && (
+            <Card className="mb-6 border border-border bg-card p-5">
+              {/* Step indicators */}
+              <div className="flex items-center justify-between mb-4">
+                {STEPS_INIT.map((step, i) => {
+                  const current = steps[i];
+                  return (
+                    <div key={step.label} className="flex items-center gap-1.5 flex-1">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-all duration-300 ${current.status === "done"
+                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                        : current.status === "active"
+                          ? "border-2 border-primary text-primary bg-primary/10"
+                          : "border-2 border-border text-muted-foreground"
+                        }`}>
+                        {current.status === "done" ? "✓" : i + 1}
+                      </div>
+                      <span className={`text-xs font-medium hidden sm:inline transition-colors ${current.status === "done" ? "text-primary" : current.status === "active" ? "text-foreground" : "text-muted-foreground"
+                        }`}>
+                        {step.label}
+                      </span>
+                      {i < STEPS_INIT.length - 1 && (
+                        <ChevronRight className="h-3.5 w-3.5 text-border mx-1 flex-shrink-0" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCopyEmails}
-                  size="sm"
-                  variant="outline"
-                  disabled={emailCount === 0}
-                  className="text-xs font-medium"
-                >
-                  {emailsCopied ? (
-                    <><CheckCheck className="mr-1.5 h-3.5 w-3.5 text-primary" />Copied!</>
-                  ) : (
-                    <><Copy className="mr-1.5 h-3.5 w-3.5" />Copy Emails</>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleDownload}
-                  size="sm"
-                  className="text-xs font-semibold shadow-sm shadow-primary/20"
-                >
-                  <Download className="mr-1.5 h-3.5 w-3.5" />Download XLSX
-                </Button>
-              </div>
-            </div>
 
-            {/* Results table */}
-            <div className="overflow-x-auto max-h-96 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-secondary/80 backdrop-blur-sm">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Business</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Website</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {results.map((r, i) => (
-                    <tr key={r.placeId || i} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-foreground truncate max-w-[180px]">{r.name}</p>
-                        {r.category && (
-                          <p className="text-xs text-muted-foreground capitalize mt-0.5">{r.category.replace(/_/g, " ")}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                        {r.phone || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.emails.length > 0 ? (
-                          <div className="space-y-0.5">
-                            {r.emails.slice(0, 2).map((e) => (
-                              <p key={e} className="text-xs text-primary font-medium truncate max-w-[200px]">{e}</p>
-                            ))}
-                            {r.emails.length > 2 && (
-                              <p className="text-xs text-muted-foreground">+{r.emails.length - 2} more</p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.website ? (
-                          <a
-                            href={r.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            <Globe className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </td>
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-muted-foreground truncate max-w-[75%]">{status}</span>
+                <span className="font-semibold text-primary">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </Card>
+          )}
+
+          {/* Results */}
+          {results && !isProcessing && (
+            <Card className="border border-border bg-card overflow-hidden">
+              {/* Summary bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/50 px-5 py-3.5">
+                <div className="flex gap-4 text-sm">
+                  <span className="font-semibold text-foreground">{results.length} businesses</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Mail className="h-3.5 w-3.5" /> {emailCount} emails
+                  </span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5" /> {whatsappCount} WhatsApp
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCopyEmails}
+                    size="sm"
+                    variant="outline"
+                    disabled={emailCount === 0}
+                    className="text-xs font-medium"
+                  >
+                    {emailsCopied ? (
+                      <><CheckCheck className="mr-1.5 h-3.5 w-3.5 text-primary" />Copied!</>
+                    ) : (
+                      <><Copy className="mr-1.5 h-3.5 w-3.5" />Copy Emails</>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleDownload}
+                    size="sm"
+                    className="text-xs font-semibold shadow-sm shadow-primary/20"
+                  >
+                    <Download className="mr-1.5 h-3.5 w-3.5" />Download XLSX
+                  </Button>
+                </div>
+              </div>
+
+              {/* Results table */}
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-secondary/80 backdrop-blur-sm">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Business</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Website</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {results.map((r, i) => (
+                      <tr key={r.placeId || i} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-foreground truncate max-w-[180px]">{r.name}</p>
+                          {r.category && (
+                            <p className="text-xs text-muted-foreground capitalize mt-0.5">{r.category.replace(/_/g, " ")}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                          {r.phone || "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.emails.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {r.emails.slice(0, 2).map((e) => (
+                                <p key={e} className="text-xs text-primary font-medium truncate max-w-[200px]">{e}</p>
+                              ))}
+                              {r.emails.length > 2 && (
+                                <p className="text-xs text-muted-foreground">+{r.emails.length - 2} more</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.website ? (
+                            <a
+                              href={r.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+        </>)}
       </div>
     </section>
   );
 };
 
 export default LeadGeneratorSection;
+

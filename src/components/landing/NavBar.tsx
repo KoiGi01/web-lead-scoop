@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import { Target, Menu, X } from "lucide-react";
+import { Target, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavBarProps {
   onGetStarted: () => void;
+  onOpenAuth: () => void;
 }
 
-const NavBar = ({ onGetStarted }: NavBarProps) => {
+const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -24,11 +27,10 @@ const NavBar = ({ onGetStarted }: NavBarProps) => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border shadow-sm"
-          : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+        ? "bg-background/80 backdrop-blur-xl border-b border-border shadow-sm"
+        : "bg-transparent"
+        }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         {/* Logo */}
@@ -37,7 +39,7 @@ const NavBar = ({ onGetStarted }: NavBarProps) => {
             <Target className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="font-bold text-foreground text-[15px] tracking-tight">
-            LeadScoop
+            GlobaLeads22
           </span>
         </a>
 
@@ -56,13 +58,25 @@ const NavBar = ({ onGetStarted }: NavBarProps) => {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Button
-            onClick={onGetStarted}
-            size="sm"
-            className="font-semibold shadow-lg shadow-primary/25 animate-pulse-glow"
-          >
-            Start Free Trial
-          </Button>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-md">
+                {user.email?.[0]?.toUpperCase() ?? "U"}
+              </div>
+              <span className="text-sm text-muted-foreground max-w-[140px] truncate hidden lg:block">{user.email}</span>
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-muted-foreground">
+                <LogOut className="h-3.5 w-3.5" /> Sign Out
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={onOpenAuth}
+              size="sm"
+              className="font-semibold shadow-lg shadow-primary/25 animate-pulse-glow"
+            >
+              Sign In / Sign Up
+            </Button>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
