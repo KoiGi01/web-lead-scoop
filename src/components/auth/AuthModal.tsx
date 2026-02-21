@@ -84,16 +84,20 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-border bg-card">
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-white/10 bg-[#0F1115]">
                 {/* Header gradient band */}
-                <div className="h-1.5 w-full bg-gradient-to-r from-[hsl(252,87%,50%)] via-[hsl(240,82%,55%)] to-[hsl(214,100%,60%)]" />
+                <div className="h-1.5 w-full bg-gradient-to-r from-[#EA580C] to-[#F7931A]" />
 
                 <div className="p-6">
                     <DialogHeader className="mb-6">
-                        <DialogTitle className="text-xl font-bold text-foreground text-center">
-                            {mode === "signin" ? "Welcome back" : "Create your account"}
+                        <DialogTitle className="text-xl font-heading font-bold text-white text-center">
+                            {mode === "signin" ? (
+                                <>Welcome <span className="text-[#F7931A]">back</span></>
+                            ) : (
+                                <>Create your <span className="text-[#F7931A]">account</span></>
+                            )}
                         </DialogTitle>
-                        <p className="text-sm text-muted-foreground text-center mt-1">
+                        <p className="text-sm text-[#94A3B8] text-center mt-1">
                             {mode === "signin"
                                 ? "Sign in to generate and download leads"
                                 : "Free account — start generating leads instantly"}
@@ -103,7 +107,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                     {/* Google Button */}
                     <Button
                         variant="outline"
-                        className="w-full mb-4 gap-2 font-medium"
+                        className="w-full mb-4 gap-2 font-medium bg-white/10 border-white/20 text-white hover:bg-white/20"
                         onClick={handleGoogle}
                         disabled={googleLoading || loading}
                     >
@@ -123,26 +127,26 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                     {/* Divider */}
                     <div className="relative mb-4">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-border" />
+                            <span className="w-full border-t border-white/10" />
                         </div>
                         <div className="relative flex justify-center text-xs">
-                            <span className="bg-card px-3 text-muted-foreground">or continue with email</span>
+                            <span className="bg-[#0F1115] px-3 text-[#94A3B8]">or continue with email</span>
                         </div>
                     </div>
 
                     {/* Email form */}
                     <form onSubmit={handleEmail} className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-email" className="text-sm">Email</Label>
+                            <Label htmlFor="auth-email" className="text-sm text-[#94A3B8] font-mono">Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
                                 <Input
                                     id="auth-email"
                                     type="email"
                                     placeholder="you@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-9"
+                                    className="pl-9 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30"
                                     required
                                     disabled={loading}
                                 />
@@ -150,13 +154,14 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-password" className="text-sm">Password</Label>
+                            <Label htmlFor="auth-password" className="text-sm text-[#94A3B8] font-mono">Password</Label>
                             <Input
                                 id="auth-password"
                                 type="password"
                                 placeholder={mode === "signup" ? "Min. 8 characters" : "Your password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                className="bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30"
                                 required
                                 disabled={loading}
                                 minLength={mode === "signup" ? 8 : undefined}
@@ -164,30 +169,30 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                         </div>
 
                         {error && (
-                            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</p>
+                            <p className="text-sm text-orange-400 bg-orange-500/10 rounded-lg px-3 py-2">{error}</p>
                         )}
                         {success && (
-                            <p className="text-sm text-emerald-500 bg-emerald-500/10 rounded-lg px-3 py-2">{success}</p>
+                            <p className="text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">{success}</p>
                         )}
 
-                        <Button type="submit" className="w-full font-semibold" disabled={loading || googleLoading}>
+                        <button type="submit" className="btn-btc w-full font-semibold" disabled={loading || googleLoading}>
                             {loading ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</>
                             ) : mode === "signin" ? "Sign In" : "Create Account"}
-                        </Button>
+                        </button>
                     </form>
 
                     {/* Mode toggle */}
-                    <p className="mt-5 text-center text-sm text-muted-foreground">
+                    <p className="mt-5 text-center text-sm text-[#94A3B8]">
                         {mode === "signin" ? (
                             <>Don't have an account?{" "}
-                                <button onClick={() => switchMode("signup")} className="text-primary font-medium hover:underline">
+                                <button onClick={() => switchMode("signup")} className="text-[#F7931A] font-medium hover:underline">
                                     Sign up free
                                 </button>
                             </>
                         ) : (
                             <>Already have an account?{" "}
-                                <button onClick={() => switchMode("signin")} className="text-primary font-medium hover:underline">
+                                <button onClick={() => switchMode("signin")} className="text-[#F7931A] font-medium hover:underline">
                                     Sign in
                                 </button>
                             </>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Target, Menu, X, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavBarProps {
@@ -29,29 +28,29 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-[#e0e5ec] border-b border-[#babecc] shadow-[0_2px_8px_#babecc,-0_-1px_0_#ffffff]"
-          : "bg-[#e0e5ec]/95 border-b border-[#babecc]/60"
+          ? "bg-[#030304]/95 backdrop-blur-md border-b border-white/10 shadow-[0_0_30px_-10px_rgba(247,147,26,0.1)]"
+          : "bg-transparent border-b border-white/5"
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
 
         {/* Logo */}
         <a href="/" className="flex items-center gap-2.5 group">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 group-hover:-translate-y-px"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
-            <Target className="h-4 w-4 text-[#ff4757]" strokeWidth={2} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 transition-all duration-200 group-hover:shadow-[0_0_16px_rgba(247,147,26,0.4)]">
+            <Target className="h-4 w-4 text-[#F7931A]" strokeWidth={2} />
           </div>
-          <span className="font-bold text-[#2d3436] text-[15px] tracking-tight text-debossed">
-            GlobaLeads22
+          <span className="font-heading font-bold text-white text-[15px] tracking-tight">
+            GlobaLeads<span className="text-[#F7931A]">22</span>
           </span>
         </a>
 
         {/* System status — desktop only */}
-        <div className="hidden lg:flex items-center gap-1.5 ml-6">
-          <div className="h-2 w-2 led-green" />
-          <span className="font-mono-data text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+        <div className="hidden lg:flex items-center gap-2 ml-6">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+          </span>
+          <span className="font-mono-data text-[10px] font-bold uppercase tracking-widest text-emerald-400">
             System Online
           </span>
         </div>
@@ -62,7 +61,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
             <a
               key={l.label}
               href={l.href}
-              className="px-4 py-2 rounded-md text-sm font-semibold text-[#4a5568] hover:text-[#2d3436] transition-colors tracking-wide uppercase text-[11px]"
+              className="px-4 py-2 rounded-md text-[11px] font-semibold text-[#94A3B8] hover:text-white transition-colors tracking-wider uppercase"
             >
               {l.label}
             </a>
@@ -73,18 +72,15 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-2">
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ff4757] text-white text-xs font-bold"
-                style={{ boxShadow: "var(--shadow-sharp)" }}
-              >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#EA580C] to-[#F7931A] text-white text-xs font-bold">
                 {user.email?.[0]?.toUpperCase() ?? "U"}
               </div>
-              <span className="text-sm text-[#4a5568] max-w-[140px] truncate hidden lg:block font-mono-data">
+              <span className="text-sm text-[#94A3B8] max-w-[140px] truncate hidden lg:block font-mono-data">
                 {user.email}
               </span>
               <button
                 onClick={signOut}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[#4a5568] hover:text-[#ff4757] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F7931A] transition-colors"
               >
                 <LogOut className="h-3 w-3" /> Sign Out
               </button>
@@ -92,11 +88,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
           ) : (
             <button
               onClick={onOpenAuth}
-              className="btn-press relative px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#ff4757] transition-all hover:brightness-110"
-              style={{
-                boxShadow: "4px 4px 8px rgba(166,50,60,0.35), -2px -2px 6px rgba(255,100,110,0.3)",
-                border: "1px solid rgba(255,255,255,0.15)",
-              }}
+              className="btn-btc px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white"
             >
               Sign In / Sign Up
             </button>
@@ -105,8 +97,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 rounded-lg text-[#4a5568] hover:text-[#2d3436] transition-colors btn-press"
-          style={{ boxShadow: "var(--shadow-card)" }}
+          className="md:hidden p-2 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Menu"
         >
@@ -116,21 +107,20 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div className="md:hidden border-t border-[#babecc] bg-[#e0e5ec] px-4 pb-5 pt-3 animate-fade-in">
+        <div className="md:hidden border-t border-white/10 bg-[#0F1115] px-4 pb-5 pt-3 animate-fade-in">
           {links.map((l) => (
             <a
               key={l.label}
               href={l.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-[#4a5568] hover:text-[#2d3436] transition-colors"
+              className="flex items-center px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors"
             >
               {l.label}
             </a>
           ))}
           <button
             onClick={() => { onGetStarted(); setMenuOpen(false); }}
-            className="btn-press mt-3 w-full px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-[#ff4757]"
-            style={{ boxShadow: "4px 4px 8px rgba(166,50,60,0.35), -2px -2px 6px rgba(255,100,110,0.3)" }}
+            className="btn-btc mt-3 w-full px-5 py-3 text-xs font-bold uppercase tracking-widest text-white"
           >
             Start Free Trial
           </button>

@@ -42,15 +42,15 @@ interface LeadGeneratorSectionProps {
   devBypass?: boolean;
 }
 
-/* Input field with industrial recessed styling */
-const IndustrialInput = ({
+/* Dark terminal input */
+const DarkInput = ({
   id, placeholder, value, onChange, disabled, icon: Icon, type = "text", min,
 }: {
   id: string; placeholder: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean; icon?: React.ComponentType<{ className?: string }>; type?: string; min?: string;
 }) => (
   <div className="relative">
-    {Icon && <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#babecc] pointer-events-none" />}
+    {Icon && <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 pointer-events-none" />}
     <input
       id={id}
       type={type}
@@ -59,22 +59,17 @@ const IndustrialInput = ({
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className="w-full rounded-xl h-12 px-4 font-mono-data text-sm text-[#2d3436] placeholder:text-[#babecc] outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:ring-2 focus:ring-[#ff4757]/40"
-      style={{
-        background: "#d1d9e6",
-        boxShadow: "var(--shadow-recessed)",
-        paddingLeft: Icon ? "2.5rem" : "1rem",
-        border: "1px solid transparent",
-      }}
+      className="w-full h-12 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white text-sm placeholder:text-white/30 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:shadow-[0_10px_20px_-10px_rgba(247,147,26,0.3)]"
+      style={{ paddingLeft: Icon ? "2.5rem" : "1rem", paddingRight: "1rem" }}
     />
   </div>
 );
 
-/* Label with industrial stamp look */
-const StampLabel = ({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) => (
+/* Mono label */
+const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) => (
   <label
     htmlFor={htmlFor}
-    className="block mb-2 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#4a5568]"
+    className="block mb-2 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]"
   >
     {children}
   </label>
@@ -201,9 +196,9 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
     const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "Contact Page"];
     const headerStyle = {
       font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
-      fill: { fgColor: { rgb: "FF4757" }, patternType: "solid" as const },
+      fill: { fgColor: { rgb: "F7931A" }, patternType: "solid" as const },
       alignment: { horizontal: "center" as const, vertical: "center" as const },
-      border: { bottom: { style: "thin" as const, color: { rgb: "CC0011" } } },
+      border: { bottom: { style: "thin" as const, color: { rgb: "EA580C" } } },
     };
     const cellStyle = {
       font: { sz: 10, name: "Calibri" },
@@ -243,27 +238,21 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
   const whatsappCount = results?.reduce((acc, r) => acc + r.whatsapp.length, 0) ?? 0;
 
   return (
-    <section id="tool" className="bg-[#e0e5ec] py-16 sm:py-24">
+    <section id="tool" className="bg-[#030304] py-16 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
 
         {/* Header */}
         <div className="mb-10 text-center">
-          <div
-            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2"
-            style={{ boxShadow: "var(--shadow-recessed)" }}
-          >
-            <Target className="h-3 w-3 text-[#ff4757]" />
-            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#4a5568]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+            <Target className="h-3 w-3 text-[#F7931A]" />
+            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
               Lead Generator
             </span>
           </div>
-          <h2
-            className="text-4xl font-bold tracking-tight text-[#2d3436] sm:text-5xl"
-            style={{ textShadow: "0 1px 0 #ffffff" }}
-          >
-            Start Your Search
+          <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Start Your <span className="gradient-text">Search</span>
           </h2>
-          <p className="mt-4 text-[#4a5568] text-lg">
+          <p className="mt-4 text-[#94A3B8] text-lg">
             Enter a business type and location to extract leads instantly.
           </p>
         </div>
@@ -271,46 +260,39 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
         {/* Auth loading */}
         {authLoading && !devBypass && (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-[#ff4757]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#F7931A]" />
           </div>
         )}
 
         {/* ── Locked state ── */}
         {!authLoading && !effectiveUser && (
-          <div
-            className="flex flex-col items-center gap-6 rounded-2xl p-12 text-center"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
-            <div
-              className="flex h-16 w-16 items-center justify-center rounded-full"
-              style={{ boxShadow: "var(--shadow-recessed)" }}
-            >
-              <Lock className="h-7 w-7 text-[#babecc]" />
+          <div className="flex flex-col items-center gap-6 rounded-2xl p-12 text-center bg-[#0F1115] border border-white/10">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F7931A]/10 border border-[#F7931A]/30">
+              <Lock className="h-7 w-7 text-[#F7931A]" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-[#2d3436] mb-2" style={{ textShadow: "0 1px 0 #ffffff" }}>
+              <h3 className="text-xl font-heading font-semibold text-white mb-2">
                 Sign in to generate leads
               </h3>
-              <p className="text-[#4a5568] text-sm max-w-sm mx-auto">
+              <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
                 Create a free account or sign in to start searching Google Maps and the web for business contacts.
               </p>
             </div>
             <button
-              className="btn-press px-8 py-3.5 rounded-xl font-mono-data text-xs font-bold uppercase tracking-widest text-white bg-[#ff4757]"
-              style={{ boxShadow: "4px 4px 10px rgba(166,50,60,0.4), -2px -2px 8px rgba(255,100,110,0.3)", border: "1px solid rgba(255,255,255,0.2)" }}
+              className="btn-btc px-8 py-3.5 font-mono-data text-xs font-bold uppercase tracking-widest text-white"
               onClick={onOpenAuth}
             >
               Sign In / Sign Up Free
             </button>
             {/* Blurred preview */}
-            <div className="w-full rounded-xl overflow-hidden relative mt-2" style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}>
-              <div className="absolute inset-0 bg-[#e0e5ec]/70 backdrop-blur-sm z-10 rounded-xl" />
-              <div className="grid grid-cols-3 gap-2 p-4 pointer-events-none select-none opacity-60">
+            <div className="w-full rounded-xl overflow-hidden relative mt-2 border border-white/10 bg-[#030304]">
+              <div className="absolute inset-0 bg-[#030304]/70 backdrop-blur-sm z-10 rounded-xl" />
+              <div className="grid grid-cols-3 gap-2 p-4 pointer-events-none select-none opacity-40">
                 {["Business Name", "Email", "Phone"].map(h => (
-                  <div key={h} className="h-6 rounded-lg bg-[#babecc] text-[10px] flex items-center justify-center text-[#4a5568] font-mono-data font-bold uppercase tracking-wider">{h}</div>
+                  <div key={h} className="h-6 rounded-lg bg-white/10 text-[10px] flex items-center justify-center text-[#94A3B8] font-mono-data font-bold uppercase tracking-wider">{h}</div>
                 ))}
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-5 rounded-lg bg-[#babecc]/60" />
+                  <div key={i} className="h-5 rounded-lg bg-white/5" />
                 ))}
               </div>
             </div>
@@ -321,22 +303,17 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
         {(devBypass || (!authLoading && effectiveUser)) && (<>
 
           {/* Search Form Panel */}
-          <div
-            className="mb-6 rounded-2xl bg-[#e0e5ec] p-6 relative overflow-hidden"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
-            {/* Corner screws */}
-            <span className="absolute top-2 left-2 h-2.5 w-2.5 rounded-full opacity-40" style={{ background: "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
-            <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full opacity-40" style={{ background: "radial-gradient(circle at 65% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
-            <span className="absolute bottom-2 left-2 h-2.5 w-2.5 rounded-full opacity-40" style={{ background: "radial-gradient(circle at 35% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
-            <span className="absolute bottom-2 right-2 h-2.5 w-2.5 rounded-full opacity-40" style={{ background: "radial-gradient(circle at 65% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2.5px, transparent 5px)" }} />
+          <div className="mb-6 rounded-2xl bg-[#0F1115] border border-white/10 p-6 relative overflow-hidden">
+            {/* Orange corner accents */}
+            <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#F7931A]/30 rounded-tl-2xl" />
+            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#F7931A]/30 rounded-br-2xl" />
 
             <div className="space-y-5">
               {/* Keyword + Location */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <StampLabel htmlFor="keyword">Business Keyword</StampLabel>
-                  <IndustrialInput
+                  <FieldLabel htmlFor="keyword">Business Keyword</FieldLabel>
+                  <DarkInput
                     id="keyword"
                     placeholder='"plumber", "dentist"'
                     value={keyword}
@@ -346,8 +323,8 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                   />
                 </div>
                 <div>
-                  <StampLabel htmlFor="location">Location</StampLabel>
-                  <IndustrialInput
+                  <FieldLabel htmlFor="location">Location</FieldLabel>
+                  <DarkInput
                     id="location"
                     placeholder='"Miami, FL", "London, UK"'
                     value={location}
@@ -361,10 +338,10 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
               {/* Radius + Max results */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <StampLabel htmlFor="radius">
-                    Radius (km) <span className="text-[#babecc] normal-case font-normal">(optional)</span>
-                  </StampLabel>
-                  <IndustrialInput
+                  <FieldLabel htmlFor="radius">
+                    Radius (km) <span className="text-white/20 normal-case font-normal">(optional)</span>
+                  </FieldLabel>
+                  <DarkInput
                     id="radius"
                     type="number"
                     min="1"
@@ -375,21 +352,20 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                   />
                 </div>
                 <div>
-                  <StampLabel htmlFor="max-results">
-                    Max Results: <span className="text-[#ff4757]">{maxResults}</span>
-                  </StampLabel>
+                  <FieldLabel htmlFor="max-results">
+                    Max Results: <span className="text-[#F7931A]">{maxResults}</span>
+                  </FieldLabel>
                   <div className="flex gap-2">
                     {[20, 40, 60].map((v) => (
                       <button
                         key={v}
                         onClick={() => setMaxResults(v)}
                         disabled={isProcessing}
-                        className="flex-1 rounded-xl py-3 font-mono-data text-xs font-bold uppercase tracking-wider transition-all btn-press"
-                        style={
+                        className={`flex-1 rounded-lg py-3 font-mono-data text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
                           maxResults === v
-                            ? { background: "#ff4757", color: "#ffffff", boxShadow: "4px 4px 8px rgba(166,50,60,0.3), -2px -2px 6px rgba(255,100,110,0.2)", border: "1px solid rgba(255,255,255,0.15)" }
-                            : { boxShadow: "var(--shadow-recessed)", background: "#d1d9e6", color: "#4a5568" }
-                        }
+                            ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_16px_rgba(247,147,26,0.3)]"
+                            : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"
+                        }`}
                       >
                         {v}
                       </button>
@@ -402,8 +378,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
               <button
                 onClick={handleGenerate}
                 disabled={isProcessing}
-                className="btn-press w-full flex items-center justify-center gap-2.5 rounded-xl py-4 font-mono-data text-sm font-bold uppercase tracking-widest text-white bg-[#ff4757] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                style={{ boxShadow: "4px 4px 10px rgba(166,50,60,0.4), -2px -2px 8px rgba(255,100,110,0.3)", border: "1px solid rgba(255,255,255,0.2)" }}
+                className="btn-btc w-full flex items-center justify-center gap-2.5 py-4 font-mono-data text-sm font-bold uppercase tracking-widest text-white disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isProcessing ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</>
@@ -416,10 +391,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
 
           {/* ── Progress Panel ── */}
           {(isProcessing || (results && progress > 0)) && (
-            <div
-              className="mb-6 rounded-2xl bg-[#e0e5ec] p-5"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
+            <div className="mb-6 rounded-2xl bg-[#0F1115] border border-white/10 p-5">
               {/* Step indicators */}
               <div className="flex items-center justify-between mb-5">
                 {STEPS_INIT.map((step, i) => {
@@ -430,22 +402,22 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                         className="flex h-8 w-8 items-center justify-center rounded-full font-mono-data text-xs font-bold flex-shrink-0 transition-all duration-300"
                         style={
                           current.status === "done"
-                            ? { background: "#ff4757", color: "#ffffff", boxShadow: "var(--shadow-floating)" }
+                            ? { background: "linear-gradient(to right, #EA580C, #F7931A)", color: "#ffffff", boxShadow: "0 0 16px rgba(247,147,26,0.4)" }
                             : current.status === "active"
-                            ? { background: "#e0e5ec", color: "#ff4757", boxShadow: "var(--shadow-floating)", border: "2px solid #ff4757" }
-                            : { background: "#d1d9e6", color: "#babecc", boxShadow: "var(--shadow-recessed)" }
+                            ? { background: "transparent", color: "#F7931A", border: "2px solid #F7931A", boxShadow: "0 0 12px rgba(247,147,26,0.3)" }
+                            : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.1)" }
                         }
                       >
                         {current.status === "done" ? "✓" : i + 1}
                       </div>
                       <span
                         className="font-mono-data text-[10px] font-bold hidden sm:inline uppercase tracking-wider transition-colors"
-                        style={{ color: current.status === "done" ? "#ff4757" : current.status === "active" ? "#2d3436" : "#babecc" }}
+                        style={{ color: current.status === "done" ? "#F7931A" : current.status === "active" ? "#ffffff" : "rgba(255,255,255,0.2)" }}
                       >
                         {step.label}
                       </span>
                       {i < STEPS_INIT.length - 1 && (
-                        <ChevronRight className="h-3.5 w-3.5 text-[#babecc] mx-1 flex-shrink-0" />
+                        <ChevronRight className="h-3.5 w-3.5 text-white/20 mx-1 flex-shrink-0" />
                       )}
                     </div>
                   );
@@ -454,15 +426,15 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
 
               {/* Status + percentage */}
               <div className="flex items-center justify-between font-mono-data text-sm mb-2">
-                <span className="text-[#4a5568] truncate max-w-[75%] text-xs uppercase tracking-wider">{status}</span>
-                <span className="font-bold text-[#ff4757]">{progress}%</span>
+                <span className="text-[#94A3B8] truncate max-w-[75%] text-xs uppercase tracking-wider">{status}</span>
+                <span className="font-bold text-[#F7931A]">{progress}%</span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-2.5 rounded-full overflow-hidden" style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}>
+              <div className="h-2 rounded-full overflow-hidden bg-white/10">
                 <div
-                  className="h-full rounded-full bg-[#ff4757] transition-all duration-300"
-                  style={{ width: `${progress}%`, boxShadow: "0 0 8px rgba(255,71,87,0.5)" }}
+                  className="h-full rounded-full bg-gradient-to-r from-[#EA580C] to-[#F7931A] transition-all duration-300"
+                  style={{ width: `${progress}%`, boxShadow: "0 0 10px rgba(247,147,26,0.5)" }}
                 />
               </div>
             </div>
@@ -470,21 +442,15 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
 
           {/* ── Results Panel ── */}
           {results && !isProcessing && (
-            <div
-              className="rounded-2xl bg-[#e0e5ec] overflow-hidden"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
+            <div className="rounded-2xl bg-[#0F1115] border border-white/10 overflow-hidden">
               {/* Summary header */}
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[#babecc]"
-                style={{ background: "#d1d9e6", boxShadow: "inset 0 -1px 0 rgba(0,0,0,0.06)" }}
-              >
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-white/10 bg-black/30">
                 <div className="flex gap-4 font-mono-data text-xs font-bold uppercase tracking-wider">
-                  <span className="text-[#2d3436]">{results.length} businesses</span>
-                  <span className="flex items-center gap-1 text-[#4a5568]">
+                  <span className="text-white">{results.length} businesses</span>
+                  <span className="flex items-center gap-1 text-[#94A3B8]">
                     <Mail className="h-3 w-3" /> {emailCount} emails
                   </span>
-                  <span className="flex items-center gap-1 text-[#4a5568]">
+                  <span className="flex items-center gap-1 text-[#94A3B8]">
                     <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
                   </span>
                 </div>
@@ -492,19 +458,18 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                   <button
                     onClick={handleCopyEmails}
                     disabled={emailCount === 0}
-                    className="btn-press flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-[#4a5568] disabled:opacity-40"
-                    style={{ boxShadow: "var(--shadow-card)" }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] border border-white/10 bg-white/5 hover:border-[#F7931A]/30 hover:text-white transition-all disabled:opacity-40"
                   >
                     {emailsCopied ? (
-                      <><CheckCheck className="h-3.5 w-3.5 text-emerald-600" />Copied!</>
+                      <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
                     ) : (
                       <><Copy className="h-3.5 w-3.5" />Copy Emails</>
                     )}
                   </button>
                   <button
                     onClick={handleDownload}
-                    className="btn-press flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-white bg-[#ff4757]"
-                    style={{ boxShadow: "4px 4px 8px rgba(166,50,60,0.3), -2px -2px 6px rgba(255,100,110,0.2)" }}
+                    className="btn-btc flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider text-white"
+                    style={{ borderRadius: "8px" }}
                   >
                     <Download className="h-3.5 w-3.5" />Download XLSX
                   </button>
@@ -514,48 +479,43 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
               {/* Results table */}
               <div className="overflow-x-auto max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead
-                    className="sticky top-0"
-                    style={{ background: "#d1d9e6", boxShadow: "0 1px 0 #babecc" }}
-                  >
+                  <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
                     <tr>
                       {["Business", "Phone", "Email", "Website"].map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#4a5568]">
+                        <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#babecc]/40">
+                  <tbody className="divide-y divide-white/[0.04]">
                     {results.map((r, i) => (
                       <tr
                         key={r.placeId || i}
-                        className="transition-colors"
-                        style={{ background: i % 2 === 1 ? "#d1d9e6" : "transparent" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,71,87,0.04)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 1 ? "#d1d9e6" : "transparent")}
+                        className="transition-colors hover:bg-[#F7931A]/5"
+                        style={{ background: i % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent" }}
                       >
                         <td className="px-4 py-3">
-                          <p className="font-semibold text-[#2d3436] truncate max-w-[180px]">{r.name}</p>
+                          <p className="font-heading font-medium text-white truncate max-w-[180px]">{r.name}</p>
                           {r.category && (
-                            <p className="font-mono-data text-[9px] text-[#4a5568] capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
+                            <p className="font-mono-data text-[9px] text-[#94A3B8] capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-mono-data text-xs text-[#4a5568] whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono-data text-xs text-[#94A3B8] whitespace-nowrap">
                           {r.phone || "—"}
                         </td>
                         <td className="px-4 py-3">
                           {r.emails.length > 0 ? (
                             <div className="space-y-0.5">
                               {r.emails.slice(0, 2).map((e) => (
-                                <p key={e} className="font-mono-data text-xs text-[#ff4757] truncate max-w-[200px]">{e}</p>
+                                <p key={e} className="font-mono-data text-xs text-[#F7931A] truncate max-w-[200px]">{e}</p>
                               ))}
                               {r.emails.length > 2 && (
-                                <p className="font-mono-data text-[9px] text-[#4a5568]">+{r.emails.length - 2} more</p>
+                                <p className="font-mono-data text-[9px] text-[#94A3B8]">+{r.emails.length - 2} more</p>
                               )}
                             </div>
                           ) : (
-                            <span className="font-mono-data text-xs text-[#babecc]">—</span>
+                            <span className="font-mono-data text-xs text-white/20">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -564,14 +524,14 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                               href={r.website}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 font-mono-data text-xs text-[#4a5568] hover:text-[#ff4757] transition-colors"
+                              className="flex items-center gap-1 font-mono-data text-xs text-[#94A3B8] hover:text-[#F7931A] transition-colors"
                             >
                               <Globe className="h-3.5 w-3.5 flex-shrink-0" />
                               <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                               <ExternalLink className="h-3 w-3 flex-shrink-0" />
                             </a>
                           ) : (
-                            <span className="font-mono-data text-xs text-[#babecc]">—</span>
+                            <span className="font-mono-data text-xs text-white/20">—</span>
                           )}
                         </td>
                       </tr>

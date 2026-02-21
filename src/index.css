@@ -1,5 +1,4 @@
 @charset "UTF-8";
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,93 +7,49 @@
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════
-       Industrial Skeuomorphism — Token System
-       Light mode only. Matte ABS plastic chassis.
+       Bitcoin DeFi — Token System
+       Dark mode only. True void + bitcoin fire.
     ═══════════════════════════════════════════════ */
 
-    /* ── Base Surfaces ── */
-    --background:             213 17% 90%;   /* #e0e5ec — chassis plate */
-    --foreground:             191  9% 19%;   /* #2d3436 — charcoal ink  */
+    --background:              0 0% 1%;        /* #030304 true void */
+    --foreground:              0 0% 100%;      /* #ffffff pure light */
 
-    /* Cards are the same surface; depth comes from shadow, not color */
-    --card:                   213 17% 90%;
-    --card-foreground:        191  9% 19%;
+    --card:                    222 11% 8%;     /* #0F1115 dark matter */
+    --card-foreground:         0 0% 100%;
 
-    /* Popover — slightly lighter raised panel */
-    --popover:                220 14% 95%;   /* #f0f2f5 */
-    --popover-foreground:     191  9% 19%;
+    --popover:                 222 11% 8%;
+    --popover-foreground:      0 0% 100%;
 
-    /* ── Brand / Interactive ── */
-    --primary:                354 100% 64%;  /* #ff4757 — safety orange/red */
-    --primary-foreground:       0   0% 100%;
+    --primary:                 33 92% 53%;     /* #F7931A bitcoin orange */
+    --primary-foreground:      0 0% 100%;
 
-    /* ── Secondary / Muted ── */
-    --secondary:              220 14% 95%;   /* #f0f2f5 — raised panel */
-    --secondary-foreground:   191  9% 19%;
+    --secondary:               222 11% 8%;
+    --secondary-foreground:    215 16% 63%;    /* #94A3B8 stardust */
 
-    --muted:                  213 24% 86%;   /* #d1d9e6 — recessed / sunken */
-    --muted-foreground:       218 17% 35%;   /* #4a5568 — slate labels (AA) */
+    --muted:                   222 11% 8%;
+    --muted-foreground:        215 16% 63%;
 
-    /* Accent == Primary (safety red) */
-    --accent:                 354 100% 64%;
-    --accent-foreground:        0   0% 100%;
+    --accent:                  33 92% 53%;
+    --accent-foreground:       0 0% 100%;
 
-    /* ── States ── */
-    --destructive:              0  84% 60%;
-    --destructive-foreground:   0   0% 100%;
+    --destructive:             0 84% 60%;
+    --destructive-foreground:  0 0% 100%;
 
-    /* ── Borders ── */
-    --border:                 228 11% 76%;   /* #babecc — shadow side of pair */
-    --input:                  213 24% 86%;   /* #d1d9e6 — recessed slot */
-    --ring:                   354 100% 64%;
+    --border:                  215 28% 17%;    /* #1E293B dim boundary */
+    --input:                   215 28% 17%;
+    --ring:                    33 92% 53%;
 
-    --radius:                 1rem;          /* 16px base */
+    --radius:                  1rem;
 
-    /* ── Sidebar ── */
-    --sidebar-background:         213 17% 88%;
-    --sidebar-foreground:         191  9% 19%;
-    --sidebar-primary:            354 100% 64%;
-    --sidebar-primary-foreground:   0   0% 100%;
-    --sidebar-accent:             213 24% 86%;
-    --sidebar-accent-foreground:  191  9% 19%;
-    --sidebar-border:             228 11% 76%;
-    --sidebar-ring:               354 100% 64%;
-
-    /* ═══════════════════════════════════════════════
-       Neumorphic Shadow System
-       Consistent top-left lighting source.
-       Dark shadow → bottom-right (#babecc)
-       Light shadow → top-left (#ffffff)
-    ═══════════════════════════════════════════════ */
-    --shadow-card:
-      8px  8px  16px #babecc,
-      -8px -8px  16px #ffffff,
-      inset 0 0 0 rgba(0,0,0,0);             /* 3-layer for smooth transitions */
-
-    --shadow-floating:
-      12px 12px 24px #babecc,
-      -12px -12px 24px #ffffff,
-      inset 1px 1px 0 rgba(255,255,255,0.5);
-
-    --shadow-pressed:
-      inset 6px  6px  12px #babecc,
-      inset -6px -6px  12px #ffffff,
-      0 0 0 rgba(0,0,0,0);
-
-    --shadow-recessed:
-      inset 4px  4px  8px #babecc,
-      inset -4px -4px  8px #ffffff,
-      0 0 0 rgba(0,0,0,0);
-
-    --shadow-sharp:
-      4px 4px 8px rgba(0,0,0,0.15),
-      -1px -1px 1px rgba(255,255,255,0.8);
-
-    --shadow-glow:
-      0 0 12px 3px rgba(255, 71, 87, 0.5);
-
-    --shadow-glow-green:
-      0 0 8px 2px rgba(34, 197, 94, 0.9);
+    /* Sidebar */
+    --sidebar-background:          222 11% 8%;
+    --sidebar-foreground:          0 0% 100%;
+    --sidebar-primary:             33 92% 53%;
+    --sidebar-primary-foreground:  0 0% 100%;
+    --sidebar-accent:              215 28% 17%;
+    --sidebar-accent-foreground:   0 0% 100%;
+    --sidebar-border:              215 28% 17%;
+    --sidebar-ring:                33 92% 53%;
   }
 }
 
@@ -104,30 +59,28 @@
   }
 
   html {
-    /* Subtle noise texture baked into the chassis plate */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-    background-size: 150px 150px;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-[#030304] text-white antialiased;
     font-family: 'Inter', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
     letter-spacing: -0.02em;
   }
 
-  /* Custom scrollbar */
+  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: rgba(247, 147, 26, 0.3);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
+    background: rgba(247, 147, 26, 0.6);
   }
 }
 
@@ -147,19 +100,9 @@
   100% { transform: translateX(-50%); }
 }
 
-@keyframes led-breathe {
-  0%, 100% { box-shadow: 0 0 4px 1px rgba(34, 197, 94, 0.7); }
-  50%       { box-shadow: 0 0 9px 3px rgba(34, 197, 94, 1); }
-}
-
-@keyframes led-breathe-red {
-  0%, 100% { box-shadow: 0 0 4px 1px rgba(255, 71, 87, 0.7); }
-  50%       { box-shadow: 0 0 9px 3px rgba(255, 71, 87, 1); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-20px); }
 }
 
 @keyframes accordion-down {
@@ -174,66 +117,69 @@
 
 /* ─── Utility Classes ────────────────────────────────────────────── */
 @layer utilities {
-  /* Monospace — for numbers, data, labels */
+  /* Typography */
   .font-mono-data {
-    font-family: 'JetBrains Mono', 'Roboto Mono', 'Courier New', monospace;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .font-heading {
+    font-family: 'Space Grotesk', sans-serif;
   }
 
-  /* Embossed text — light text on dark, shadow below */
-  .text-embossed {
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  /* Bitcoin gradient text */
+  .gradient-text {
+    background: linear-gradient(to right, #F7931A, #FFD600);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  /* Debossed text — dark text on light, white shadow below = raised look */
-  .text-debossed {
-    text-shadow: 0 1px 0 #ffffff, 0 -1px 0 rgba(0,0,0,0.08);
+  /* Glass card */
+  .glass-card {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  /* Neumorphic shadows as utilities */
-  .shadow-card     { box-shadow: var(--shadow-card); }
-  .shadow-floating { box-shadow: var(--shadow-floating); }
-  .shadow-pressed  { box-shadow: var(--shadow-pressed); }
-  .shadow-recessed { box-shadow: var(--shadow-recessed); }
-  .shadow-sharp    { box-shadow: var(--shadow-sharp); }
-  .shadow-glow     { box-shadow: var(--shadow-glow); }
-  .shadow-glow-green { box-shadow: var(--shadow-glow-green); }
+  /* Orange glow shadow */
+  .glow-orange {
+    box-shadow: 0 0 20px -5px rgba(247, 147, 26, 0.6);
+  }
 
-  /* Card lift — transitions between card and floating shadow on hover */
+  /* Card hover lift with orange glow */
   .card-lift {
-    box-shadow: var(--shadow-card);
-    transition:
-      transform   300ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
-      box-shadow  300ms cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
   }
   .card-lift:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-floating);
+    border-color: rgba(247, 147, 26, 0.4);
+    box-shadow: 0 0 30px -10px rgba(247, 147, 26, 0.25);
   }
 
-  /* LED indicators */
-  .led-green {
-    background-color: #22c55e;
+  /* Orange gradient button */
+  .btn-btc {
+    background: linear-gradient(to right, #EA580C, #F7931A);
+    box-shadow: 0 0 20px -5px rgba(234, 88, 12, 0.5);
     border-radius: 9999px;
-    animation: led-breathe 2.2s ease-in-out infinite;
+    transition: transform 300ms ease, box-shadow 300ms ease;
   }
-  .led-red {
-    background-color: #ff4757;
-    border-radius: 9999px;
-    animation: led-breathe-red 2.2s ease-in-out infinite;
+  .btn-btc:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px -5px rgba(247, 147, 26, 0.6);
   }
-  .led-amber {
-    background-color: #f59e0b;
-    border-radius: 9999px;
-    animation: pulse 2s ease-in-out infinite;
+  .btn-btc:active {
+    transform: scale(0.98);
   }
 
-  /* Button physical press */
-  .btn-press {
-    transition: transform 150ms ease, box-shadow 150ms ease;
-  }
-  .btn-press:active {
-    transform: translateY(2px);
-    box-shadow: var(--shadow-pressed) !important;
+  /* Background grid pattern with vignette */
+  .bg-grid-pattern {
+    background-size: 50px 50px;
+    background-image:
+      linear-gradient(to right, rgba(30, 41, 59, 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
   }
 
   /* Animations */
@@ -246,8 +192,8 @@
   .animate-marquee {
     animation: marquee 30s linear infinite;
   }
-  .animate-spin-slow {
-    animation: spin-slow 4s linear infinite;
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
   }
   .animate-accordion-down {
     animation: accordion-down 0.2s ease-out;

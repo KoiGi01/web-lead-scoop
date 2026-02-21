@@ -17,7 +17,7 @@ const Index = () => {
   const openAuth = () => navigate("/app");
 
   return (
-    <div className="min-h-screen bg-[#e0e5ec]">
+    <div className="min-h-screen bg-[#030304]">
       <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
       <HeroSection onGetStarted={goToApp} />
       <StatsBar />

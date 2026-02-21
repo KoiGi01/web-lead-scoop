@@ -58,42 +58,38 @@ const AppSidebar = ({
   if (collapsed) {
     return (
       <aside
-        className="hidden md:flex flex-col items-center w-14 py-4 gap-3 flex-shrink-0 border-r border-[#babecc]"
-        style={{ background: "#e0e5ec" }}
+        className="hidden md:flex flex-col items-center w-14 py-4 gap-3 flex-shrink-0 border-r border-white/10 bg-[#0F1115]"
       >
         <button
           onClick={onToggleCollapse}
-          className="p-2 rounded-lg text-[#4a5568] hover:text-[#2d3436] transition-colors btn-press"
-          style={{ boxShadow: "var(--shadow-card)" }}
+          className="p-2 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10 hover:border-[#F7931A]/50"
           title="Expand sidebar"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
         <button
           onClick={onNewSearch}
-          className="p-2 rounded-lg text-white bg-[#ff4757] btn-press"
-          style={{ boxShadow: "4px 4px 8px rgba(166,50,60,0.3), -2px -2px 6px rgba(255,100,110,0.2)" }}
+          className="p-2 rounded-lg text-white bg-gradient-to-r from-[#EA580C] to-[#F7931A]"
+          style={{ boxShadow: "0 0 16px rgba(247,147,26,0.3)" }}
           title="New Search"
         >
           <Plus className="h-4 w-4" />
         </button>
         <button
-          className="p-2 rounded-lg text-[#4a5568] btn-press"
-          style={{ boxShadow: "var(--shadow-recessed)" }}
+          className="p-2 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10"
           title="History"
         >
           <Clock className="h-4 w-4" />
         </button>
         <button
-          className="p-2 rounded-lg text-[#4a5568] btn-press"
-          style={{ boxShadow: "var(--shadow-recessed)" }}
+          className="p-2 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10"
           title="Stats"
         >
           <BarChart3 className="h-4 w-4" />
         </button>
         <div className="mt-auto flex flex-col items-center gap-1">
-          <Zap className="h-4 w-4 text-[#ff4757]" />
-          <span className="font-mono-data text-[10px] font-bold text-[#2d3436]">{creditsRemaining}</span>
+          <Zap className="h-4 w-4 text-[#F7931A]" />
+          <span className="font-mono text-[10px] font-bold text-[#F7931A]">{creditsRemaining}</span>
         </div>
       </aside>
     );
@@ -101,22 +97,20 @@ const AppSidebar = ({
 
   return (
     <aside
-      className="hidden md:flex flex-col w-64 flex-shrink-0 overflow-hidden border-r border-[#babecc]"
-      style={{ background: "#e0e5ec" }}
+      className="hidden md:flex flex-col w-64 flex-shrink-0 overflow-hidden border-r border-white/10 bg-[#0F1115]"
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-[#babecc]"
+        className="flex items-center justify-between px-4 py-3 border-b border-white/10"
       >
         <span
-          className="font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#4a5568]"
+          className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]"
         >
           Dashboard
         </span>
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-[#4a5568] hover:text-[#2d3436] transition-colors btn-press"
-          style={{ boxShadow: "var(--shadow-recessed)" }}
+          className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10 hover:border-[#F7931A]/50"
           title="Collapse sidebar"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
@@ -127,8 +121,7 @@ const AppSidebar = ({
       <div className="px-3 pt-3">
         <button
           onClick={onNewSearch}
-          className="btn-press w-full flex items-center justify-center gap-2 rounded-xl py-2.5 font-mono-data text-[11px] font-bold uppercase tracking-widest text-white bg-[#ff4757]"
-          style={{ boxShadow: "4px 4px 8px rgba(166,50,60,0.3), -2px -2px 6px rgba(255,100,110,0.2)", border: "1px solid rgba(255,255,255,0.15)" }}
+          className="btn-btc w-full flex items-center justify-center gap-2 rounded-xl py-2.5 font-mono text-[11px] font-bold uppercase tracking-widest text-white"
         >
           <Plus className="h-3.5 w-3.5" /> New Search
         </button>
@@ -136,7 +129,7 @@ const AppSidebar = ({
 
       {/* Stats Grid */}
       <div className="px-3 pt-4 pb-2">
-        <p className="font-mono-data text-[9px] uppercase tracking-widest font-bold text-[#4a5568] mb-2.5 flex items-center gap-1.5">
+        <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8] mb-2.5 flex items-center gap-1.5">
           <BarChart3 className="h-2.5 w-2.5" /> Stats
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -148,11 +141,10 @@ const AppSidebar = ({
           ].map(({ label, value, icon: Icon }) => (
             <div
               key={label}
-              className="rounded-xl px-3 py-2.5 text-center"
-              style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}
+              className="rounded-xl px-3 py-2.5 text-center bg-[#0F1115] border border-white/10"
             >
-              <p className="font-mono-data text-lg font-bold text-[#2d3436] leading-tight">{value}</p>
-              <p className="font-mono-data text-[8px] text-[#4a5568] flex items-center justify-center gap-1 mt-0.5 uppercase tracking-wider">
+              <p className="font-mono text-lg font-bold text-[#F7931A] leading-tight">{value}</p>
+              <p className="font-mono text-[8px] text-[#94A3B8] flex items-center justify-center gap-1 mt-0.5 uppercase tracking-wider">
                 <Icon className="h-2 w-2" /> {label}
               </p>
             </div>
@@ -161,18 +153,18 @@ const AppSidebar = ({
       </div>
 
       {/* Divider */}
-      <div className="mx-3 border-t border-[#babecc]/60 my-1" />
+      <div className="mx-3 border-t border-white/10 my-1" />
 
       {/* Search History */}
       <div className="flex-1 overflow-hidden flex flex-col px-3 pt-2">
         <div className="flex items-center justify-between mb-2">
-          <p className="font-mono-data text-[9px] uppercase tracking-widest font-bold text-[#4a5568] flex items-center gap-1.5">
+          <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8] flex items-center gap-1.5">
             <Clock className="h-2.5 w-2.5" /> Recent Searches
           </p>
           {history.length > 0 && (
             <button
               onClick={onClearHistory}
-              className="font-mono-data text-[9px] text-[#4a5568] hover:text-[#ff4757] transition-colors flex items-center gap-1 uppercase tracking-wider"
+              className="font-mono text-[9px] text-[#94A3B8] hover:text-[#F7931A] transition-colors flex items-center gap-1 uppercase tracking-wider"
             >
               <Trash2 className="h-2.5 w-2.5" /> Clear
             </button>
@@ -183,37 +175,34 @@ const AppSidebar = ({
           {history.length === 0 && (
             <div className="py-8 text-center">
               <div
-                className="mx-auto mb-3 h-12 w-12 rounded-full flex items-center justify-center"
-                style={{ boxShadow: "var(--shadow-recessed)" }}
+                className="mx-auto mb-3 h-12 w-12 rounded-full flex items-center justify-center border border-white/10 bg-white/5"
               >
-                <Search className="h-5 w-5 text-[#babecc]" />
+                <Search className="h-5 w-5 text-[#94A3B8]" />
               </div>
-              <p className="font-mono-data text-[10px] text-[#4a5568] uppercase tracking-wider">No searches yet</p>
-              <p className="font-mono-data text-[9px] text-[#babecc] mt-1 uppercase tracking-wider">Run a search to see history</p>
+              <p className="font-mono text-[10px] text-[#94A3B8] uppercase tracking-wider">No searches yet</p>
+              <p className="font-mono text-[9px] text-[#94A3B8]/50 mt-1 uppercase tracking-wider">Run a search to see history</p>
             </div>
           )}
           {history.map((entry) => (
             <button
               key={entry.id}
               onClick={() => onSelectEntry(entry)}
-              className="w-full text-left rounded-xl px-3 py-2.5 transition-all group btn-press"
-              style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}
+              className="w-full text-left rounded-xl px-3 py-2.5 transition-all bg-[#030304] border border-white/10 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/5 group"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="font-mono-data text-[11px] font-bold text-[#2d3436] truncate group-hover:text-[#ff4757] transition-colors">
+                  <p className="font-mono text-[11px] font-bold text-white truncate group-hover:text-[#F7931A] transition-colors">
                     {entry.keyword}
                   </p>
-                  <p className="font-mono-data text-[9px] text-[#4a5568] truncate uppercase tracking-wider">{entry.location}</p>
+                  <p className="font-mono text-[9px] text-[#94A3B8] truncate uppercase tracking-wider">{entry.location}</p>
                 </div>
                 <span
-                  className="flex-shrink-0 rounded-full px-2 py-0.5 font-mono-data text-[9px] font-bold text-[#ff4757]"
-                  style={{ boxShadow: "var(--shadow-floating)", background: "#e0e5ec" }}
+                  className="flex-shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-bold text-[#F7931A]"
                 >
                   {entry.leadCount}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-1.5 font-mono-data text-[9px] text-[#4a5568] uppercase tracking-wider">
+              <div className="flex items-center gap-3 mt-1.5 font-mono text-[9px] text-[#94A3B8] uppercase tracking-wider">
                 <span className="flex items-center gap-0.5">
                   <Mail className="h-2 w-2" /> {entry.emailCount}
                 </span>
@@ -228,30 +217,30 @@ const AppSidebar = ({
       </div>
 
       {/* Credits — pinned bottom */}
-      <div className="mt-auto border-t border-[#babecc]/60 px-4 py-4">
+      <div className="mt-auto border-t border-white/10 px-4 py-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono-data text-[9px] uppercase tracking-widest text-[#4a5568]">Credits</span>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-[#94A3B8]">Credits</span>
           <a
             href="#pricing"
-            className="font-mono-data text-[9px] font-bold text-[#ff4757] hover:underline flex items-center gap-0.5 uppercase tracking-wider"
+            className="font-mono text-[9px] font-bold text-[#F7931A] hover:underline flex items-center gap-0.5 uppercase tracking-wider"
           >
             Upgrade <ArrowUpRight className="h-2.5 w-2.5" />
           </a>
         </div>
         <div className="flex items-baseline gap-1 mb-2">
-          <span className="font-mono-data text-2xl font-bold text-[#2d3436]" style={{ textShadow: "0 1px 0 #ffffff" }}>
+          <span className="font-mono text-2xl font-bold text-[#F7931A]">
             {creditsRemaining}
           </span>
-          <span className="font-mono-data text-sm text-[#4a5568]">/ {creditsTotal}</span>
+          <span className="font-mono text-sm text-[#94A3B8]">/ {creditsTotal}</span>
         </div>
-        {/* Progress bar — neumorphic */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}>
+        {/* Progress bar */}
+        <div className="h-2 rounded-full overflow-hidden bg-[#030304] border border-white/10">
           <div
-            className="h-full rounded-full bg-[#ff4757] transition-all duration-500"
-            style={{ width: `${creditPercent}%`, boxShadow: "0 0 6px rgba(255,71,87,0.5)" }}
+            className="h-full rounded-full bg-gradient-to-r from-[#EA580C] to-[#F7931A] transition-all duration-500"
+            style={{ width: `${creditPercent}%`, boxShadow: "0 0 12px rgba(247,147,26,0.4)" }}
           />
         </div>
-        <p className="font-mono-data text-[9px] text-[#4a5568] mt-1.5 uppercase tracking-wider">
+        <p className="font-mono text-[9px] text-[#94A3B8] mt-1.5 uppercase tracking-wider">
           {creditsUsed} of {creditsTotal} used
         </p>
       </div>

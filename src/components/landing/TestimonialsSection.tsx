@@ -39,40 +39,31 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section className="bg-[#e0e5ec] py-24 sm:py-32 overflow-hidden">
+    <section className="bg-[#0F1115] py-24 sm:py-32 overflow-hidden">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
 
         {/* Header */}
         <div className="mb-12 text-center">
-          <div
-            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2"
-            style={{ boxShadow: "var(--shadow-recessed)" }}
-          >
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
             <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#4a5568]">
+            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
               Field Reports
             </span>
           </div>
-          <h2
-            className="text-4xl font-bold tracking-tight text-[#2d3436] sm:text-5xl"
-            style={{ textShadow: "0 1px 0 #ffffff" }}
-          >
-            What Our Users Say
+          <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            What Our <span className="gradient-text">Users Say</span>
           </h2>
         </div>
 
         {/* Scrolling marquee */}
         <div className="relative mb-14 overflow-hidden">
-          {/* Edge fades */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-20 z-10" style={{ background: "linear-gradient(to right, #e0e5ec, transparent)" }} />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-20 z-10" style={{ background: "linear-gradient(to left, #e0e5ec, transparent)" }} />
-
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-20 z-10" style={{ background: "linear-gradient(to right, #0F1115, transparent)" }} />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-20 z-10" style={{ background: "linear-gradient(to left, #0F1115, transparent)" }} />
           <div className="flex gap-3 animate-marquee whitespace-nowrap">
             {marqueeItems.map((item, i) => (
               <span
                 key={i}
-                className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#4a5568]"
-                style={{ boxShadow: "var(--shadow-recessed)" }}
+                className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] border border-white/10 bg-white/5"
               >
                 {item}
               </span>
@@ -85,26 +76,10 @@ const TestimonialsSection = () => {
           {testimonials.map((t) => (
             <div
               key={t.name}
-              className={`group relative rounded-2xl bg-[#e0e5ec] p-6 pt-8 ${t.rotate} card-lift`}
+              className={`group relative rounded-2xl p-6 glass-card ${t.rotate} card-lift`}
             >
-              {/* Push-pin */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                <div
-                  className="relative h-6 w-6 rounded-full bg-[#ff4757] flex items-center justify-center"
-                  style={{ boxShadow: "2px 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)" }}
-                >
-                  {/* Pin shine */}
-                  <div className="absolute top-0.5 left-1 h-1.5 w-1.5 rounded-full bg-white/40" />
-                  {/* Pin center hole */}
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#cc0011]" style={{ boxShadow: "inset 1px 1px 2px rgba(0,0,0,0.4)" }} />
-                </div>
-              </div>
-
-              {/* Corner screws */}
-              <span className="absolute top-2 left-2 h-2 w-2 rounded-full opacity-40 pointer-events-none" style={{ background: "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2px, transparent 4px)" }} />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full opacity-40 pointer-events-none" style={{ background: "radial-gradient(circle at 65% 35%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2px, transparent 4px)" }} />
-              <span className="absolute bottom-2 left-2 h-2 w-2 rounded-full opacity-40 pointer-events-none" style={{ background: "radial-gradient(circle at 35% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2px, transparent 4px)" }} />
-              <span className="absolute bottom-2 right-2 h-2 w-2 rounded-full opacity-40 pointer-events-none" style={{ background: "radial-gradient(circle at 65% 65%, rgba(255,255,255,0.9) 1px, rgba(0,0,0,0.2) 2px, transparent 4px)" }} />
+              {/* Orange top accent line */}
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#F7931A]/50 to-transparent" />
 
               {/* Stars */}
               <div className="flex gap-0.5 mb-4">
@@ -115,19 +90,19 @@ const TestimonialsSection = () => {
                 ))}
               </div>
 
-              <p className="text-sm leading-relaxed text-[#4a5568] mb-5">"{t.quote}"</p>
+              <p className="text-sm leading-relaxed text-[#94A3B8] mb-5">"{t.quote}"</p>
 
               {/* Author */}
               <div className="flex items-center gap-3">
                 <div
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                  style={{ background: t.color, boxShadow: "var(--shadow-sharp)" }}
+                  style={{ background: t.color }}
                 >
                   {t.initials}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#2d3436]">{t.name}</p>
-                  <p className="font-mono-data text-[10px] text-[#4a5568] uppercase tracking-wider">{t.role}</p>
+                  <p className="text-sm font-heading font-semibold text-white">{t.name}</p>
+                  <p className="font-mono-data text-[10px] text-[#94A3B8] uppercase tracking-wider">{t.role}</p>
                 </div>
               </div>
             </div>

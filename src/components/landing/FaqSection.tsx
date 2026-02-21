@@ -27,34 +27,27 @@ const faqs = [
 
 const FaqSection = () => {
   return (
-    <section className="relative bg-[#e0e5ec] py-24 sm:py-32 overflow-hidden">
-      {/* Blueprint grid */}
+    <section className="relative bg-[#0F1115] py-24 sm:py-32 overflow-hidden">
+      {/* Subtle grid */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none opacity-30"
         style={{
-          backgroundImage: "linear-gradient(#a3b1c6 1px, transparent 1px), linear-gradient(90deg, #a3b1c6 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          opacity: 0.07,
+          backgroundImage: "linear-gradient(rgba(30,41,59,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.5) 1px, transparent 1px)",
+          backgroundSize: "50px 50px",
         }}
       />
 
       <div className="relative mx-auto max-w-3xl px-4 sm:px-6">
         {/* Header */}
         <div className="mb-14 text-center">
-          <div
-            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2"
-            style={{ boxShadow: "var(--shadow-recessed)" }}
-          >
-            <HelpCircle className="h-3 w-3 text-[#ff4757]" strokeWidth={2} />
-            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#4a5568]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
+            <HelpCircle className="h-3 w-3 text-[#F7931A]" strokeWidth={2} />
+            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
               FAQ
             </span>
           </div>
-          <h2
-            className="text-4xl font-bold tracking-tight text-[#2d3436] sm:text-5xl"
-            style={{ textShadow: "0 1px 0 #ffffff" }}
-          >
-            Common <span className="text-[#ff4757]">Questions</span>
+          <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Common <span className="gradient-text">Questions</span>
           </h2>
         </div>
 
@@ -63,15 +56,14 @@ const FaqSection = () => {
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="relative rounded-2xl border-0 px-6 transition-all"
-              style={{ boxShadow: "var(--shadow-recessed)", background: "#d1d9e6" }}
+              className="relative rounded-2xl border border-white/10 bg-[#030304] px-6 transition-all hover:border-[#F7931A]/20"
             >
               <AccordionTrigger
-                className="text-left font-semibold text-[#2d3436] hover:no-underline py-5 text-sm sm:text-base hover:text-[#ff4757] transition-colors"
+                className="text-left font-heading font-semibold text-white hover:no-underline py-5 text-sm sm:text-base hover:text-[#F7931A] transition-colors"
               >
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm text-[#4a5568] leading-relaxed pb-5">
+              <AccordionContent className="text-sm text-[#94A3B8] leading-relaxed pb-5">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>

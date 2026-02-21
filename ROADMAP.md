@@ -7,22 +7,14 @@
 ## PHASE 1 — Foundation (Easy, 1–2 days)
 *These are quick wins, blockers for everything else, or security fixes. Do these first.*
 
-### 1.1 Git + GitHub Setup
-- [ ] Run `git init` in the project root
-- [ ] Create a new GitHub repository (private or public)
-- [ ] Push initial commit with all current files
-- [ ] Add a `.gitignore` (node_modules, dist, .env)
-- [ ] **Never commit `.env`** — use `.env.example` with empty values instead
+### ~~1.1 Git + GitHub Setup~~ ✅ DONE
+- [x] Git repo initialized, `.env.example` added, `.gitignore` fixed
+- [x] All changes committed and pushed to `github.com/KoiGi01/web-lead-scoop`
 
-### 1.2 Vercel Deployment + Domain
-- [ ] Connect GitHub repo to Vercel (import project)
-- [ ] Add environment variables in Vercel dashboard:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_PUBLISHABLE_KEY`
-  - `VITE_SUPABASE_PROJECT_ID`
-- [ ] Configure custom domain: **globaleads22.com** → point DNS to Vercel
-- [ ] Verify HTTPS is working on globaleads22.com
-- [ ] Set up preview deployments (auto-deploy on every push to main)
+### ~~1.2 Vercel Deployment + Domain~~ ✅ DONE
+- [x] GitHub connected to Vercel, auto-deploy on push active
+- [x] `globaleads22.com` live and pointing to Vercel
+- [x] HTTPS working
 
 ### 1.3 Security Fixes
 - [ ] Remove `devMode` bypass from `AppPage.tsx` (or gate it properly with `import.meta.env.DEV`)
