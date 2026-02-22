@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
+import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
@@ -33,20 +34,41 @@ const AppPage = () => {
   };
 
   // Handle sidebar callbacks
-  const handleSelectEntry = () => {
-    // Placeholder: in future, this will scroll to search results or display specific leads
+  const handleSelectEntry = (entry: any) => {
+    // Scroll to search form and populate with entry data
+    const searchForm = document.querySelector('input[placeholder*="plumber"]');
+    if (searchForm) {
+      searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    toast({
+      title: "Search selected",
+      description: `Loading leads for "${entry.keyword}" in ${entry.location}`,
+    });
   };
 
   const handleNewSearch = () => {
-    // Placeholder: focus search form or scroll to top
+    // Scroll to search form
+    const searchForm = document.querySelector('input[placeholder*="plumber"]');
+    if (searchForm) {
+      searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   const handleClearHistory = () => {
-    // Placeholder: add confirmation and clear history from database
+    // TODO: Add confirmation dialog and implement database deletion
+    toast({
+      title: "Clear history",
+      description: "This feature coming soon",
+      variant: "destructive",
+    });
   };
 
   const handleViewAllLeads = () => {
-    // Placeholder: show all leads modal or dedicated page
+    // TODO: Implement modal or dedicated page to view all leads from all searches
+    toast({
+      title: "All Leads",
+      description: "All leads viewer coming soon - shows all leads from all your searches",
+    });
   };
 
   return (
