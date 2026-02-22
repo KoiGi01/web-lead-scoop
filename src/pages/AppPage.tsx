@@ -17,6 +17,7 @@ const AppPage = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
   // Show onboarding for new users (first sign-up)
@@ -29,6 +30,23 @@ const AppPage = () => {
   // Handle search completion - refresh credits and history
   const handleSearchComplete = async () => {
     await Promise.all([refetchCredits(), refetchHistory()]);
+  };
+
+  // Handle sidebar callbacks
+  const handleSelectEntry = () => {
+    // Placeholder: in future, this will scroll to search results or display specific leads
+  };
+
+  const handleNewSearch = () => {
+    // Placeholder: focus search form or scroll to top
+  };
+
+  const handleClearHistory = () => {
+    // Placeholder: add confirmation and clear history from database
+  };
+
+  const handleViewAllLeads = () => {
+    // Placeholder: show all leads modal or dedicated page
   };
 
   return (
@@ -118,9 +136,12 @@ const AppPage = () => {
             creditsUsed={0}
             creditsTotal={creditsBalance}
             history={searchHistory}
-            onSelectEntry={() => {}}
-            onNewSearch={() => {}}
-            onClearHistory={() => {}}
+            onSelectEntry={handleSelectEntry}
+            onNewSearch={handleNewSearch}
+            onClearHistory={handleClearHistory}
+            onViewAllLeads={handleViewAllLeads}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
         )}
 

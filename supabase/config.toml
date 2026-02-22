@@ -1,7 +1,13 @@
-project_id = "yhtvfoessedtvachimqt"
+project_id = "uoaxxxoqasczxcxygscy"
 
 [functions.search-places]
 verify_jwt = false
 
+[functions.web-search-leads]
+verify_jwt = false
+
 [functions.extract-contacts]
+verify_jwt = false
+
+[functions.analyze-lead]
 verify_jwt = false
