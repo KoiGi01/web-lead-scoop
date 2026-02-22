@@ -190,20 +190,26 @@ async function generatePitch(
         messages: [
           {
             role: "user",
-            content: `Generate a pitch for a freelancer. Output ONLY valid JSON with this exact schema, no markdown:
+            content: `You are a ${userProfile.service_type} specialist helping create personalized outreach. Output ONLY valid JSON with this exact schema, no markdown:
 {"suggested_pitch_angle":"string (one short phrase)","outreach_hook":"2-3 sentences max"}
 
 Freelancer profile:
 - Service: ${userProfile.service_type}
 - Pricing tier: ${userProfile.pricing_tier}
 
-Business analysis:
+Target business analysis:
 - Maturity: ${intelligence.business_maturity}
 - Positioning: ${intelligence.positioning}
 - Issues detected:
 ${issuesText}
 
-Generate a specific, actionable pitch angle and cold outreach message that addresses the detected issues.`,
+Create a pitch that:
+1. Directly addresses the detected business issues with ${userProfile.service_type} expertise
+2. Explains how ${userProfile.service_type} specifically solves these problems
+3. Positions the freelancer as the ideal solution for this business's maturity level
+4. Uses language appropriate for ${userProfile.pricing_tier}-tier services
+
+Generate a specific, actionable pitch angle (one short phrase) and a compelling 2-3 sentence outreach hook that will resonate with a ${intelligence.positioning} positioned business facing these issues.`,
           },
         ],
       }),
