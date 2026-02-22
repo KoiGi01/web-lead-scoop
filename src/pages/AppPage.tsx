@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import ViewAllLeadsModal from "@/components/landing/ViewAllLeadsModal";
 import AppSidebar from "@/components/app/AppSidebar";
 
 const AppPage = () => {
@@ -17,6 +18,7 @@ const AppPage = () => {
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [viewAllLeadsOpen, setViewAllLeadsOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
@@ -73,11 +75,7 @@ const AppPage = () => {
   };
 
   const handleViewAllLeads = () => {
-    // TODO: Implement modal or dedicated page to view all leads from all searches
-    toast({
-      title: "All Leads",
-      description: "All leads viewer coming soon - shows all leads from all your searches",
-    });
+    setViewAllLeadsOpen(true);
   };
 
   const handleOnboardingClose = async () => {
@@ -200,6 +198,11 @@ const AppPage = () => {
           userId={user.id}
         />
       )}
+      <ViewAllLeadsModal
+        open={viewAllLeadsOpen}
+        onClose={() => setViewAllLeadsOpen(false)}
+        userId={user?.id}
+      />
     </div>
   );
 };
