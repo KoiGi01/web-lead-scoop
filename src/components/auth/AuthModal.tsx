@@ -46,7 +46,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                     email,
                     password,
                     options: {
-                        emailRedirectTo: window.location.origin,
+                        emailRedirectTo: `${window.location.origin}/app`,
                     },
                 });
                 if (error) throw error;
@@ -72,7 +72,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: window.location.origin,
+                redirectTo: `${window.location.origin}/app`,
             },
         });
         if (error) {
