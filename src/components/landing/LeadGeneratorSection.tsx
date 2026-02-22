@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useCredits } from "@/hooks/useCredits";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
   Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
@@ -35,6 +36,7 @@ interface LeadResult extends Business {
   contactPageFound: boolean;
   intelligence?: LeadIntelligence | null;
   intelligenceLoading?: boolean;
+  dbId?: string; // Supabase lead ID for Intelligence updates
 }
 
 type StepStatus = "idle" | "active" | "done";
@@ -53,6 +55,7 @@ const STEPS_INIT: Step[] = [
 interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
   devBypass?: boolean;
+  onSearchComplete?: () => void;
 }
 
 /* Dark terminal input */
@@ -88,9 +91,10 @@ const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.Re
   </label>
 );
 
-const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { profile: userProfile } = useUserProfile(user?.id);
+  const { balance: creditsBalance, plan: creditsPlan, deduct: deductCredits } = useCredits(user?.id);
   const effectiveUser = devBypass ? true : user;
 
   const [keyword,    setKeyword]    = useState("");
@@ -117,6 +121,13 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
       toast({ title: "Missing fields", description: "Please enter a keyword and location.", variant: "destructive" });
       return;
     }
+
+    // Check credits
+    if (creditsBalance < 10) {
+      toast({ title: "Insufficient credits", description: "You need at least 10 credits to perform a search.", variant: "destructive" });
+      return;
+    }
+
     setIsProcessing(true);
     setResults(null);
     setProgress(0);
@@ -180,11 +191,81 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
       setStatus("Compiling your leads…");
       setProgress(95);
       await new Promise((r) => setTimeout(r, 400));
+
+      // Fire-and-forget: Save search session and leads to database
+      if (user?.id) {
+        (async () => {
+          try {
+            // Create search session
+            const { data: sessionData, error: sessionError } = await supabase
+              .from("search_sessions")
+              .insert({
+                user_id: user.id,
+                keyword: keyword.trim(),
+                location: location.trim(),
+                lead_count: leads.length,
+                email_count: leads.reduce((acc, l) => acc + l.emails.length, 0),
+                whatsapp_count: leads.reduce((acc, l) => acc + l.whatsapp.length, 0),
+                credits_used: 10,
+              })
+              .select()
+              .single();
+
+            if (!sessionError && sessionData) {
+              // Bulk insert saved leads
+              const savedLeadsInsert = leads.map((lead) => ({
+                user_id: user.id,
+                session_id: sessionData.id,
+                name: lead.name,
+                address: lead.address,
+                phone: lead.phone,
+                website: lead.website,
+                category: lead.category,
+                emails: lead.emails,
+                whatsapp: lead.whatsapp,
+                contact_page_found: lead.contactPageFound,
+              }));
+
+              const { data: leadsData } = await supabase
+                .from("saved_leads")
+                .insert(savedLeadsInsert)
+                .select();
+
+              // Map dbId back to results for Intelligence updates
+              if (leadsData) {
+                const dbIdMap = new Map(
+                  leadsData.map((dbLead, idx) => [idx, dbLead.id])
+                );
+                setResults((prevResults) => {
+                  if (!prevResults) return null;
+                  return prevResults.map((lead, idx) => ({
+                    ...lead,
+                    dbId: dbIdMap.get(idx),
+                  }));
+                });
+              }
+            }
+          } catch (dbError) {
+            console.error("Error saving search session to database:", dbError);
+          }
+        })();
+      }
+
+      // Deduct credits
+      try {
+        await deductCredits(10);
+      } catch (creditError) {
+        console.error("Error deducting credits:", creditError);
+      }
+
       setStep(2, "done");
       setResults(leads);
       setProgress(100);
       setStatus(`${leads.length} leads ready!`);
       toast({ title: "✅ Complete", description: `${leads.length} leads generated.` });
+
+      // Notify parent to refresh search history
+      onSearchComplete?.();
     } catch (error) {
       const msg = error instanceof Error ? error.message : "An error occurred";
       setStatus(`Error: ${msg}`);
@@ -254,6 +335,18 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
       return;
     }
 
+    // Check if free user trying to unlock
+    if (creditsPlan === "free") {
+      toast({ title: "Upgrade required", description: "Intelligence unlocks are only available with a paid plan.", variant: "destructive" });
+      return;
+    }
+
+    // Check credits
+    if (creditsBalance < 1) {
+      toast({ title: "Insufficient credits", description: "You need at least 1 credit to unlock intelligence.", variant: "destructive" });
+      return;
+    }
+
     const lead = results[index];
     const domain = getDomain(lead.website);
 
@@ -293,6 +386,24 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
         intelligenceLoading: false,
       };
       setResults(updatedResults);
+
+      // Fire-and-forget: Update saved_leads with intelligence and deduct credit
+      if (lead.dbId) {
+        (async () => {
+          try {
+            // Update lead intelligence in database
+            await supabase
+              .from("saved_leads")
+              .update({ intelligence: data })
+              .eq("id", lead.dbId);
+
+            // Deduct 1 credit for Intelligence unlock
+            await deductCredits(1);
+          } catch (dbError) {
+            console.error("Error updating lead intelligence:", dbError);
+          }
+        })();
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to unlock intelligence";
       toast({ title: "Error", description: msg, variant: "destructive" });

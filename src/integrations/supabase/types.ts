@@ -75,6 +75,114 @@ export type Database = {
           analyzed_at?: string
         }
       }
+      user_credits: {
+        Row: {
+          id: string
+          user_id: string
+          balance: number
+          plan: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          balance?: number
+          plan?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          balance?: number
+          plan?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      search_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          keyword: string
+          location: string
+          lead_count: number
+          email_count: number
+          whatsapp_count: number
+          credits_used: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          keyword: string
+          location: string
+          lead_count?: number
+          email_count?: number
+          whatsapp_count?: number
+          credits_used?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          keyword?: string
+          location?: string
+          lead_count?: number
+          email_count?: number
+          whatsapp_count?: number
+          credits_used?: number
+          created_at?: string
+        }
+      }
+      saved_leads: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string
+          name: string | null
+          address: string | null
+          phone: string | null
+          website: string | null
+          category: string | null
+          emails: Json | null
+          whatsapp: Json | null
+          contact_page_found: boolean
+          intelligence: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id: string
+          name?: string | null
+          address?: string | null
+          phone?: string | null
+          website?: string | null
+          category?: string | null
+          emails?: Json | null
+          whatsapp?: Json | null
+          contact_page_found?: boolean
+          intelligence?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string
+          name?: string | null
+          address?: string | null
+          phone?: string | null
+          website?: string | null
+          category?: string | null
+          emails?: Json | null
+          whatsapp?: Json | null
+          contact_page_found?: boolean
+          intelligence?: Json | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

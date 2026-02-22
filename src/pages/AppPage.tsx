@@ -1,14 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Target, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useCredits } from "@/hooks/useCredits";
+import { useSearchHistory } from "@/hooks/useSearchHistory";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import AppSidebar from "@/components/app/AppSidebar";
 
 const AppPage = () => {
   const { user, signOut } = useAuth();
   const { hasProfile, loading: profileLoading } = useUserProfile(user?.id);
+  const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
+  const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
@@ -20,6 +25,11 @@ const AppPage = () => {
       setOnboardingOpen(true);
     }
   }, [user, profileLoading, hasProfile]);
+
+  // Handle search completion - refresh credits and history
+  const handleSearchComplete = async () => {
+    await Promise.all([refetchCredits(), refetchHistory()]);
+  };
 
   return (
     <div className="min-h-screen bg-[#030304] flex flex-col">
@@ -100,10 +110,29 @@ const AppPage = () => {
         </div>
       </header>
 
-      {/* ── Tool Content ── */}
-      <main className="flex-1">
-        <LeadGeneratorSection onOpenAuth={() => setAuthOpen(true)} devBypass={devMode} />
-      </main>
+      {/* ── Main Content with Sidebar ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        {user && (
+          <AppSidebar
+            creditsUsed={0}
+            creditsTotal={creditsBalance}
+            history={searchHistory}
+            onSelectEntry={() => {}}
+            onNewSearch={() => {}}
+            onClearHistory={() => {}}
+          />
+        )}
+
+        {/* Tool Content */}
+        <main className="flex-1 overflow-y-auto">
+          <LeadGeneratorSection
+            onOpenAuth={() => setAuthOpen(true)}
+            devBypass={devMode}
+            onSearchComplete={handleSearchComplete}
+          />
+        </main>
+      </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       {user && (
