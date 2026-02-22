@@ -111,6 +111,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   const [emailsCopied, setEmailsCopied] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
   const [filterByEmail, setFilterByEmail] = useState(false);
+  const [touched, setTouched] = useState({ keyword: false, location: false });
 
   // Listen for loadSearch event from sidebar
   useEffect(() => {
@@ -569,25 +570,49 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <FieldLabel htmlFor="keyword">Business Keyword</FieldLabel>
-                  <DarkInput
-                    id="keyword"
-                    placeholder='"plumber", "dentist"'
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    disabled={isProcessing}
-                    icon={Search}
-                  />
+                  <div>
+                    <DarkInput
+                      id="keyword"
+                      placeholder='"plumber", "dentist"'
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, keyword: true }))}
+                      disabled={isProcessing}
+                      icon={Search}
+                      required
+                      style={
+                        touched.keyword && !keyword.trim()
+                          ? { borderColor: '#ff4757', boxShadow: '0 0 8px rgba(255, 71, 87, 0.2)' }
+                          : undefined
+                      }
+                    />
+                  </div>
+                  {touched.keyword && !keyword.trim() && (
+                    <p className="text-[#ff4757] text-xs mt-1.5 font-mono-data">Keyword is required</p>
+                  )}
                 </div>
                 <div>
                   <FieldLabel htmlFor="location">Location</FieldLabel>
-                  <DarkInput
-                    id="location"
-                    placeholder='"Miami, FL", "London, UK"'
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    disabled={isProcessing}
-                    icon={MapPin}
-                  />
+                  <div>
+                    <DarkInput
+                      id="location"
+                      placeholder='"Miami, FL", "London, UK"'
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      onBlur={() => setTouched(prev => ({ ...prev, location: true }))}
+                      disabled={isProcessing}
+                      icon={MapPin}
+                      required
+                      style={
+                        touched.location && !location.trim()
+                          ? { borderColor: '#ff4757', boxShadow: '0 0 8px rgba(255, 71, 87, 0.2)' }
+                          : undefined
+                      }
+                    />
+                  </div>
+                  {touched.location && !location.trim() && (
+                    <p className="text-[#ff4757] text-xs mt-1.5 font-mono-data">Location is required</p>
+                  )}
                 </div>
               </div>
 
