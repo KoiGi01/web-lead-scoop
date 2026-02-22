@@ -19,6 +19,8 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
   const fetchProfile = async () => {
     if (!userId) {
       setLoading(false);
+      setProfile(null);
+      setHasProfile(false);
       return;
     }
 
@@ -30,11 +32,16 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
         .eq("id", userId)
         .single();
 
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 = "not found" which is expected for new users
-        console.error("Error fetching user profile:", error);
-        setProfile(null);
-        setHasProfile(false);
+      if (error) {
+        if (error.code === "PGRST116") {
+          // PGRST116 = "not found" which is expected for new users
+          setProfile(null);
+          setHasProfile(false);
+        } else {
+          console.error("Error fetching user profile:", error);
+          setProfile(null);
+          setHasProfile(false);
+        }
       } else if (data) {
         setProfile(data);
         setHasProfile(true);

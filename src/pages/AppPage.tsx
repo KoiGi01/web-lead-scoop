@@ -12,21 +12,23 @@ import AppSidebar from "@/components/app/AppSidebar";
 
 const AppPage = () => {
   const { user, signOut } = useAuth();
-  const { hasProfile, loading: profileLoading } = useUserProfile(user?.id);
+  const { hasProfile, loading: profileLoading, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [onboardingShown, setOnboardingShown] = useState(false);
   const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
-  // Show onboarding for new users (first sign-up)
+  // Show onboarding for new users (first sign-up) - only once per session
   useEffect(() => {
-    if (user && !profileLoading && !hasProfile) {
+    if (user && !profileLoading && !hasProfile && !onboardingShown) {
       setOnboardingOpen(true);
+      setOnboardingShown(true);
     }
-  }, [user, profileLoading, hasProfile]);
+  }, [user, profileLoading, hasProfile, onboardingShown]);
 
   // Handle search completion - refresh credits and history
   const handleSearchComplete = async () => {
@@ -76,6 +78,12 @@ const AppPage = () => {
       title: "All Leads",
       description: "All leads viewer coming soon - shows all leads from all your searches",
     });
+  };
+
+  const handleOnboardingClose = async () => {
+    setOnboardingOpen(false);
+    // Refetch profile to update hasProfile state after onboarding completes
+    await refetchProfile();
   };
 
   return (
@@ -188,7 +196,7 @@ const AppPage = () => {
       {user && (
         <OnboardingModal
           open={onboardingOpen}
-          onClose={() => setOnboardingOpen(false)}
+          onClose={handleOnboardingClose}
           userId={user.id}
         />
       )}
