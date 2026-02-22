@@ -513,7 +513,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         </div>
 
         {/* Auth loading */}
-        {authLoading && !devBypass && (
+        {authLoading && (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-[#F7931A]" />
           </div>
