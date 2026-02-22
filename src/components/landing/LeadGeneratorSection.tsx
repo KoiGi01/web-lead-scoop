@@ -824,8 +824,17 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                 </div>
               </div>
 
+              {/* Skeleton loading rows */}
+              {isProcessing && !results && (
+                <div className="space-y-2 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-12 bg-white/5 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              )}
+
               {/* Results table */}
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+              <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
                     <tr>
