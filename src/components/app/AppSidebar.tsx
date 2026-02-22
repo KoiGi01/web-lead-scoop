@@ -262,7 +262,9 @@ const AppSidebar = ({
             <div className="flex items-center justify-between mb-2.5">
               <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8]">Credits</span>
               <a
-                href="#pricing"
+                href="https://globaleads22.com#pricing"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="font-mono text-[9px] font-bold text-[#F7931A] hover:underline flex items-center gap-0.5 uppercase tracking-wider"
               >
                 Upgrade <ArrowUpRight className="h-3 w-3" />
