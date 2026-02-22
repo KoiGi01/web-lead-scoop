@@ -1,5 +1,6 @@
-import { Target, Twitter, Github, Linkedin } from "lucide-react";
+import { Twitter, Github, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 
 const FooterSection = () => {
   const currentYear = new Date().getFullYear();
@@ -16,7 +17,7 @@ const FooterSection = () => {
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 shadow-[0_0_12px_rgba(247,147,26,0.2)]">
-                <Target className="h-4 w-4 text-[#F7931A]" />
+                <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={20} />
               </div>
               <span className="font-heading font-bold text-white tracking-tight">
                 GlobaLeads<span className="text-[#F7931A]">22</span>

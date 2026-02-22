@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Target, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
@@ -97,7 +98,7 @@ const AppPage = () => {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10"
               style={{ boxShadow: "0 0 12px rgba(247,147,26,0.2)" }}
             >
-              <Target className="h-4 w-4 text-[#F7931A]" strokeWidth={2} />
+              <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={20} />
             </div>
             <span className="font-heading font-bold text-white tracking-tight">
               GlobaLeads<span className="text-[#F7931A]">22</span>

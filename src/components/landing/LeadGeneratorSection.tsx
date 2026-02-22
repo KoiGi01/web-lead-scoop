@@ -7,9 +7,10 @@ import { useCredits } from "@/hooks/useCredits";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
   Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
-  Target, Lightbulb, TrendingUp, Linkedin,
+  Lightbulb, TrendingUp, Linkedin,
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 
 interface Business {
   placeId: string;
@@ -498,7 +499,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         {/* Header */}
         <div className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            <Target className="h-3 w-3 text-[#F7931A]" />
+            <GlobaLeadsLogo className="h-3 w-3 text-[#F7931A]" size={12} />
             <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
               Lead Generator
             </span>
