@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
 
     const { domain, homepage_text, enrichment, user_profile } = body;
 
-    if (!domain || !homepage_text || !enrichment || !user_profile) {
+    if (!domain || !enrichment || !user_profile || homepage_text === undefined) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         {
