@@ -56,6 +56,18 @@ function getDomain(url: string): string {
     }
 }
 
+function extractLinkedInUrl(html: string, links: string[]): string | null {
+    // Check for LinkedIn links in the HTML
+    const linkedinRegex = /https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[a-zA-Z0-9\-]+\/?/gi;
+    const matches = html.match(linkedinRegex);
+    if (matches && matches.length > 0) {
+        return matches[0];
+    }
+    // Also check in discovered links
+    const linkedinLink = links.find(l => l.toLowerCase().includes('linkedin.com'));
+    return linkedinLink || null;
+}
+
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
@@ -162,6 +174,7 @@ Deno.serve(async (req) => {
                 let whatsapp = extractWhatsApp(html);
                 const phone = extractPhone(html);
                 const name = extractTitle(html);
+                let linkedinUrl = extractLinkedInUrl(html, links);
 
                 // Also check contact pages for more emails
                 const contactPaths = ['/contact', '/about', '/kontakt', '/contacto'];
@@ -184,6 +197,10 @@ Deno.serve(async (req) => {
                             const cHtml = cd.data?.html || cd.html || '';
                             emails = [...new Set([...emails, ...extractEmails(cHtml)])];
                             whatsapp = [...new Set([...whatsapp, ...extractWhatsApp(cHtml)])];
+                            // Also check contact page for LinkedIn
+                            if (!linkedinUrl) {
+                                linkedinUrl = extractLinkedInUrl(cHtml, []) || linkedinUrl;
+                            }
                         }
                     } catch { /* skip */ }
                 }
@@ -197,6 +214,7 @@ Deno.serve(async (req) => {
                     category: keyword.toLowerCase(),
                     emails,
                     whatsapp,
+                    linkedinUrl: linkedinUrl || undefined,
                     contactPageFound: contactLinks.length > 0,
                 });
             } catch (e) {

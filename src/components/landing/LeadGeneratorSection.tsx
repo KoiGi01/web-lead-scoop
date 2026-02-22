@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +7,7 @@ import { useCredits } from "@/hooks/useCredits";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
   Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
-  Target, Lightbulb, TrendingUp,
+  Target, Lightbulb, TrendingUp, Linkedin,
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
 
@@ -33,6 +33,7 @@ interface LeadIntelligence {
 interface LeadResult extends Business {
   emails: string[];
   whatsapp: string[];
+  linkedinUrl?: string;
   contactPageFound: boolean;
   intelligence?: LeadIntelligence | null;
   intelligenceLoading?: boolean;
@@ -107,6 +108,19 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
   const [progress, setProgress] = useState(0);
   const [results,  setResults]  = useState<LeadResult[] | null>(null);
   const [emailsCopied, setEmailsCopied] = useState(false);
+  const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
+  const [filterByEmail, setFilterByEmail] = useState(false);
+
+  // Listen for loadSearch event from sidebar
+  useEffect(() => {
+    const handleLoadSearch = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setKeyword(customEvent.detail.keyword);
+      setLocation(customEvent.detail.location);
+    };
+    window.addEventListener('loadSearch', handleLoadSearch);
+    return () => window.removeEventListener('loadSearch', handleLoadSearch);
+  }, []);
 
   const setStep = (index: number, s: StepStatus) => {
     setSteps((prev) => prev.map((st, i) => (i === index ? { ...st, status: s } : st)));
@@ -416,8 +430,61 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
     }
   };
 
-  const emailCount    = results?.reduce((acc, r) => acc + r.emails.length, 0) ?? 0;
-  const whatsappCount = results?.reduce((acc, r) => acc + r.whatsapp.length, 0) ?? 0;
+  const handleUnlockAllIntelligence = async () => {
+    if (!results) return;
+
+    // Count how many leads need intelligence
+    const leadsNeedingIntelligence = results.filter(r => r.website && !r.intelligence);
+    const costPerLead = creditsPlan === "free" ? 1 : 1;
+    const totalCost = leadsNeedingIntelligence.length * costPerLead;
+
+    if (creditsBalance < totalCost) {
+      toast({
+        title: "Insufficient credits",
+        description: `You need ${totalCost} credits to unlock intelligence for all leads. You have ${creditsBalance}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (leadsNeedingIntelligence.length === 0) {
+      toast({ title: "Already unlocked", description: "All available leads already have intelligence." });
+      return;
+    }
+
+    // Confirm with user
+    if (!window.confirm(`This will unlock intelligence for ${leadsNeedingIntelligence.length} leads and cost ${totalCost} credits. Continue?`)) {
+      return;
+    }
+
+    // Unlock all
+    for (let i = 0; i < results.length; i++) {
+      if (results[i].website && !results[i].intelligence) {
+        await handleUnlockIntelligence(i);
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+
+    toast({ title: "Intelligence unlocked", description: `Unlocked intelligence for ${leadsNeedingIntelligence.length} leads.` });
+  };
+
+  // Filter and sort results
+  const filteredResults = results?.filter(r => !filterByEmail || r.emails.length > 0) ?? null;
+  const sortedResults = filteredResults ? [...filteredResults].sort((a, b) => {
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "emails") return (b.emails.length) - (a.emails.length);
+    if (sortBy === "score") {
+      const scoreA = a.intelligence?.opportunityScore ?? -1;
+      const scoreB = b.intelligence?.opportunityScore ?? -1;
+      return scoreB - scoreA;
+    }
+    return 0;
+  }) : null;
+
+  const emailCount    = sortedResults?.reduce((acc, r) => acc + r.emails.length, 0) ?? 0;
+  const whatsappCount = sortedResults?.reduce((acc, r) => acc + r.whatsapp.length, 0) ?? 0;
+  const leadsNeedingIntelligence = results?.filter(r => r.website && !r.intelligence).length ?? 0;
 
   return (
     <section id="tool" className="bg-[#030304] py-16 sm:py-24">
@@ -626,34 +693,77 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
           {results && !isProcessing && (
             <div className="rounded-2xl bg-[#0F1115] border border-white/10 overflow-hidden">
               {/* Summary header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-white/10 bg-black/30">
-                <div className="flex gap-4 font-mono-data text-xs font-bold uppercase tracking-wider">
-                  <span className="text-white">{results.length} businesses</span>
-                  <span className="flex items-center gap-1 text-[#94A3B8]">
-                    <Mail className="h-3 w-3" /> {emailCount} emails
-                  </span>
-                  <span className="flex items-center gap-1 text-[#94A3B8]">
-                    <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopyEmails}
-                    disabled={emailCount === 0}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] border border-white/10 bg-white/5 hover:border-[#F7931A]/30 hover:text-white transition-all disabled:opacity-40"
-                  >
-                    {emailsCopied ? (
-                      <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
-                    ) : (
-                      <><Copy className="h-3.5 w-3.5" />Copy Emails</>
+              <div className="px-5 py-4 border-b border-white/10 bg-black/30 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex gap-4 font-mono-data text-xs font-bold uppercase tracking-wider">
+                    <span className="text-white">{sortedResults?.length ?? 0} results</span>
+                    <span className="flex items-center gap-1 text-[#94A3B8]">
+                      <Mail className="h-3 w-3" /> {emailCount} emails
+                    </span>
+                    <span className="flex items-center gap-1 text-[#94A3B8]">
+                      <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {leadsNeedingIntelligence > 0 && userProfile && (
+                      <button
+                        onClick={handleUnlockAllIntelligence}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#EA580C]/20 to-[#F7931A]/20 border border-[#F7931A]/40 text-[#F7931A] hover:border-[#F7931A]/60 transition-all"
+                      >
+                        <Zap className="h-3 w-3" />
+                        Unlock All ({leadsNeedingIntelligence})
+                      </button>
                     )}
-                  </button>
+                    <button
+                      onClick={handleCopyEmails}
+                      disabled={emailCount === 0}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] border border-white/10 bg-white/5 hover:border-[#F7931A]/30 hover:text-white transition-all disabled:opacity-40"
+                    >
+                      {emailsCopied ? (
+                        <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
+                      ) : (
+                        <><Copy className="h-3.5 w-3.5" />Copy Emails</>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleDownload}
+                      className="btn-btc flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider text-white"
+                      style={{ borderRadius: "8px" }}
+                    >
+                      <Download className="h-3.5 w-3.5" />Download XLSX
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter + Sort Controls */}
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Sort:</span>
+                  <div className="flex gap-1.5">
+                    {["name", "emails", "score"].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => setSortBy(opt as typeof sortBy)}
+                        className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${
+                          sortBy === opt
+                            ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]"
+                            : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"
+                        }`}
+                      >
+                        {opt === "name" ? "Name" : opt === "emails" ? "Emails" : "Score"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <span className="ml-auto font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Filter:</span>
                   <button
-                    onClick={handleDownload}
-                    className="btn-btc flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider text-white"
-                    style={{ borderRadius: "8px" }}
+                    onClick={() => setFilterByEmail(!filterByEmail)}
+                    className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${
+                      filterByEmail
+                        ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]"
+                        : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"
+                    }`}
                   >
-                    <Download className="h-3.5 w-3.5" />Download XLSX
+                    <Mail className="h-3 w-3 inline mr-1" />Has Email
                   </button>
                 </div>
               </div>
@@ -663,7 +773,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
                     <tr>
-                      {["Business", "Phone", "Email", "Website", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
+                      {["Business", "Phone", "Email", "Website", "LinkedIn", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
                         <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
                           {h}
                         </th>
@@ -671,7 +781,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.04]">
-                    {results.map((r, i) => (
+                    {sortedResults?.map((r, i) => (
                       <tr
                         key={r.placeId || i}
                         className="transition-colors hover:bg-[#F7931A]/5"
@@ -710,6 +820,22 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
                             >
                               <Globe className="h-3.5 w-3.5 flex-shrink-0" />
                               <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="font-mono-data text-xs text-white/20">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.linkedinUrl ? (
+                            <a
+                              href={r.linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 font-mono-data text-xs text-[#0A66C2] hover:text-[#004182] transition-colors"
+                            >
+                              <Linkedin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate max-w-[100px]">Profile</span>
                               <ExternalLink className="h-3 w-3 flex-shrink-0" />
                             </a>
                           ) : (

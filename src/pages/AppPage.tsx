@@ -35,14 +35,21 @@ const AppPage = () => {
 
   // Handle sidebar callbacks
   const handleSelectEntry = (entry: any) => {
-    // Scroll to search form and populate with entry data
-    const searchForm = document.querySelector('input[placeholder*="plumber"]');
-    if (searchForm) {
-      searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    // Dispatch custom event with search data
+    const event = new CustomEvent('loadSearch', { detail: { keyword: entry.keyword, location: entry.location } });
+    window.dispatchEvent(event);
+
+    // Scroll to search form
+    setTimeout(() => {
+      const searchForm = document.querySelector('input[placeholder*="plumber"]');
+      if (searchForm) {
+        searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+
     toast({
-      title: "Search selected",
-      description: `Loading leads for "${entry.keyword}" in ${entry.location}`,
+      title: "Search loaded",
+      description: `Reloading "${entry.keyword}" in ${entry.location}`,
     });
   };
 
