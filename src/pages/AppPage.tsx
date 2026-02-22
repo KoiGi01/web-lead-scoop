@@ -1,14 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Target, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
 
 const AppPage = () => {
   const { user, signOut } = useAuth();
+  const { hasProfile, loading: profileLoading } = useUserProfile(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+  // Show onboarding for new users (first sign-up)
+  useEffect(() => {
+    if (user && !profileLoading && !hasProfile) {
+      setOnboardingOpen(true);
+    }
+  }, [user, profileLoading, hasProfile]);
 
   return (
     <div className="min-h-screen bg-[#030304] flex flex-col">
@@ -95,6 +106,13 @@ const AppPage = () => {
       </main>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      {user && (
+        <OnboardingModal
+          open={onboardingOpen}
+          onClose={() => setOnboardingOpen(false)}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };

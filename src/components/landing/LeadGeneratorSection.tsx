@@ -2,10 +2,11 @@ import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
-  Mail, Phone, Globe, ExternalLink, ChevronRight, Lock,
-  Target,
+  Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
+  Target, Lightbulb, TrendingUp,
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
 
@@ -18,10 +19,22 @@ interface Business {
   category: string;
 }
 
+interface LeadIntelligence {
+  opportunityScore: number;
+  businessMaturity: string;
+  positioning: string;
+  detectedIssues: string[];
+  opportunitySummary: string;
+  suggestedPitchAngle: string;
+  outreachHook: string;
+}
+
 interface LeadResult extends Business {
   emails: string[];
   whatsapp: string[];
   contactPageFound: boolean;
+  intelligence?: LeadIntelligence | null;
+  intelligenceLoading?: boolean;
 }
 
 type StepStatus = "idle" | "active" | "done";
@@ -77,6 +90,7 @@ const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.Re
 
 const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
+  const { profile: userProfile } = useUserProfile(user?.id);
   const effectiveUser = devBypass ? true : user;
 
   const [keyword,    setKeyword]    = useState("");
@@ -232,6 +246,62 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Leads");
     XLSX.writeFile(wb, `GlobaLeads22-${keyword}-${location}.xlsx`);
+  };
+
+  const handleUnlockIntelligence = async (index: number) => {
+    if (!results || !results[index].website || !userProfile) {
+      toast({ title: "Error", description: "Missing required data", variant: "destructive" });
+      return;
+    }
+
+    const lead = results[index];
+    const domain = getDomain(lead.website);
+
+    try {
+      // Set loading state
+      const newResults = [...results];
+      newResults[index].intelligenceLoading = true;
+      setResults(newResults);
+
+      // Call analyze-lead edge function
+      const { data, error } = await supabase.functions.invoke("analyze-lead", {
+        body: {
+          domain,
+          homepage_text: "", // Will be empty for now; in production would pass scraped text
+          enrichment: {
+            emails: lead.emails,
+            whatsapp: lead.whatsapp,
+            contact_page_found: lead.contactPageFound,
+            website_present: !!lead.website,
+          },
+          user_profile: {
+            service_type: userProfile.service_type,
+            pricing_tier: userProfile.pricing_tier,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update results with intelligence
+      const updatedResults = [...results];
+      updatedResults[index] = {
+        ...updatedResults[index],
+        intelligence: data as LeadIntelligence,
+        intelligenceLoading: false,
+      };
+      setResults(updatedResults);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to unlock intelligence";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+
+      // Clear loading state
+      const newResults = [...results];
+      newResults[index].intelligenceLoading = false;
+      setResults(newResults);
+    }
   };
 
   const emailCount    = results?.reduce((acc, r) => acc + r.emails.length, 0) ?? 0;
@@ -481,7 +551,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
                     <tr>
-                      {["Business", "Phone", "Email", "Website"].map(h => (
+                      {["Business", "Phone", "Email", "Website", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
                         <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
                           {h}
                         </th>
@@ -534,6 +604,45 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass }: LeadGeneratorSectionPro
                             <span className="font-mono-data text-xs text-white/20">—</span>
                           )}
                         </td>
+                        {userProfile && (
+                          <td className="px-4 py-3">
+                            {r.intelligenceLoading ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin text-[#F7931A]" />
+                                <span className="font-mono-data text-[9px] text-[#94A3B8]">Analyzing…</span>
+                              </div>
+                            ) : r.intelligence ? (
+                              <div className="space-y-2">
+                                {/* Intelligence card - click to expand */}
+                                <div className="bg-gradient-to-r from-[#EA580C]/10 to-[#F7931A]/10 border border-[#F7931A]/30 rounded-lg p-3 hover:border-[#F7931A]/50 transition-all cursor-default">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <TrendingUp className="h-3.5 w-3.5 text-[#F7931A]" />
+                                      <span className="font-mono-data font-bold text-[#F7931A]">{r.intelligence.opportunityScore}/100</span>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 space-y-1 text-[9px]">
+                                    <p className="text-[#94A3B8]"><span className="font-semibold text-white">Maturity:</span> {r.intelligence.businessMaturity}</p>
+                                    <p className="text-[#94A3B8]"><span className="font-semibold text-white">Pitch:</span> {r.intelligence.suggestedPitchAngle}</p>
+                                    {r.intelligence.detectedIssues.length > 0 && (
+                                      <p className="text-[#94A3B8]"><span className="font-semibold text-white">{r.intelligence.detectedIssues.length} issues</span></p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : r.website ? (
+                              <button
+                                onClick={() => handleUnlockIntelligence(i)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#F7931A]/40 bg-[#F7931A]/10 hover:bg-[#F7931A]/20 transition-all"
+                              >
+                                <Lock className="h-3 w-3 text-[#F7931A]" />
+                                <span className="font-mono-data text-[9px] font-bold uppercase tracking-wider text-[#F7931A]">Unlock</span>
+                              </button>
+                            ) : (
+                              <span className="font-mono-data text-xs text-white/20">—</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

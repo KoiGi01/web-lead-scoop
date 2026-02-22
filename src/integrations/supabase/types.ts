@@ -14,7 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_profiles: {
+        Row: {
+          id: string
+          service_type: string
+          service_other: string | null
+          client_type: string
+          pricing_tier: string
+          location: string | null
+          sells_online: boolean
+          created_at: string
+        }
+        Insert: {
+          id: string
+          service_type: string
+          service_other?: string | null
+          client_type: string
+          pricing_tier: string
+          location?: string | null
+          sells_online?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          service_type?: string
+          service_other?: string | null
+          client_type?: string
+          pricing_tier?: string
+          location?: string | null
+          sells_online?: boolean
+          created_at?: string
+        }
+      }
+      domain_intelligence: {
+        Row: {
+          domain: string
+          opportunity_score: number | null
+          business_maturity: string | null
+          positioning: string | null
+          detected_issues: Json | null
+          opportunity_summary: string | null
+          analyzed_at: string
+        }
+        Insert: {
+          domain: string
+          opportunity_score?: number | null
+          business_maturity?: string | null
+          positioning?: string | null
+          detected_issues?: Json | null
+          opportunity_summary?: string | null
+          analyzed_at?: string
+        }
+        Update: {
+          domain?: string
+          opportunity_score?: number | null
+          business_maturity?: string | null
+          positioning?: string | null
+          detected_issues?: Json | null
+          opportunity_summary?: string | null
+          analyzed_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
