@@ -43,19 +43,20 @@
 ## PHASE 4 — Pre-Launch Polish (Medium, 2–3 days)
 *Security, UX, and polish to prepare for ads and launch.*
 
-### 4.1 Security Fixes
-- [ ] Remove `devMode` bypass from `AppPage.tsx` (gate with `import.meta.env.DEV`)
-- [ ] Audit edge functions for exposed secrets (confirm all API keys are env vars only)
-- [ ] Add `VITE_` prefix audit — no secret keys in frontend env vars
-- [ ] Ensure Supabase RLS policies block unauthorized access
-- [ ] Test auth redirects work correctly on production domain
+### ✅ 4.1 Security Fixes
+- [x] Remove `devMode` bypass from `AppPage.tsx` (gate with `import.meta.env.DEV`)
+- [x] Audit edge functions for exposed secrets (confirm all API keys are env vars only)
+- [x] Add `VITE_` prefix audit — no secret keys in frontend env vars
+- [x] Ensure Supabase RLS policies block unauthorized access
+- [x] Test auth redirects work correctly on production domain
+- [x] Created comprehensive SECURITY_AUDIT.md documenting all findings
 
-### 4.2 Quick UX Fixes
-- [ ] Add a proper favicon (replace default Vite one)
-- [ ] Update `index.html` canonical URL to `https://globaleads22.com`
-- [ ] Add Open Graph image (og:image meta tag) for link previews
-- [ ] Fix any broken nav links in footer
-- [ ] Add Google Analytics 4 snippet to `index.html`
+### ✅ 4.2 Quick UX Fixes
+- [x] Add a proper favicon (already configured with manifest)
+- [x] Update `index.html` canonical URL to `https://globaleads22.com`
+- [x] Add Open Graph image (og:image meta tag) for link previews
+- [x] Fix any broken nav links in footer
+- [x] Add Google Analytics 4 snippet to `index.html`
 
 ### 4.3 Error Handling & UX
 - [ ] Add React Error Boundary component wrapping app
@@ -243,14 +244,15 @@ Create new edge functions:
 | # | Phase | Status | Effort | Blocker For |
 |---|-------|--------|--------|-------------|
 | ✅ | 1–3 | **DONE** | — | Everything else |
-| **NEXT** | **4** | **In Progress** | **2–3 days** | Phase 5 |
+| ✅ | **4.1–4.2** | **DONE** | **~1 day** | Phase 4.3–4.4 |
+| **NEXT** | **4.3–4.4** | **In Progress** | **~1 day** | Phase 5 |
 | 5 | Stripe Billing | Pending | ~3 days | Revenue |
 | 6 | SEO, Legal, Email | Pending | ~2 days | Launch |
 | 7 | Ads & Conversion Optimization | Pending | ~2 days | Paid traffic |
 | 8 | Lead Management | Pending | ~2–3 days | Retention |
 | 9 | Growth Features | Pending | Ongoing | Revenue growth |
 
-**Total to MVP launch-ready**: ~4–5 focused days (Phases 4–6).
+**Total to MVP launch-ready**: ~3–4 focused days (Phases 4.3–4.4, then 5–6).
 **Total to revenue-ready**: ~7–8 focused days (Phases 4–7).
 **Total to full feature parity**: ~12–14 days + ongoing.
 
