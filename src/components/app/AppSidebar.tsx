@@ -3,16 +3,7 @@ import {
   Search, BarChart3, Clock, Trash2, Plus, Mail, Phone, Globe,
   ChevronLeft, ChevronRight, Zap, ArrowUpRight, Archive,
 } from "lucide-react";
-
-export interface SearchHistoryEntry {
-  id: string;
-  keyword: string;
-  location: string;
-  leadCount: number;
-  emailCount: number;
-  whatsappCount: number;
-  timestamp: number;
-}
+import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
 
 interface AppSidebarProps {
   history: SearchHistoryEntry[];

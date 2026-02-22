@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { LogOut } from "lucide-react";
 import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
@@ -11,6 +12,13 @@ import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
+
+// Map of plan names to credit limits
+const PLAN_CREDITS: Record<string, number> = {
+  free: 50,
+  starter: 200,
+  pro: 500,
+};
 
 const AppPage = () => {
   const { user, signOut } = useAuth();
@@ -64,13 +72,30 @@ const AppPage = () => {
     }
   };
 
-  const handleClearHistory = () => {
-    // TODO: Add confirmation dialog and implement database deletion
-    toast({
-      title: "Clear history",
-      description: "This feature coming soon",
-      variant: "destructive",
-    });
+  const handleClearHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('search_sessions')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      await refetchHistory();
+      toast({
+        title: "History cleared",
+        description: "All search history has been deleted",
+      });
+    } catch (err) {
+      console.error('Failed to clear history:', err);
+      toast({
+        title: "Error",
+        description: "Failed to clear history. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleViewAllLeads = () => {
@@ -153,8 +178,8 @@ const AppPage = () => {
         {/* Sidebar */}
         {user && (
           <AppSidebar
-            creditsUsed={0}
-            creditsTotal={creditsBalance}
+            creditsUsed={Math.max(0, (PLAN_CREDITS[creditsPlan] ?? 50) - creditsBalance)}
+            creditsTotal={PLAN_CREDITS[creditsPlan] ?? 50}
             history={searchHistory}
             onSelectEntry={handleSelectEntry}
             onNewSearch={handleNewSearch}
