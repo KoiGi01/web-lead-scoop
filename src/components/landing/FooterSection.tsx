@@ -39,15 +39,33 @@ const FooterSection = () => {
 
             {/* Social icons */}
             <div className="flex gap-2.5">
-              {[Twitter, Github, Linkedin].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#94A3B8] hover:text-[#F7931A] transition-all duration-300 border border-white/10 bg-white/5 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/10"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </a>
-              ))}
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#94A3B8] hover:text-[#F7931A] transition-all duration-300 border border-white/10 bg-white/5 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/10"
+                title="Twitter"
+              >
+                <Twitter className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href="https://github.com/KoiGi01/web-lead-scoop"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#94A3B8] hover:text-[#F7931A] transition-all duration-300 border border-white/10 bg-white/5 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/10"
+                title="GitHub"
+              >
+                <Github className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#94A3B8] hover:text-[#F7931A] transition-all duration-300 border border-white/10 bg-white/5 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/10"
+                title="LinkedIn"
+              >
+                <Linkedin className="h-3.5 w-3.5" />
+              </a>
             </div>
           </div>
 
@@ -57,16 +75,10 @@ const FooterSection = () => {
               Product
             </p>
             <ul className="space-y-3">
-              {["Features", "Pricing", "How It Works", "Changelog"].map((l) => (
-                <li key={l}>
-                  <a
-                    href={`#${l.toLowerCase().replace(/\s+/g, "-")}`}
-                    className="text-sm text-[#94A3B8] hover:text-white transition-colors"
-                  >
-                    {l}
-                  </a>
-                </li>
-              ))}
+              <li><a href="#features" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Features</a></li>
+              <li><a href="#pricing" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Pricing</a></li>
+              <li><a href="#how-it-works" className="text-sm text-[#94A3B8] hover:text-white transition-colors">How It Works</a></li>
+              <li><a href="#" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Changelog</a></li>
             </ul>
           </div>
 
@@ -76,13 +88,10 @@ const FooterSection = () => {
               Support
             </p>
             <ul className="space-y-3">
-              {["Documentation", "FAQ", "Contact Us", "Status"].map((l) => (
-                <li key={l}>
-                  <a href="#" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-                    {l}
-                  </a>
-                </li>
-              ))}
+              <li><a href="https://github.com/KoiGi01/web-lead-scoop/wiki" target="_blank" rel="noopener noreferrer" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Documentation</a></li>
+              <li><a href="#faq" className="text-sm text-[#94A3B8] hover:text-white transition-colors">FAQ</a></li>
+              <li><a href="mailto:support@globaleads22.com" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Contact Us</a></li>
+              <li><a href="https://status.globaleads22.com" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Status</a></li>
             </ul>
           </div>
 
@@ -94,8 +103,8 @@ const FooterSection = () => {
             <ul className="space-y-3">
               <li><Link to="/privacy" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><a href="#" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Refund Policy</a></li>
-              <li><a href="#" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Cookie Policy</a></li>
+              <li><Link to="/terms" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Refund Policy</Link></li>
+              <li><a href="mailto:privacy@globaleads22.com" className="text-sm text-[#94A3B8] hover:text-white transition-colors">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
