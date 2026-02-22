@@ -161,8 +161,9 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
       const uniqueWebLeads = webLeads.filter(l => l.website && !mapsDomains.has(getDomain(l.website)));
 
       setStep(1, "active");
-      const totalToScan = mapsBusinesses.filter(b => b.website).length;
-      setStatus(`Found ${mapsBusinesses.length + uniqueWebLeads.length} businesses — scanning websites…`);
+      const websiteBusinesses = mapsBusinesses.filter(b => b.website);
+      const totalToScan = Math.min(10, websiteBusinesses.length);
+      setStatus(`Found ${mapsBusinesses.length + uniqueWebLeads.length} businesses — scanning top ${totalToScan} websites…`);
 
       const leads: LeadResult[] = [];
 
@@ -170,7 +171,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
         leads.push({ ...b, emails: [], whatsapp: [], contactPageFound: false });
       }
 
-      const withWebsite = mapsBusinesses.filter(b => b.website);
+      const withWebsite = websiteBusinesses.slice(0, 10);
       for (let i = 0; i < withWebsite.length; i++) {
         const business = withWebsite[i];
         setStatus(`Scanning ${i + 1}/${totalToScan}: ${business.name}`);
