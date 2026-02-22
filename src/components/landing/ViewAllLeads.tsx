@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, TrendingUp, Lock } from "lucide-react";
+import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import XLSX from "xlsx-js-style";
@@ -19,25 +19,24 @@ interface SavedLead {
   created_at: string;
 }
 
-interface ViewAllLeadsModalProps {
-  open: boolean;
-  onClose: () => void;
+interface ViewAllLeadsProps {
   userId: string | undefined;
+  onBackToSearch: () => void;
 }
 
-const ViewAllLeadsModal = ({ open, onClose, userId }: ViewAllLeadsModalProps) => {
+const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   const [leads, setLeads] = useState<SavedLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
   const [filterByEmail, setFilterByEmail] = useState(false);
   const [emailsCopied, setEmailsCopied] = useState(false);
 
-  // Fetch all leads on modal open
+  // Fetch all leads on mount
   useEffect(() => {
-    if (open && userId) {
+    if (userId) {
       fetchAllLeads();
     }
-  }, [open, userId]);
+  }, [userId]);
 
   const fetchAllLeads = async () => {
     if (!userId) return;
@@ -126,40 +125,47 @@ const ViewAllLeadsModal = ({ open, onClose, userId }: ViewAllLeadsModalProps) =>
   const emailCount = sortedResults.reduce((acc, r) => acc + r.emails.length, 0);
   const whatsappCount = sortedResults.reduce((acc, r) => acc + r.whatsapp.length, 0);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="max-w-6xl w-full max-h-[90vh] bg-[#0F1115] border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+    <section id="tool" className="bg-[#030304] py-16 sm:py-24 flex-1 flex flex-col">
+      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 flex flex-col flex-1">
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0F1115]/95 backdrop-blur-sm">
-          <h2 className="text-xl font-heading font-bold text-white">All Leads</h2>
+        <div className="mb-10">
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            onClick={onBackToSearch}
+            className="mb-4 flex items-center gap-2 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#F7931A] hover:text-white transition-colors"
           >
-            <X className="h-5 w-5 text-[#94A3B8]" />
+            <ArrowLeft className="h-4 w-4" />
+            Back to Search
           </button>
+          <div className="text-center">
+            <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              Your <span className="gradient-text">Leads</span>
+            </h2>
+            <p className="mt-4 text-[#94A3B8] text-lg">
+              All leads from your searches in one place.
+            </p>
+          </div>
         </div>
 
         {/* Loading state */}
         {loading && (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-20 flex-1">
             <Loader2 className="h-8 w-8 animate-spin text-[#F7931A]" />
           </div>
         )}
 
         {/* Empty state */}
         {!loading && leads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="text-[#94A3B8] text-sm">No leads found. Run a search to get started!</div>
+          <div className="flex flex-col items-center justify-center py-20 flex-1 text-center">
+            <p className="text-[#94A3B8] text-base">No leads found. Run a search to get started!</p>
           </div>
         )}
 
         {/* Content */}
         {!loading && leads.length > 0 && (
-          <>
+          <div className="rounded-2xl bg-[#0F1115] border border-white/10 overflow-hidden flex flex-col flex-1">
+
             {/* Summary + Controls */}
             <div className="px-5 py-4 border-b border-white/10 bg-black/30 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -306,11 +312,11 @@ const ViewAllLeadsModal = ({ open, onClose, userId }: ViewAllLeadsModalProps) =>
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 
-export default ViewAllLeadsModal;
+export default ViewAllLeads;

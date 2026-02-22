@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Target, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
-import ViewAllLeadsModal from "@/components/landing/ViewAllLeadsModal";
+import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
 
 const AppPage = () => {
@@ -18,7 +18,7 @@ const AppPage = () => {
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [viewAllLeadsOpen, setViewAllLeadsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"search" | "all-leads">("search");
   const [devMode, setDevMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
@@ -75,7 +75,7 @@ const AppPage = () => {
   };
 
   const handleViewAllLeads = () => {
-    setViewAllLeadsOpen(true);
+    setViewMode("all-leads");
   };
 
   const handleOnboardingClose = async () => {
@@ -181,12 +181,20 @@ const AppPage = () => {
         )}
 
         {/* Tool Content */}
-        <main className="flex-1 overflow-y-auto">
-          <LeadGeneratorSection
-            onOpenAuth={() => setAuthOpen(true)}
-            devBypass={devMode}
-            onSearchComplete={handleSearchComplete}
-          />
+        <main className="flex-1 overflow-y-auto flex flex-col">
+          {viewMode === "search" ? (
+            <LeadGeneratorSection
+              onOpenAuth={() => setAuthOpen(true)}
+              devBypass={devMode}
+              onSearchComplete={handleSearchComplete}
+              viewMode="search"
+            />
+          ) : (
+            <ViewAllLeads
+              userId={user?.id}
+              onBackToSearch={() => setViewMode("search")}
+            />
+          )}
         </main>
       </div>
 
@@ -198,11 +206,6 @@ const AppPage = () => {
           userId={user.id}
         />
       )}
-      <ViewAllLeadsModal
-        open={viewAllLeadsOpen}
-        onClose={() => setViewAllLeadsOpen(false)}
-        userId={user?.id}
-      />
     </div>
   );
 };

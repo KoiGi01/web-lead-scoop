@@ -57,6 +57,8 @@ interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
   devBypass?: boolean;
   onSearchComplete?: () => void;
+  viewMode?: "search" | "all-leads";
+  onToggleViewMode?: (mode: "search" | "all-leads") => void;
 }
 
 /* Dark terminal input */
@@ -92,7 +94,7 @@ const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.Re
   </label>
 );
 
-const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete, viewMode = "search", onToggleViewMode }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { profile: userProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, deduct: deductCredits } = useCredits(user?.id);
@@ -485,6 +487,11 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete }: LeadG
   const emailCount    = sortedResults?.reduce((acc, r) => acc + r.emails.length, 0) ?? 0;
   const whatsappCount = sortedResults?.reduce((acc, r) => acc + r.whatsapp.length, 0) ?? 0;
   const leadsNeedingIntelligence = results?.filter(r => r.website && !r.intelligence).length ?? 0;
+
+  // Only render search form in "search" mode
+  if (viewMode === "all-leads") {
+    return null; // Parent will handle ViewAllLeads component
+  }
 
   return (
     <section id="tool" className="bg-[#030304] py-16 sm:py-24">
