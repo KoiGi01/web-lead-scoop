@@ -30,6 +30,7 @@ const AppPage = () => {
   const [viewMode, setViewMode] = useState<"search" | "all-leads">("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Show onboarding for new users (first sign-up) - only once per session
   useEffect(() => {
@@ -38,6 +39,30 @@ const AppPage = () => {
       setOnboardingShown(true);
     }
   }, [user, profileLoading, hasProfile, onboardingShown]);
+
+  // Handle checkout success and bundle query param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      toast({
+        title: "Credits added!",
+        description: "Your credits have been added to your account.",
+      });
+      refetchCredits();
+      // Clean up URL
+      window.history.replaceState({}, '', '/app');
+    }
+
+    // If bundle param exists and user is logged in, trigger checkout
+    const bundleParam = params.get('bundle');
+    if (bundleParam && user && !checkoutLoading) {
+      handleBuyCredits(bundleParam);
+      // Remove bundle param from URL
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('bundle');
+      window.history.replaceState({}, '', newUrl.pathname);
+    }
+  }, [user]);
 
   // Handle search completion - refresh credits and history
   const handleSearchComplete = async () => {
@@ -106,6 +131,41 @@ const AppPage = () => {
     setOnboardingOpen(false);
     // Refetch profile to update hasProfile state after onboarding completes
     await refetchProfile();
+  };
+
+  const handleBuyCredits = async (bundleKey: string) => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { bundleKey, userId: user.id },
+      });
+
+      if (error || !data?.url) {
+        toast({
+          title: "Checkout error",
+          description: error?.message || "Failed to create checkout session. Please try again.",
+          variant: "destructive",
+        });
+        setCheckoutLoading(false);
+        return;
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Checkout error:', err);
+      toast({
+        title: "Checkout error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+      setCheckoutLoading(false);
+    }
   };
 
   return (
@@ -185,6 +245,7 @@ const AppPage = () => {
             onNewSearch={handleNewSearch}
             onClearHistory={handleClearHistory}
             onViewAllLeads={handleViewAllLeads}
+            onBuyCredits={() => window.location.href = '/#pricing'}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />

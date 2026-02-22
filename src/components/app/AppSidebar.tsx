@@ -13,6 +13,7 @@ interface AppSidebarProps {
   onViewAllLeads: () => void;
   creditsUsed: number;
   creditsTotal: number;
+  onBuyCredits?: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -27,6 +28,7 @@ const AppSidebar = ({
   onViewAllLeads,
   creditsUsed,
   creditsTotal,
+  onBuyCredits,
   collapsed = false,
   onToggleCollapse,
 }: AppSidebarProps) => {
@@ -252,14 +254,12 @@ const AppSidebar = ({
           <>
             <div className="flex items-center justify-between mb-2.5">
               <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8]">Credits</span>
-              <a
-                href="https://globaleads22.com#pricing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-[9px] font-bold text-[#F7931A] hover:underline flex items-center gap-0.5 uppercase tracking-wider"
+              <button
+                onClick={onBuyCredits}
+                className="font-mono text-[9px] font-bold text-[#F7931A] hover:underline flex items-center gap-0.5 uppercase tracking-wider hover:text-[#EA580C] transition-colors"
               >
-                Upgrade <ArrowUpRight className="h-3 w-3" />
-              </a>
+                Buy <ArrowUpRight className="h-3 w-3" />
+              </button>
             </div>
             <div className="flex items-baseline gap-1.5 mb-2.5">
               <span className="font-mono text-2xl font-bold text-[#F7931A]">

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import NavBar from "@/components/landing/NavBar";
 import HeroSection from "@/components/landing/HeroSection";
 import StatsBar from "@/components/landing/StatsBar";
@@ -12,6 +13,19 @@ import FooterSection from "@/components/landing/FooterSection";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [pendingBundle, setPendingBundle] = useState<string | null>(null);
+
+  const handlePricingClick = (bundleKey: string | null) => {
+    if (!bundleKey) {
+      // Free plan - just go to app
+      navigate("/app");
+    } else {
+      // Paid bundle - store it and redirect to app where checkout will be triggered
+      setPendingBundle(bundleKey);
+      navigate(`/app?bundle=${bundleKey}`);
+    }
+  };
+
   const goToApp = () => navigate("/app");
 
   const openAuth = () => navigate("/app");
@@ -25,7 +39,7 @@ const Index = () => {
       <HowItWorksSection />
       <UseCasesSection />
       <TestimonialsSection />
-      <PricingSection onGetStarted={goToApp} />
+      <PricingSection onGetStarted={handlePricingClick} />
       <FaqSection />
       <FooterSection />
     </div>
