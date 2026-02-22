@@ -112,6 +112,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
   const [filterByEmail, setFilterByEmail] = useState(false);
   const [touched, setTouched] = useState({ keyword: false, location: false });
+  const [confirmUnlockAll, setConfirmUnlockAll] = useState(false);
 
   // Listen for loadSearch event from sidebar
   useEffect(() => {
@@ -455,12 +456,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       return;
     }
 
-    // Confirm with user
-    if (!window.confirm(`This will unlock intelligence for ${leadsNeedingIntelligence.length} leads and cost ${totalCost} credits. Continue?`)) {
+    // Show confirmation banner
+    if (!confirmUnlockAll) {
+      setConfirmUnlockAll(true);
       return;
     }
 
     // Unlock all
+    setConfirmUnlockAll(false);
     for (let i = 0; i < results.length; i++) {
       if (results[i].website && !results[i].intelligence) {
         await handleUnlockIntelligence(i);
@@ -736,8 +739,29 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                       <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
                     </span>
                   </div>
+                  {confirmUnlockAll && leadsNeedingIntelligence > 0 && (
+                    <div className="mb-3 p-3 rounded-lg bg-[#F7931A]/10 border border-[#F7931A]/30 flex items-center justify-between">
+                      <span className="font-mono-data text-xs text-[#F7931A]">
+                        Unlock intelligence for {leadsNeedingIntelligence} leads ({leadsNeedingIntelligence} credit{leadsNeedingIntelligence !== 1 ? 's' : ''})? This action cannot be undone.
+                      </span>
+                      <div className="flex gap-2 ml-3">
+                        <button
+                          onClick={() => setConfirmUnlockAll(false)}
+                          className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleUnlockAllIntelligence}
+                          className="px-3 py-1 rounded bg-[#F7931A]/20 border border-[#F7931A]/40 text-[#F7931A] font-bold uppercase tracking-wider text-xs hover:border-[#F7931A]/60 transition-all"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex gap-2">
-                    {leadsNeedingIntelligence > 0 && userProfile && (
+                    {leadsNeedingIntelligence > 0 && userProfile && !confirmUnlockAll && (
                       <button
                         onClick={handleUnlockAllIntelligence}
                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#EA580C]/20 to-[#F7931A]/20 border border-[#F7931A]/40 text-[#F7931A] hover:border-[#F7931A]/60 transition-all"
