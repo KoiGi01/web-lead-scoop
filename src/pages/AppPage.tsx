@@ -19,10 +19,8 @@ const AppPage = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"search" | "all-leads">("search");
-  const [devMode, setDevMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
-  const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
   // Show onboarding for new users (first sign-up) - only once per session
   useEffect(() => {
@@ -118,20 +116,6 @@ const AppPage = () => {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            {isDev && (
-              <button
-                onClick={() => setDevMode(!devMode)}
-                className="px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider rounded-full transition-all border"
-                style={
-                  devMode
-                    ? { background: "rgba(255,215,0,0.15)", border: "1px solid rgba(255,215,0,0.4)", color: "#FFD600" }
-                    : { border: "1px solid rgba(255,255,255,0.2)", color: "#94A3B8" }
-                }
-              >
-                {devMode ? "⚡ Dev Mode ON" : "⚡ Dev Mode"}
-              </button>
-            )}
-
             {user ? (
               <>
                 <div
@@ -185,7 +169,6 @@ const AppPage = () => {
           {viewMode === "search" ? (
             <LeadGeneratorSection
               onOpenAuth={() => setAuthOpen(true)}
-              devBypass={devMode}
               onSearchComplete={handleSearchComplete}
               viewMode="search"
             />

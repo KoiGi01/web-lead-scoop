@@ -55,7 +55,6 @@ const STEPS_INIT: Step[] = [
 
 interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
-  devBypass?: boolean;
   onSearchComplete?: () => void;
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
@@ -94,11 +93,10 @@ const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.Re
   </label>
 );
 
-const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete, viewMode = "search", onToggleViewMode }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search", onToggleViewMode }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { profile: userProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, deduct: deductCredits } = useCredits(user?.id);
-  const effectiveUser = devBypass ? true : user;
 
   const [keyword,    setKeyword]    = useState("");
   const [location,   setLocation]   = useState("");
@@ -521,7 +519,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete, viewMod
         )}
 
         {/* ── Locked state ── */}
-        {!authLoading && !effectiveUser && (
+        {!authLoading && !user && (
           <div className="flex flex-col items-center gap-6 rounded-2xl p-12 text-center bg-[#0F1115] border border-white/10">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F7931A]/10 border border-[#F7931A]/30">
               <Lock className="h-7 w-7 text-[#F7931A]" />
@@ -556,7 +554,7 @@ const LeadGeneratorSection = ({ onOpenAuth, devBypass, onSearchComplete, viewMod
         )}
 
         {/* ── Signed-in tool ── */}
-        {(devBypass || (!authLoading && effectiveUser)) && (<>
+        {!authLoading && user && (<>
 
           {/* Search Form Panel */}
           <div className="mb-6 rounded-2xl bg-[#0F1115] border border-white/10 p-6 relative overflow-hidden">
