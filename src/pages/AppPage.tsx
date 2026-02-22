@@ -95,10 +95,10 @@ const AppPage = () => {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10"
               style={{ boxShadow: "0 0 12px rgba(247,147,26,0.2)" }}
             >
-              <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={20} />
+              <GlobaLeadsLogo className="h-6 w-6 text-[#F7931A]" size={28} />
             </div>
             <span className="font-heading font-bold text-white tracking-tight">
               GlobaLeads<span className="text-[#F7931A]">22</span>

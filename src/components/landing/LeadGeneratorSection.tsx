@@ -499,7 +499,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         {/* Header */}
         <div className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            <GlobaLeadsLogo className="h-3 w-3 text-[#F7931A]" size={12} />
+            <GlobaLeadsLogo className="h-4 w-4 text-[#F7931A]" size={16} />
             <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
               Lead Generator
             </span>

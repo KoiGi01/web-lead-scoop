@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Target, Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 
 interface NavBarProps {
   onGetStarted: () => void;
@@ -36,8 +37,8 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
 
         {/* Logo */}
         <a href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 transition-all duration-200 group-hover:shadow-[0_0_16px_rgba(247,147,26,0.4)]">
-            <Target className="h-4 w-4 text-[#F7931A]" strokeWidth={2} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 transition-all duration-200 group-hover:shadow-[0_0_16px_rgba(247,147,26,0.4)]">
+            <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={24} />
           </div>
           <span className="font-heading font-bold text-white text-[15px] tracking-tight">
             GlobaLeads<span className="text-[#F7931A]">22</span>

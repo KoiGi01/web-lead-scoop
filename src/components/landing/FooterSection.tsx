@@ -16,8 +16,8 @@ const FooterSection = () => {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 shadow-[0_0_12px_rgba(247,147,26,0.2)]">
-                <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={20} />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 shadow-[0_0_12px_rgba(247,147,26,0.2)]">
+                <GlobaLeadsLogo className="h-6 w-6 text-[#F7931A]" size={28} />
               </div>
               <span className="font-heading font-bold text-white tracking-tight">
                 GlobaLeads<span className="text-[#F7931A]">22</span>

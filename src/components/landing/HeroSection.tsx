@@ -1,4 +1,5 @@
-import { ArrowRight, Globe, Mail, Users, Target } from "lucide-react";
+import { ArrowRight, Globe, Mail, Users } from "lucide-react";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -130,7 +131,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                 className="w-36 h-36 rounded-full bg-gradient-to-br from-[#EA580C] to-[#F7931A] flex items-center justify-center"
                 style={{ boxShadow: "0 0 60px rgba(247,147,26,0.5), 0 0 120px rgba(247,147,26,0.2)" }}
               >
-                <Target className="h-14 w-14 text-white" strokeWidth={1.5} />
+                <GlobaLeadsLogo className="h-16 w-16 text-white" size={80} />
               </div>
             </div>
 
