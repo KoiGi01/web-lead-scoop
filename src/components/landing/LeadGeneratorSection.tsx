@@ -285,6 +285,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     } catch (error) {
       const msg = error instanceof Error ? error.message : "An error occurred";
       setStatus(`Error: ${msg}`);
+      setProgress(0);
       setSteps(STEPS_INIT);
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
