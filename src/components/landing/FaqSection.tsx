@@ -1,75 +1,69 @@
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { Plus, Minus } from "lucide-react";
 
 const faqs = [
   {
     q: "How accurate are the email addresses?",
-    a: "We use multiple verification sources and web scraping to extract emails directly from business websites. Accuracy is typically 85-90% depending on how well-populated the website is.",
+    a: "We scrape emails directly from business websites using multi-page scanning. Accuracy typically runs 85-90% depending on how well the site is populated.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes, you can cancel your subscription anytime. If you cancel within 7 days, we'll refund your purchase in full.",
+    a: "Yes. Cancel whenever — no questions, no lock-ins. Paid plans include a 7-day money-back guarantee.",
   },
   {
-    q: "How many credits do I need per search?",
-    a: "The cost depends on your max results: 20 leads = 1 credit, 40 leads = 2 credits, 60 leads = 3 credits. You also need credits to unlock AI lead scoring.",
+    q: "How many credits per search?",
+    a: "Credits scale with max results: 20 leads = 1 credit, 40 leads = 2 credits, 60 leads = 3 credits. AI scoring uses additional credits per lead.",
   },
   {
-    q: "Do you offer a free trial?",
-    a: "Yes! Start with our free demo to get 30 credits for 1 search. That's up to 60 leads with no payment required.",
+    q: "Does it work outside the US?",
+    a: "Absolutely. GlobaLeads works in 47+ countries worldwide. Just enter any city — we have covered Miami to Tokyo.",
   },
   {
-    q: "Can I export my leads to other tools?",
-    a: "Absolutely. You can download leads as Excel or CSV, then import into Salesforce, HubSpot, Mailchimp, or any CRM.",
+    q: "What export formats are supported?",
+    a: "You get a professionally styled Excel (.xlsx) file with colored headers and auto-sized columns. You can import this into any CRM, Mailchimp, or cold email tool.",
   },
   {
-    q: "Is my data private and secure?",
-    a: "Yes. All data is encrypted in transit and at rest. We never share your data with third parties. Your searches and exports are yours alone.",
+    q: "Is there a free trial?",
+    a: "Yes — our Demo plan gives you 30 credits for 1 search (up to 60 leads) completely free. No credit card required.",
   },
 ];
 
 const FaqSection = () => {
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-20 sm:py-32">
+    <section id="faq" className="py-24 sm:py-32 bg-white">
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-16 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 leading-tight">
-            Frequently Asked Questions
+        <div className="mb-12 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#F5F5F7] border border-[rgba(0,0,0,0.08)] px-3.5 py-1.5 mb-5 text-xs font-semibold text-[#6e6e73] tracking-wide">
+            FAQ
+          </div>
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1d1d1f] leading-tight">
+            Common questions
           </h2>
-          <p className="text-lg text-slate-600">
-            Got questions? We've got answers.
-          </p>
         </div>
 
-        {/* FAQ Items */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="border border-[#EBEBF0] rounded-2xl overflow-hidden transition-all"
+              className="rounded-2xl border border-[rgba(0,0,0,0.07)] overflow-hidden bg-white"
             >
               <button
                 onClick={() => setOpen(open === idx ? null : idx)}
-                className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
+                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-[#FAFAFA] transition-colors"
               >
-                <h3 className="text-left font-bold text-slate-900">
-                  {faq.q}
-                </h3>
-                <ChevronDown
-                  className={`h-5 w-5 text-slate-500 transition-transform flex-shrink-0 ${
-                    open === idx ? "rotate-180" : ""
-                  }`}
-                />
+                <span className="text-sm font-semibold text-[#1d1d1f]">{faq.q}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#F5F5F7] flex items-center justify-center">
+                  {open === idx
+                    ? <Minus className="h-3.5 w-3.5 text-[#6e6e73]" />
+                    : <Plus className="h-3.5 w-3.5 text-[#6e6e73]" />
+                  }
+                </span>
               </button>
-
               {open === idx && (
-                <div className="px-6 py-4 bg-blue-50/50 border-t border-[#EBEBF0]">
-                  <p className="text-slate-700 leading-relaxed">
-                    {faq.a}
-                  </p>
+                <div className="px-6 pb-5 border-t border-[rgba(0,0,0,0.06)]">
+                  <p className="text-sm text-[#6e6e73] leading-relaxed pt-4">{faq.a}</p>
                 </div>
               )}
             </div>

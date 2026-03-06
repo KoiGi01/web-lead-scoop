@@ -17,24 +17,20 @@ const Index = () => {
 
   const handlePricingClick = (bundleKey: string | null) => {
     if (bundleKey === "demo") {
-      // Demo - redirect to app with demo flag
       navigate("/app?demo=true");
     } else if (!bundleKey) {
-      // This case shouldn't happen anymore, but keep as fallback
       navigate("/app");
     } else {
-      // Paid bundle - store it and redirect to app where checkout will be triggered
       setPendingBundle(bundleKey);
       navigate(`/app?bundle=${bundleKey}`);
     }
   };
 
   const goToApp = () => navigate("/app");
-
   const openAuth = () => navigate("/app");
 
   return (
-    <div className="min-h-screen bg-[#030304]">
+    <div className="min-h-screen" style={{ background: "#F5F5F7" }}>
       <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
       <HeroSection onGetStarted={goToApp} />
       <StatsBar />

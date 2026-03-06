@@ -1,159 +1,141 @@
-import { Check } from "lucide-react";
+import { Check, Zap } from "lucide-react";
 import { useState } from "react";
 
-const bundles = [
+const plans = [
   {
     key: "demo",
-    name: "Try Demo",
+    name: "Demo",
     price: "Free",
-    description: "Get started risk-free",
-    credits: 30,
-    searches: "1 search",
+    description: "Try it risk-free. No card needed.",
+    badge: null,
     features: [
       "30 demo credits",
+      "1 search included",
       "Up to 60 leads",
-      "Email extraction",
-      "Basic sorting",
+      "Email + phone extraction",
+      "Excel export",
     ],
     cta: "Start Free Demo",
-    highlighted: false,
+    primary: false,
   },
   {
     key: "starter",
     name: "Starter",
     price: "$19",
-    period: "/month",
-    description: "Perfect for freelancers",
-    credits: 500,
-    searches: "40 searches",
+    period: "/mo",
+    description: "For freelancers and solo operators.",
+    badge: null,
     features: [
-      "500 credits/month",
-      "Up to 2,400 leads/month",
-      "Email extraction",
-      "Phone & WhatsApp",
+      "500 credits / month",
+      "40 searches / month",
+      "Up to 2,400 leads",
+      "Email + phone + WhatsApp",
+      "Excel export",
       "Smart sorting",
-      "CSV + Excel export",
     ],
     cta: "Get Started",
-    highlighted: false,
+    primary: false,
   },
   {
     key: "pro",
     name: "Professional",
     price: "$49",
-    period: "/month",
-    description: "For agencies & teams",
-    credits: 1500,
-    searches: "150 searches",
+    period: "/mo",
+    description: "For agencies and teams at scale.",
+    badge: "Most Popular",
     features: [
-      "1,500 credits/month",
-      "Up to 9,000 leads/month",
+      "1,500 credits / month",
+      "150 searches / month",
+      "Up to 9,000 leads",
       "Everything in Starter",
       "AI lead scoring",
       "Opportunity insights",
-      "Team collaboration",
       "Priority support",
     ],
-    cta: "Get Started",
-    highlighted: true,
+    cta: "Get Professional",
+    primary: true,
   },
 ];
 
 interface PricingSectionProps {
-  onPricingClick: (bundleKey: string) => void;
+  onGetStarted: (bundleKey: string) => void;
 }
 
-const PricingSection = ({ onPricingClick }: PricingSectionProps) => {
-  const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
+const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
+  const [loading, setLoading] = useState<string | null>(null);
 
   const handleClick = (key: string) => {
-    setLoadingBundle(key);
-    setTimeout(() => setLoadingBundle(null), 1000);
-    onPricingClick(key);
+    setLoading(key);
+    setTimeout(() => setLoading(null), 1200);
+    onGetStarted(key);
   };
 
   return (
-    <section id="pricing" className="py-20 sm:py-32 bg-blue-50/50">
+    <section id="pricing" className="py-24 sm:py-32" style={{ background: "#F5F5F7" }}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-16 text-center max-w-2xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 leading-tight">
-            Simple, Transparent Pricing
+        <div className="mb-16 text-center max-w-xl mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white border border-[rgba(0,0,0,0.08)] px-3.5 py-1.5 mb-5 text-xs font-semibold text-[#6e6e73] tracking-wide shadow-sm">
+            Simple pricing
+          </div>
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#1d1d1f] mb-4 leading-tight">
+            Start free.<br />Scale when ready.
           </h2>
-          <p className="text-lg text-slate-600">
-            Choose the plan that fits your needs. All plans include email support.
+          <p className="text-lg text-[#6e6e73]">
+            No hidden fees. 7-day money-back on paid plans.
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid gap-8 md:grid-cols-3">
-          {bundles.map((bundle) => (
+        <div className="grid gap-6 md:grid-cols-3 items-stretch">
+          {plans.map((plan, idx) => (
             <div
-              key={bundle.key}
-              className={`card-lift p-8 flex flex-col gap-6 transition-all relative ${
-                bundle.highlighted ? "md:scale-105 shadow-lg" : ""
-              }`}
+              key={plan.key}
+              className={`relative flex flex-col animate-fade-in-up ${
+                plan.primary
+                  ? "rounded-[20px] ring-2 ring-blue-600 shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_8px_40px_rgba(37,99,235,0.15)]"
+                  : "card-lift"
+              } bg-white p-7`}
+              style={{ animationDelay: `${idx * 80}ms` }}
             >
-              {bundle.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-block bg-blue-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-1 rounded-full">
-                    Most Popular
-                  </span>
+              {plan.badge && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <div className="flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+                    <Zap className="h-3 w-3" />
+                    {plan.badge}
+                  </div>
                 </div>
               )}
 
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  {bundle.name}
-                </h3>
-                <p className="text-sm text-slate-600 mb-4">
-                  {bundle.description}
-                </p>
+              <div className="mb-6">
+                <h3 className="text-base font-bold text-[#1d1d1f] mb-1">{plan.name}</h3>
+                <p className="text-xs text-[#6e6e73] mb-4">{plan.description}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-slate-900">
-                    {bundle.price}
-                  </span>
-                  {bundle.period && (
-                    <span className="text-slate-600">{bundle.period}</span>
-                  )}
+                  <span className="text-4xl font-black text-[#1d1d1f]">{plan.price}</span>
+                  {plan.period && <span className="text-sm text-[#6e6e73]">{plan.period}</span>}
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  {bundle.credits} • {bundle.searches}
-                </p>
               </div>
 
               <button
-                onClick={() => handleClick(bundle.key)}
-                disabled={loadingBundle === bundle.key}
-                className={`py-3 px-6 rounded-full font-bold uppercase tracking-widest text-sm transition-all ${
-                  bundle.highlighted
+                onClick={() => handleClick(plan.key)}
+                disabled={loading === plan.key}
+                className={`w-full py-3 rounded-full text-sm font-bold tracking-wide transition-all mb-6 ${
+                  plan.primary
                     ? "btn-btc text-white"
-                    : "border border-[#EBEBF0] text-slate-700 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    : "bg-[#F5F5F7] text-[#1d1d1f] border border-[rgba(0,0,0,0.08)] hover:bg-[#EBEBED] hover:border-[rgba(0,0,0,0.12)]"
                 }`}
               >
-                {loadingBundle === bundle.key ? "Processing..." : bundle.cta}
+                {loading === plan.key ? "Processing..." : plan.cta}
               </button>
 
-              <div className="border-t border-[#EBEBF0] pt-6 space-y-3">
-                {bundle.features.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2.5 text-sm text-slate-700">
-                    <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <ul className="space-y-3 border-t border-[rgba(0,0,0,0.05)] pt-6 flex-1">
+                {plan.features.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#3d3d3f]">
+                    <Check className={`h-4 w-4 flex-shrink-0 ${plan.primary ? "text-blue-600" : "text-[#86868b]"}`} />
                     {f}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           ))}
-        </div>
-
-        {/* FAQ Row */}
-        <div className="mt-16 pt-8 border-t border-[#EBEBF0] text-center">
-          <p className="text-slate-600">
-            All plans include a 7-day money-back guarantee.{" "}
-            <a href="#faq" className="text-blue-600 font-medium hover:underline">
-              See FAQ →
-            </a>
-          </p>
         </div>
       </div>
     </section>

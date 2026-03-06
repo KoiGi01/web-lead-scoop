@@ -6,244 +6,164 @@
 
 @layer base {
   :root {
-    /* ═══════════════════════════════════════════════
-       Clean Productivity App Theme — Light & Minimal
-       Modern SaaS with blue accent, clean typography, generous spacing.
-    ═══════════════════════════════════════════════ */
-
-    --background:              227 14% 94%;    /* #E8EAF0 very light cool-gray */
-    --foreground:              228 13% 18%;    /* #1A1A2E near-black */
-
-    --card:                    0 0% 100%;      /* #ffffff pure white */
-    --card-foreground:         228 13% 18%;
-
+    --background:              220 14% 96%;
+    --foreground:              224 71% 4%;
+    --card:                    0 0% 100%;
+    --card-foreground:         224 71% 4%;
     --popover:                 0 0% 100%;
-    --popover-foreground:      228 13% 18%;
-
-    --primary:                 229 90% 60%;    /* #3B6EF8 bright blue */
+    --popover-foreground:      224 71% 4%;
+    --primary:                 221 83% 53%;
     --primary-foreground:      0 0% 100%;
-
-    --secondary:               220 14% 96%;    /* #f1f5f9 very light gray */
-    --secondary-foreground:    227 9% 53%;    /* #8A8FA8 medium gray */
-
+    --secondary:               220 14% 96%;
+    --secondary-foreground:    220 9% 46%;
     --muted:                   220 14% 96%;
-    --muted-foreground:        227 9% 53%;
-
-    --accent:                  229 90% 60%;    /* Same as primary blue */
+    --muted-foreground:        220 9% 46%;
+    --accent:                  221 83% 53%;
     --accent-foreground:       0 0% 100%;
-
     --destructive:             0 84% 60%;
     --destructive-foreground:  0 0% 100%;
-
-    --border:                  227 10% 94%;    /* #EBEBF0 ultra-light */
-    --input:                   227 10% 94%;
-    --ring:                    229 90% 60%;    /* blue */
-
+    --border:                  220 13% 91%;
+    --input:                   220 13% 91%;
+    --ring:                    221 83% 53%;
     --radius:                  0.75rem;
-
-    /* Sidebar */
-    --sidebar-background:          0 0% 100%;
-    --sidebar-foreground:          228 13% 18%;
-    --sidebar-primary:             229 90% 60%;
-    --sidebar-primary-foreground:  0 0% 100%;
-    --sidebar-accent:              220 14% 96%;
-    --sidebar-accent-foreground:   228 13% 18%;
-    --sidebar-border:              227 10% 94%;
-    --sidebar-ring:                229 90% 60%;
+    --sidebar-background:      0 0% 100%;
+    --sidebar-foreground:      224 71% 4%;
+    --sidebar-primary:         221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:          220 14% 96%;
+    --sidebar-accent-foreground: 224 71% 4%;
+    --sidebar-border:          220 13% 91%;
+    --sidebar-ring:            221 83% 53%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
   body {
     @apply antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
-    background: #E8EAF0;
-    color: #1A1A2E;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    background: #F5F5F7;
+    color: #1d1d1f;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    color: #1d1d1f;
   }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(59, 110, 248, 0.3);
-    border-radius: 999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(59, 110, 248, 0.6);
-  }
+  ::-webkit-scrollbar-thumb { background: #C7C7CC; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #AEAEB2; }
 }
 
-/* ─── Keyframes ──────────────────────────────────────────────────── */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-20px); }
+  50%       { transform: translateY(-12px); }
 }
-
 @keyframes accordion-down {
   from { height: 0; }
   to   { height: var(--radix-accordion-content-height); }
 }
-
 @keyframes accordion-up {
   from { height: var(--radix-accordion-content-height); }
   to   { height: 0; }
 }
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+}
 
-/* ─── Utility Classes ────────────────────────────────────────────── */
 @layer utilities {
-  /* Typography */
   .font-mono-data {
-    font-family: 'Inter', monospace;
-    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
   }
   .font-heading {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
     font-weight: 700;
   }
 
-  /* Blue gradient accent text */
+  /* Blue-to-violet gradient text */
   .gradient-text {
-    background: linear-gradient(135deg, #FF6B6B, #FFB347);
+    background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Clean card — no glass effect */
+  /* White card — Apple-style */
   .glass-card {
     background: #FFFFFF;
-    border: none;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-    border-radius: 24px;
+    border: 1px solid rgba(0,0,0,0.07);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06);
+    border-radius: 20px;
   }
 
-  /* Blue glow shadow */
-  .glow-orange {
-    box-shadow: 0 0 20px -5px rgba(59, 110, 248, 0.25);
-  }
-
-  /* Card hover lift with subtle shadow */
+  /* Card with spring hover */
   .card-lift {
-    border: none;
     background: #FFFFFF;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-    border-radius: 24px;
-    transition: transform 300ms ease, box-shadow 300ms ease;
+    border: 1px solid rgba(0,0,0,0.07);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06);
+    border-radius: 20px;
+    transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 300ms ease;
   }
   .card-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-6px);
+    box-shadow: 0 24px 48px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
   }
 
-  /* Blue solid button */
+  /* Primary CTA — deep blue */
   .btn-btc {
-    background: #3B6EF8;
-    box-shadow: 0 4px 12px rgba(59, 110, 248, 0.3);
+    background: linear-gradient(135deg, #1d4ed8, #2563EB);
     border-radius: 999px;
-    transition: transform 300ms ease, box-shadow 300ms ease;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    transition: all 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .btn-btc:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 24px rgba(59, 110, 248, 0.4);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(37,99,235,0.35);
   }
-  .btn-btc:active {
-    transform: scale(0.98);
-  }
+  .btn-btc:active { transform: scale(0.98); }
 
-  /* Subtle background grid pattern */
+  .glow-blue   { box-shadow: 0 0 40px rgba(37,99,235,0.12); }
+  .glow-orange { box-shadow: 0 0 40px rgba(249,115,22,0.12); }
+
+  /* Dot-grid for hero */
   .bg-grid-pattern {
-    background-size: 50px 50px;
-    background-image:
-      linear-gradient(to right, rgba(235, 235, 240, 0.4) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(235, 235, 240, 0.4) 1px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(0,0,0,0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 
-  /* Accent gradient blobs — removed, kept for compatibility */
-  .blob-1 {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(59, 110, 248, 0.08) 0%, transparent 70%);
-    border-radius: 50%;
-    filter: blur(60px);
-    pointer-events: none;
-  }
-  .blob-2 {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(77, 217, 192, 0.08) 0%, transparent 70%);
-    border-radius: 50%;
-    filter: blur(60px);
-    pointer-events: none;
-  }
-  .blob-3 {
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(137, 196, 244, 0.08) 0%, transparent 70%);
-    border-radius: 50%;
-    filter: blur(60px);
-    pointer-events: none;
-  }
+  .animate-fade-in-up  { animation: fade-in-up 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+  .animate-fade-in     { animation: fade-in 0.4s ease both; }
+  .animate-float       { animation: float 6s ease-in-out infinite; }
+  .animate-marquee     { animation: marquee 30s linear infinite; }
+  .animate-accordion-down { animation: accordion-down 0.2s ease-out; }
+  .animate-accordion-up   { animation: accordion-up 0.2s ease-out; }
 
-  /* Animations */
-  .animate-fade-in-up {
-    animation: fade-in-up 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-  }
-  .animate-fade-in {
-    animation: fade-in 0.4s ease both;
-  }
-  .animate-marquee {
-    animation: marquee 30s linear infinite;
-  }
-  .animate-float {
-    animation: float 8s ease-in-out infinite;
-  }
-  .animate-accordion-down {
-    animation: accordion-down 0.2s ease-out;
-  }
-  .animate-accordion-up {
-    animation: accordion-up 0.2s ease-out;
-  }
-
-  .fade-in-section {
-    animation: fade-in-up 0.6s ease-out both;
-  }
-
-  /* Animation delays */
   .delay-100 { animation-delay: 100ms; }
+  .delay-150 { animation-delay: 150ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
 }
