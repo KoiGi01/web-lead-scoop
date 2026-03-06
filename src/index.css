@@ -7,49 +7,49 @@
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════
-       Glassmorphism Light Theme — Token System
-       Premium SaaS design with frosted glass + light gradients.
+       Clean Productivity App Theme — Light & Minimal
+       Modern SaaS with blue accent, clean typography, generous spacing.
     ═══════════════════════════════════════════════ */
 
-    --background:              220 33% 97%;    /* #f0f4ff light blue-white */
-    --foreground:              222 47% 11%;    /* #0f172a slate-900 dark charcoal */
+    --background:              227 14% 94%;    /* #E8EAF0 very light cool-gray */
+    --foreground:              228 13% 18%;    /* #1A1A2E near-black */
 
     --card:                    0 0% 100%;      /* #ffffff pure white */
-    --card-foreground:         222 47% 11%;
+    --card-foreground:         228 13% 18%;
 
     --popover:                 0 0% 100%;
-    --popover-foreground:      222 47% 11%;
+    --popover-foreground:      228 13% 18%;
 
-    --primary:                 33 92% 53%;     /* #F7931A bitcoin orange (keep) */
+    --primary:                 229 90% 60%;    /* #3B6EF8 bright blue */
     --primary-foreground:      0 0% 100%;
 
-    --secondary:               220 14% 96%;    /* #f1f5f9 slate-100 */
-    --secondary-foreground:    215 16% 47%;    /* slate-500 medium gray */
+    --secondary:               220 14% 96%;    /* #f1f5f9 very light gray */
+    --secondary-foreground:    227 9% 53%;    /* #8A8FA8 medium gray */
 
     --muted:                   220 14% 96%;
-    --muted-foreground:        215 16% 47%;
+    --muted-foreground:        227 9% 53%;
 
-    --accent:                  33 92% 53%;
+    --accent:                  229 90% 60%;    /* Same as primary blue */
     --accent-foreground:       0 0% 100%;
 
     --destructive:             0 84% 60%;
     --destructive-foreground:  0 0% 100%;
 
-    --border:                  214 32% 91%;    /* #e2e8f0 slate-200 */
-    --input:                   214 32% 91%;
-    --ring:                    33 92% 53%;
+    --border:                  227 10% 94%;    /* #EBEBF0 ultra-light */
+    --input:                   227 10% 94%;
+    --ring:                    229 90% 60%;    /* blue */
 
-    --radius:                  1rem;
+    --radius:                  0.75rem;
 
     /* Sidebar */
     --sidebar-background:          0 0% 100%;
-    --sidebar-foreground:          222 47% 11%;
-    --sidebar-primary:             33 92% 53%;
+    --sidebar-foreground:          228 13% 18%;
+    --sidebar-primary:             229 90% 60%;
     --sidebar-primary-foreground:  0 0% 100%;
     --sidebar-accent:              220 14% 96%;
-    --sidebar-accent-foreground:   222 47% 11%;
-    --sidebar-border:              214 32% 91%;
-    --sidebar-ring:                33 92% 53%;
+    --sidebar-accent-foreground:   228 13% 18%;
+    --sidebar-border:              227 10% 94%;
+    --sidebar-ring:                229 90% 60%;
   }
 }
 
@@ -65,13 +65,13 @@
   body {
     @apply antialiased;
     font-family: 'Inter', system-ui, sans-serif;
-    background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 50%, #fff7ed 100%);
-    background-attachment: fixed;
-    color: #0f172a;
+    background: #E8EAF0;
+    color: #1A1A2E;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
     letter-spacing: -0.02em;
   }
 
@@ -79,11 +79,11 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(247, 147, 26, 0.3);
+    background: rgba(59, 110, 248, 0.3);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(247, 147, 26, 0.6);
+    background: rgba(59, 110, 248, 0.6);
   }
 }
 
@@ -122,76 +122,77 @@
 @layer utilities {
   /* Typography */
   .font-mono-data {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Inter', monospace;
+    font-size: 12px;
   }
   .font-heading {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 700;
   }
 
-  /* Bitcoin gradient text */
+  /* Blue gradient accent text */
   .gradient-text {
-    background: linear-gradient(to right, #F7931A, #FFD600);
+    background: linear-gradient(135deg, #FF6B6B, #FFB347);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Glass card */
+  /* Clean card — no glass effect */
   .glass-card {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+    background: #FFFFFF;
+    border: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    border-radius: 24px;
   }
 
-  /* Orange glow shadow */
+  /* Blue glow shadow */
   .glow-orange {
-    box-shadow: 0 0 20px -5px rgba(247, 147, 26, 0.35);
+    box-shadow: 0 0 20px -5px rgba(59, 110, 248, 0.25);
   }
 
-  /* Card hover lift with orange glow */
+  /* Card hover lift with subtle shadow */
   .card-lift {
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
+    border: none;
+    background: #FFFFFF;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    border-radius: 24px;
+    transition: transform 300ms ease, box-shadow 300ms ease;
   }
   .card-lift:hover {
-    transform: translateY(-4px);
-    border-color: rgba(247, 147, 26, 0.45);
-    box-shadow: 0 12px 40px -12px rgba(15, 23, 42, 0.12), 0 0 20px -8px rgba(247, 147, 26, 0.2);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
   }
 
-  /* Orange gradient button */
+  /* Blue solid button */
   .btn-btc {
-    background: linear-gradient(to right, #EA580C, #F7931A);
-    box-shadow: 0 4px 20px -4px rgba(234, 88, 12, 0.4);
-    border-radius: 9999px;
+    background: #3B6EF8;
+    box-shadow: 0 4px 12px rgba(59, 110, 248, 0.3);
+    border-radius: 999px;
     transition: transform 300ms ease, box-shadow 300ms ease;
   }
   .btn-btc:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 28px -4px rgba(234, 88, 12, 0.45);
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(59, 110, 248, 0.4);
   }
   .btn-btc:active {
     transform: scale(0.98);
   }
 
-  /* Background grid pattern with vignette */
+  /* Subtle background grid pattern */
   .bg-grid-pattern {
     background-size: 50px 50px;
     background-image:
-      linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
-    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
-    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+      linear-gradient(to right, rgba(235, 235, 240, 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(235, 235, 240, 0.4) 1px, transparent 1px);
   }
 
-  /* Ambient gradient blobs */
+  /* Accent gradient blobs — removed, kept for compatibility */
   .blob-1 {
     position: absolute;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, rgba(247, 147, 26, 0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(59, 110, 248, 0.08) 0%, transparent 70%);
     border-radius: 50%;
     filter: blur(60px);
     pointer-events: none;
@@ -200,7 +201,7 @@
     position: absolute;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.10) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(77, 217, 192, 0.08) 0%, transparent 70%);
     border-radius: 50%;
     filter: blur(60px);
     pointer-events: none;
@@ -209,7 +210,7 @@
     position: absolute;
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(137, 196, 244, 0.08) 0%, transparent 70%);
     border-radius: 50%;
     filter: blur(60px);
     pointer-events: none;

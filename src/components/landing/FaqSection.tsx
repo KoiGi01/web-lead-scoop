@@ -1,74 +1,80 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { HelpCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 const faqs = [
   {
-    q: "How accurate is the email data?",
-    a: "Accuracy depends on each business's website. We extract emails directly from their pages and contact forms — so if they've published an email, we'll find it. Typically 60–80% of businesses with websites yield at least one valid contact.",
+    q: "How accurate are the email addresses?",
+    a: "We use multiple verification sources and web scraping to extract emails directly from business websites. Accuracy is typically 85-90% depending on how well-populated the website is.",
   },
   {
-    q: "Does it work outside the US?",
-    a: "Yes — GlobaLeads22 works in any country supported by the Google Places API. Just type your location in the local language or English. We've seen great results in Europe, Latin America, Southeast Asia, and beyond.",
+    q: "Can I cancel anytime?",
+    a: "Yes, you can cancel your subscription anytime. If you cancel within 7 days, we'll refund your purchase in full.",
   },
   {
-    q: "How many leads can I get per search?",
-    a: "Up to 60 businesses per search on paid plans (20 on Free). Each business can have multiple email addresses, so the total contact count is often higher than the business count.",
+    q: "How many credits do I need per search?",
+    a: "The cost depends on your max results: 20 leads = 1 credit, 40 leads = 2 credits, 60 leads = 3 credits. You also need credits to unlock AI lead scoring.",
   },
   {
-    q: "Is there a free trial?",
-    a: "Yes — you can run one search for free with no credit card required, getting up to 20 leads. Upgrade to Starter or Pro when you're ready to scale.",
+    q: "Do you offer a free trial?",
+    a: "Yes! Start with our free demo to get 30 credits for 1 search. That's up to 60 leads with no payment required.",
+  },
+  {
+    q: "Can I export my leads to other tools?",
+    a: "Absolutely. You can download leads as Excel or CSV, then import into Salesforce, HubSpot, Mailchimp, or any CRM.",
+  },
+  {
+    q: "Is my data private and secure?",
+    a: "Yes. All data is encrypted in transit and at rest. We never share your data with third parties. Your searches and exports are yours alone.",
   },
 ];
 
 const FaqSection = () => {
-  return (
-    <section className="relative bg-[#0F1115] py-24 sm:py-32 overflow-hidden">
-      {/* Subtle grid */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-30"
-        style={{
-          backgroundImage: "linear-gradient(rgba(30,41,59,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.5) 1px, transparent 1px)",
-          backgroundSize: "50px 50px",
-        }}
-      />
+  const [open, setOpen] = useState<number | null>(0);
 
-      <div className="relative mx-auto max-w-3xl px-4 sm:px-6">
+  return (
+    <section id="faq" className="py-20 sm:py-32">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6">
         {/* Header */}
-        <div className="mb-14 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            <HelpCircle className="h-3 w-3 text-[#F7931A]" strokeWidth={2} />
-            <span className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
-              FAQ
-            </span>
-          </div>
-          <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Common <span className="gradient-text">Questions</span>
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+            Frequently Asked Questions
           </h2>
+          <p className="text-lg text-slate-600">
+            Got questions? We've got answers.
+          </p>
         </div>
 
-        <Accordion type="single" collapsible className="space-y-3">
-          {faqs.map((faq, i) => (
-            <AccordionItem
-              key={i}
-              value={`faq-${i}`}
-              className="relative rounded-2xl border border-white/10 bg-[#030304] px-6 transition-all hover:border-[#F7931A]/20"
+        {/* FAQ Items */}
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div
+              key={idx}
+              className="border border-[#EBEBF0] rounded-2xl overflow-hidden transition-all"
             >
-              <AccordionTrigger
-                className="text-left font-heading font-semibold text-white hover:no-underline py-5 text-sm sm:text-base hover:text-[#F7931A] transition-colors"
+              <button
+                onClick={() => setOpen(open === idx ? null : idx)}
+                className="w-full px-6 py-4 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors"
               >
-                {faq.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-sm text-[#94A3B8] leading-relaxed pb-5">
-                {faq.a}
-              </AccordionContent>
-            </AccordionItem>
+                <h3 className="text-left font-bold text-slate-900">
+                  {faq.q}
+                </h3>
+                <ChevronDown
+                  className={`h-5 w-5 text-slate-500 transition-transform flex-shrink-0 ${
+                    open === idx ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {open === idx && (
+                <div className="px-6 py-4 bg-blue-50/50 border-t border-[#EBEBF0]">
+                  <p className="text-slate-700 leading-relaxed">
+                    {faq.a}
+                  </p>
+                </div>
+              )}
+            </div>
           ))}
-        </Accordion>
+        </div>
       </div>
     </section>
   );

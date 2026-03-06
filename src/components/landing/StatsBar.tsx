@@ -8,10 +8,10 @@ interface Stat {
 }
 
 const stats: Stat[] = [
-  { value: 34,   suffix: "K+",   label: "Leads Generated" },
-  { value: 8200, suffix: "+",    label: "Businesses Scraped" },
-  { value: 47,   suffix: "+",    label: "Countries Supported" },
-  { value: 2,    prefix: "~", suffix: " min", label: "Avg. Search Time" },
+  { value: 34, suffix: "K+", label: "Leads Generated" },
+  { value: 8200, suffix: "+", label: "Businesses Scraped" },
+  { value: 47, suffix: "+", label: "Countries Supported" },
+  { value: 2, prefix: "~", suffix: " min", label: "Avg. Search Time" },
 ];
 
 function useCountUp(target: number, duration = 1600, active = false) {
@@ -34,10 +34,10 @@ function StatItem({ stat, active }: { stat: Stat; active: boolean }) {
   const count = useCountUp(stat.value, 1600, active);
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-8">
-      <p className="font-mono-data text-3xl font-bold text-[#F7931A] tabular-nums">
+      <p className="font-heading text-3xl font-bold text-blue-600 tabular-nums">
         {stat.prefix ?? ""}{count.toLocaleString()}{stat.suffix}
       </p>
-      <p className="font-mono-data text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-600">
         {stat.label}
       </p>
     </div>
@@ -60,13 +60,10 @@ const StatsBar = () => {
   return (
     <div
       ref={ref}
-      className="relative overflow-hidden border-y border-slate-200/50 bg-white/60 backdrop-blur-md"
+      className="relative border-y border-[#EBEBF0] bg-white py-8"
     >
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-12 bg-[#F7931A] opacity-[0.04] blur-[60px]" />
-      </div>
       <div className="relative mx-auto max-w-5xl px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-200/50">
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#EBEBF0]">
           {stats.map((s) => (
             <StatItem key={s.label} stat={s} active={active} />
           ))}
