@@ -1,108 +1,50 @@
 import { Search, Mail, Phone, FileSpreadsheet, Globe, Zap, BarChart3, Eye } from "lucide-react";
 
 const features = [
-  {
-    icon: Search,
-    color: "blue",
-    title: "Google Maps Search",
-    description: "Search any business type in any city worldwide. Powered by Google Places API for accurate, real-time results.",
-  },
-  {
-    icon: Mail,
-    color: "violet",
-    title: "Email Extraction",
-    description: "Automatically visits each business website and scans for email addresses — including contact and about pages.",
-  },
-  {
-    icon: Phone,
-    color: "green",
-    title: "Phone & WhatsApp",
-    description: "Captures phone numbers from listings and detects WhatsApp links on business sites for instant messaging.",
-  },
-  {
-    icon: FileSpreadsheet,
-    color: "orange",
-    title: "Styled XLSX Export",
-    description: "Download a professionally formatted Excel file with colored headers, alternating rows, and auto-sized columns.",
-  },
-  {
-    icon: Globe,
-    color: "blue",
-    title: "Global Coverage",
-    description: "Works in 47+ countries. Search any neighborhood, city, or wider region. Customizable from 1 to 50+ km.",
-  },
-  {
-    icon: Zap,
-    color: "violet",
-    title: "Multi-Source Search",
-    description: "Combines Google Maps with web search results — directories, review sites, and 'best of' articles for 2× leads.",
-  },
-  {
-    icon: BarChart3,
-    color: "green",
-    title: "Lead Scoring",
-    description: "Ranked by data richness — email + phone + WhatsApp = top tier. Focus your outreach where it converts.",
-  },
-  {
-    icon: Eye,
-    color: "orange",
-    title: "Real-Time Preview",
-    description: "Watch leads populate in the live table as they're found. No waiting — results stream in as they arrive.",
-  },
+  { icon: Search,        code: "01", title: "MAPS SEARCH",    desc: "Search any business type in any city. Google Places API delivers real-time, accurate results." },
+  { icon: Mail,          code: "02", title: "EMAIL EXTRACT",  desc: "Scans each business website across all pages. Finds emails even on contact and about pages." },
+  { icon: Phone,         code: "03", title: "PHONE + WA",     desc: "Captures phone numbers from Maps listings. Detects WhatsApp links on business websites." },
+  { icon: FileSpreadsheet,code:"04", title: "XLSX EXPORT",    desc: "Professionally formatted Excel with colored headers, alternating rows, auto-sized columns." },
+  { icon: Globe,         code: "05", title: "GLOBAL COVERAGE",desc: "47+ countries. Search any neighborhood or city. Customizable radius from 1 to 50+ km." },
+  { icon: Zap,           code: "06", title: "DUAL SOURCE",    desc: "Google Maps + open web combined. Directories, review sites, articles — 2x lead density." },
+  { icon: BarChart3,     code: "07", title: "LEAD SCORING",   desc: "Ranked by data richness. Email + phone + WhatsApp = tier 1. Filter and sort intelligently." },
+  { icon: Eye,           code: "08", title: "LIVE PREVIEW",   desc: "Results stream in real-time as they are found. No waiting — watch the table populate live." },
 ];
 
-const colorMap: Record<string, { icon: string; bg: string; border: string }> = {
-  blue:   { icon: "text-blue-600",   bg: "bg-blue-50",   border: "border-blue-100" },
-  violet: { icon: "text-violet-600", bg: "bg-violet-50", border: "border-violet-100" },
-  green:  { icon: "text-emerald-600",bg: "bg-emerald-50",border: "border-emerald-100" },
-  orange: { icon: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-};
-
-const FeaturesSection = () => {
-  return (
-    <section id="features" className="py-24 sm:py-32" style={{ background: "#F5F5F7" }}>
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-16 text-center max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white border border-[rgba(0,0,0,0.08)] px-3.5 py-1.5 mb-5 text-xs font-semibold text-[#6e6e73] tracking-wide shadow-sm">
-            Everything included
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#1d1d1f] mb-4 leading-tight">
-            Built for serious<br />lead generation
+const FeaturesSection = () => (
+  <section id="features" className="py-24 sm:py-32 relative">
+    <div className="absolute inset-0 border-t border-white/[0.04] pointer-events-none" />
+    <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="mb-16 flex items-end justify-between border-b border-white/[0.06] pb-8">
+        <div>
+          <div className="label-mono mb-3 text-white/25">// SYSTEM CAPABILITIES</div>
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+            BUILT FOR SERIOUS<br />LEAD GENERATION
           </h2>
-          <p className="text-lg text-[#6e6e73] leading-relaxed">
-            From search to download, the entire pipeline runs automatically. No spreadsheet gymnastics.
-          </p>
         </div>
-
-        {/* Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f, idx) => {
-            const c = colorMap[f.color];
-            return (
-              <div
-                key={idx}
-                className="card-lift p-6 flex flex-col gap-5 animate-fade-in-up"
-                style={{ animationDelay: `${idx * 60}ms` }}
-              >
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${c.bg} border ${c.border}`}>
-                  <f.icon className={`h-5 w-5 ${c.icon}`} strokeWidth={1.8} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#1d1d1f] mb-1.5">
-                    {f.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-[#6e6e73]">
-                    {f.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="hidden md:block label-mono text-white/20 text-right">
+          08 MODULES<br />ACTIVE
         </div>
       </div>
-    </section>
-  );
-};
+
+      <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4 border border-white/[0.06]">
+        {features.map((f, idx) => (
+          <div
+            key={idx}
+            className="p-5 border-r border-b border-white/[0.05] hover:bg-white/[0.03] transition-colors animate-fade-in-up group"
+            style={{ animationDelay: `${idx * 50}ms` }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <f.icon className="h-4 w-4 text-white/40 group-hover:text-white/70 transition-colors" strokeWidth={1.5} />
+              <span className="label-mono text-white/20">{f.code}</span>
+            </div>
+            <h3 className="font-mono-data text-xs font-bold text-white/80 mb-2 tracking-wider">{f.title}</h3>
+            <p className="font-mono-data text-[11px] text-white/35 leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
 
 export default FeaturesSection;

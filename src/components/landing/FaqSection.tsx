@@ -32,38 +32,36 @@ const FaqSection = () => {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-24 sm:py-32 bg-white">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6">
-        <div className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#F5F5F7] border border-[rgba(0,0,0,0.08)] px-3.5 py-1.5 mb-5 text-xs font-semibold text-[#6e6e73] tracking-wide">
-            FAQ
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#1d1d1f] leading-tight">
-            Common questions
+    <section id="faq" className="py-24 sm:py-32 border-t border-white/[0.04]">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mb-16 border-b border-white/[0.06] pb-8">
+          <div className="label-mono mb-3 text-white/25">// SYSTEM FAQ</div>
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+            COMMON<br />QUESTIONS
           </h2>
         </div>
 
-        <div className="space-y-2">
+        <div className="max-w-2xl">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="rounded-2xl border border-[rgba(0,0,0,0.07)] overflow-hidden bg-white"
+              className="border-b border-white/[0.06] last:border-b-0"
             >
               <button
                 onClick={() => setOpen(open === idx ? null : idx)}
-                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-[#FAFAFA] transition-colors"
+                className="w-full flex items-center justify-between gap-4 py-5 text-left hover:bg-white/[0.015] px-2 -mx-2 transition-colors"
               >
-                <span className="text-sm font-semibold text-[#1d1d1f]">{faq.q}</span>
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#F5F5F7] flex items-center justify-center">
+                <span className="font-mono-data text-[11px] font-bold text-white/60 tracking-wide">{faq.q}</span>
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center border border-white/10">
                   {open === idx
-                    ? <Minus className="h-3.5 w-3.5 text-[#6e6e73]" />
-                    : <Plus className="h-3.5 w-3.5 text-[#6e6e73]" />
+                    ? <Minus className="h-3 w-3 text-white/40" />
+                    : <Plus className="h-3 w-3 text-white/40" />
                   }
                 </span>
               </button>
               {open === idx && (
-                <div className="px-6 pb-5 border-t border-[rgba(0,0,0,0.06)]">
-                  <p className="text-sm text-[#6e6e73] leading-relaxed pt-4">{faq.a}</p>
+                <div className="pb-5 px-2 -mx-2">
+                  <p className="font-mono-data text-[11px] text-white/30 leading-relaxed">{faq.a}</p>
                 </div>
               )}
             </div>

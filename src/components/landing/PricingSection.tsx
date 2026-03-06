@@ -1,12 +1,13 @@
-import { Check, Zap } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const plans = [
   {
     key: "demo",
-    name: "Demo",
-    price: "Free",
-    description: "Try it risk-free. No card needed.",
+    code: "TIER_00",
+    name: "DEMO",
+    price: "FREE",
+    description: "No card needed.",
     badge: null,
     features: [
       "30 demo credits",
@@ -15,15 +16,16 @@ const plans = [
       "Email + phone extraction",
       "Excel export",
     ],
-    cta: "Start Free Demo",
+    cta: "START FREE — 30 CREDITS",
     primary: false,
   },
   {
     key: "starter",
-    name: "Starter",
+    code: "TIER_01",
+    name: "STARTER",
     price: "$19",
-    period: "/mo",
-    description: "For freelancers and solo operators.",
+    period: "/MO",
+    description: "For solo operators.",
     badge: null,
     features: [
       "500 credits / month",
@@ -33,16 +35,17 @@ const plans = [
       "Excel export",
       "Smart sorting",
     ],
-    cta: "Get Started",
+    cta: "GET STARTED",
     primary: false,
   },
   {
     key: "pro",
-    name: "Professional",
+    code: "TIER_02",
+    name: "PROFESSIONAL",
     price: "$49",
-    period: "/mo",
-    description: "For agencies and teams at scale.",
-    badge: "Most Popular",
+    period: "/MO",
+    description: "For agencies at scale.",
+    badge: "MOST POPULAR",
     features: [
       "1,500 credits / month",
       "150 searches / month",
@@ -52,7 +55,7 @@ const plans = [
       "Opportunity insights",
       "Priority support",
     ],
-    cta: "Get Professional",
+    cta: "GET PROFESSIONAL",
     primary: true,
   },
 ];
@@ -71,65 +74,65 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
   };
 
   return (
-    <section id="pricing" className="py-24 sm:py-32" style={{ background: "#F5F5F7" }}>
+    <section id="pricing" className="py-24 sm:py-32 border-t border-white/[0.04]">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-16 text-center max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white border border-[rgba(0,0,0,0.08)] px-3.5 py-1.5 mb-5 text-xs font-semibold text-[#6e6e73] tracking-wide shadow-sm">
-            Simple pricing
+        <div className="mb-16 flex items-end justify-between border-b border-white/[0.06] pb-8">
+          <div>
+            <div className="label-mono mb-3 text-white/25">// PRICING MATRIX</div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+              START FREE.<br />SCALE WHEN READY.
+            </h2>
           </div>
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#1d1d1f] mb-4 leading-tight">
-            Start free.<br />Scale when ready.
-          </h2>
-          <p className="text-lg text-[#6e6e73]">
-            No hidden fees. 7-day money-back on paid plans.
-          </p>
+          <div className="hidden md:block label-mono text-white/20 text-right">
+            03 TIERS<br />AVAILABLE
+          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 items-stretch">
+        <div className="grid gap-0 md:grid-cols-3 border border-white/[0.06]">
           {plans.map((plan, idx) => (
             <div
               key={plan.key}
-              className={`relative flex flex-col animate-fade-in-up ${
-                plan.primary
-                  ? "rounded-[20px] ring-2 ring-blue-600 shadow-[0_0_0_1px_rgba(37,99,235,0.15),0_8px_40px_rgba(37,99,235,0.15)]"
-                  : "card-lift"
-              } bg-white p-7`}
+              className={`relative flex flex-col p-7 animate-fade-in-up hover:bg-white/[0.015] transition-colors ${
+                plan.primary ? "bg-white/[0.02]" : ""
+              } ${idx < plans.length - 1 ? "border-b md:border-b-0 md:border-r border-white/[0.06]" : ""}`}
               style={{ animationDelay: `${idx * 80}ms` }}
             >
               {plan.badge && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-1.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-                    <Zap className="h-3 w-3" />
-                    {plan.badge}
-                  </div>
+                <div className="absolute top-4 right-4">
+                  <span className="label-mono text-white/90 bg-white/10 px-2 py-0.5 border border-white/20">{plan.badge}</span>
                 </div>
               )}
 
               <div className="mb-6">
-                <h3 className="text-base font-bold text-[#1d1d1f] mb-1">{plan.name}</h3>
-                <p className="text-xs text-[#6e6e73] mb-4">{plan.description}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="label-mono text-white/20">{plan.code}</span>
+                </div>
+                <h3 className="font-mono-data text-xs font-bold text-white/80 tracking-widest mb-1">{plan.name}</h3>
+                <p className="label-mono text-white/30 mb-5">{plan.description}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-[#1d1d1f]">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-[#6e6e73]">{plan.period}</span>}
+                  <span className="text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>{plan.price}</span>
+                  {plan.period && <span className="label-mono text-white/35 ml-1">{plan.period}</span>}
                 </div>
               </div>
 
               <button
                 onClick={() => handleClick(plan.key)}
                 disabled={loading === plan.key}
-                className={`w-full py-3 rounded-full text-sm font-bold tracking-wide transition-all mb-6 ${
+                className={`w-full py-3 mb-6 font-mono-data text-[10px] font-bold tracking-widest flex items-center justify-center gap-2 transition-all group ${
                   plan.primary
-                    ? "btn-btc text-white"
-                    : "bg-[#F5F5F7] text-[#1d1d1f] border border-[rgba(0,0,0,0.08)] hover:bg-[#EBEBED] hover:border-[rgba(0,0,0,0.12)]"
+                    ? "btn-btc"
+                    : "border border-white/15 text-white/50 hover:border-white/35 hover:text-white/80"
                 }`}
+                style={{ borderRadius: "3px" }}
               >
-                {loading === plan.key ? "Processing..." : plan.cta}
+                {loading === plan.key ? "PROCESSING..." : plan.cta}
+                {loading !== plan.key && <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />}
               </button>
 
-              <ul className="space-y-3 border-t border-[rgba(0,0,0,0.05)] pt-6 flex-1">
+              <ul className="space-y-2.5 border-t border-white/[0.05] pt-5 flex-1">
                 {plan.features.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-[#3d3d3f]">
-                    <Check className={`h-4 w-4 flex-shrink-0 ${plan.primary ? "text-blue-600" : "text-[#86868b]"}`} />
+                  <li key={i} className="flex items-center gap-2 font-mono-data text-[11px] text-white/35">
+                    <Check className="h-3 w-3 flex-shrink-0 text-white/30" />
                     {f}
                   </li>
                 ))}
@@ -137,6 +140,8 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
             </div>
           ))}
         </div>
+
+        <p className="label-mono text-white/20 text-center mt-6">NO HIDDEN FEES · 7-DAY MONEY-BACK ON PAID PLANS</p>
       </div>
     </section>
   );

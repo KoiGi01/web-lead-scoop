@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import DotGrid from "@/components/landing/DotGrid";
 import NavBar from "@/components/landing/NavBar";
 import HeroSection from "@/components/landing/HeroSection";
 import StatsBar from "@/components/landing/StatsBar";
@@ -30,17 +31,20 @@ const Index = () => {
   const openAuth = () => navigate("/app");
 
   return (
-    <div className="min-h-screen" style={{ background: "#F5F5F7" }}>
-      <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
-      <HeroSection onGetStarted={goToApp} />
-      <StatsBar />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <UseCasesSection />
-      <TestimonialsSection />
-      <PricingSection onGetStarted={handlePricingClick} />
-      <FaqSection />
-      <FooterSection />
+    <div className="min-h-screen relative" style={{ background: "#080808" }}>
+      <DotGrid />
+      <div className="relative z-10">
+        <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
+        <HeroSection onGetStarted={goToApp} />
+        <StatsBar />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <UseCasesSection />
+        <TestimonialsSection />
+        <PricingSection onGetStarted={handlePricingClick} />
+        <FaqSection />
+        <FooterSection />
+      </div>
     </div>
   );
 };
