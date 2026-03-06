@@ -1,6 +1,5 @@
 import React from "react";
-import { AlertTriangle, RotateCw } from "lucide-react";
-import GlobaLeadsLogo from "./icons/GlobaLeadsLogo";
+import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
 
 interface Props {
   children: React.ReactNode;
@@ -11,7 +10,7 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
+class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -22,50 +21,31 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo);
+    console.error("ErrorBoundary caught:", error, errorInfo);
   }
-
-  resetError = () => {
-    this.setState({ hasError: false, error: null });
-  };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#030304] flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-[#0F1115] border border-white/10 rounded-2xl p-8 text-center">
+        <div className="flex items-center justify-center min-h-[60vh] px-4">
+          <div className="max-w-md rounded-2xl bg-[#0F1115] border border-white/10 p-8 text-center">
             <div className="flex justify-center mb-6">
-              <div className="h-16 w-16 rounded-full bg-[#ff4757]/10 border border-[#ff4757]/30 flex items-center justify-center">
-                <AlertTriangle className="h-8 w-8 text-[#ff4757]" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10">
+                <GlobaLeadsLogo className="h-8 w-8 text-[#F7931A]" size={32} />
               </div>
             </div>
-
-            <div className="mb-4">
-              <GlobaLeadsLogo className="h-8 w-8 mx-auto text-[#F7931A] mb-4" size={32} />
-              <h1 className="text-2xl font-heading font-bold text-white mb-2">
-                Oops!
-              </h1>
-              <p className="text-[#94A3B8] text-sm leading-relaxed mb-4">
-                Something went wrong. Our team has been notified. Please try reloading the page.
-              </p>
-              {this.state.error && (
-                <p className="text-[10px] font-mono text-[#ff4757]/70 bg-[#ff4757]/5 rounded p-3 text-left mb-4 overflow-auto max-h-32">
-                  {this.state.error.message}
-                </p>
-              )}
-            </div>
-
+            <h2 className="font-heading text-xl font-bold text-white mb-3">
+              Something went wrong
+            </h2>
+            <p className="font-mono-data text-xs text-[#94A3B8] mb-4 break-words">
+              {this.state.error?.message || "An unexpected error occurred"}
+            </p>
             <button
-              onClick={this.resetError}
-              className="btn-btc w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-mono text-sm font-bold uppercase tracking-widest text-white"
+              onClick={() => window.location.reload()}
+              className="btn-btc px-6 py-2.5 font-mono-data text-xs font-bold uppercase tracking-wider text-white rounded-lg"
             >
-              <RotateCw className="h-4 w-4" />
               Reload Page
             </button>
-
-            <p className="text-[10px] text-[#94A3B8]/50 mt-4 font-mono">
-              Error ID: {new Date().toISOString()}
-            </p>
           </div>
         </div>
       );

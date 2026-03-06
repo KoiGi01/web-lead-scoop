@@ -12,6 +12,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Map of plan names to credit limits
 const PLAN_CREDITS: Record<string, number> = {
@@ -40,9 +41,10 @@ const AppPage = () => {
     }
   }, [user, profileLoading, hasProfile, onboardingShown]);
 
-  // Handle checkout success and bundle query param
+  // Handle demo signup, checkout success, and bundle query param
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
     if (params.get('checkout') === 'success') {
       toast({
         title: "Credits added!",
@@ -51,6 +53,15 @@ const AppPage = () => {
       refetchCredits();
       // Clean up URL
       window.history.replaceState({}, '', '/app');
+    }
+
+    // If demo param exists, create a demo user session
+    if (params.get('demo') === 'true' && !user) {
+      setAuthOpen(true);
+      // Remove demo param from URL
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('demo');
+      window.history.replaceState({}, '', newUrl.pathname);
     }
 
     // If bundle param exists and user is logged in, trigger checkout
@@ -253,18 +264,20 @@ const AppPage = () => {
 
         {/* Tool Content */}
         <main className="flex-1 overflow-y-auto flex flex-col">
-          {viewMode === "search" ? (
-            <LeadGeneratorSection
-              onOpenAuth={() => setAuthOpen(true)}
-              onSearchComplete={handleSearchComplete}
-              viewMode="search"
-            />
-          ) : (
-            <ViewAllLeads
-              userId={user?.id}
-              onBackToSearch={() => setViewMode("search")}
-            />
-          )}
+          <ErrorBoundary>
+            {viewMode === "search" ? (
+              <LeadGeneratorSection
+                onOpenAuth={() => setAuthOpen(true)}
+                onSearchComplete={handleSearchComplete}
+                viewMode="search"
+              />
+            ) : (
+              <ViewAllLeads
+                userId={user?.id}
+                onBackToSearch={() => setViewMode("search")}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 

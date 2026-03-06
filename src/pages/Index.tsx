@@ -16,8 +16,11 @@ const Index = () => {
   const [pendingBundle, setPendingBundle] = useState<string | null>(null);
 
   const handlePricingClick = (bundleKey: string | null) => {
-    if (!bundleKey) {
-      // Free plan - just go to app
+    if (bundleKey === "demo") {
+      // Demo - redirect to app with demo flag
+      navigate("/app?demo=true");
+    } else if (!bundleKey) {
+      // This case shouldn't happen anymore, but keep as fallback
       navigate("/app");
     } else {
       // Paid bundle - store it and redirect to app where checkout will be triggered

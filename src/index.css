@@ -7,27 +7,27 @@
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════
-       Bitcoin DeFi — Token System
-       Dark mode only. True void + bitcoin fire.
+       Glassmorphism Light Theme — Token System
+       Premium SaaS design with frosted glass + light gradients.
     ═══════════════════════════════════════════════ */
 
-    --background:              0 0% 1%;        /* #030304 true void */
-    --foreground:              0 0% 100%;      /* #ffffff pure light */
+    --background:              220 33% 97%;    /* #f0f4ff light blue-white */
+    --foreground:              222 47% 11%;    /* #0f172a slate-900 dark charcoal */
 
-    --card:                    222 11% 8%;     /* #0F1115 dark matter */
-    --card-foreground:         0 0% 100%;
+    --card:                    0 0% 100%;      /* #ffffff pure white */
+    --card-foreground:         222 47% 11%;
 
-    --popover:                 222 11% 8%;
-    --popover-foreground:      0 0% 100%;
+    --popover:                 0 0% 100%;
+    --popover-foreground:      222 47% 11%;
 
-    --primary:                 33 92% 53%;     /* #F7931A bitcoin orange */
+    --primary:                 33 92% 53%;     /* #F7931A bitcoin orange (keep) */
     --primary-foreground:      0 0% 100%;
 
-    --secondary:               222 11% 8%;
-    --secondary-foreground:    215 16% 63%;    /* #94A3B8 stardust */
+    --secondary:               220 14% 96%;    /* #f1f5f9 slate-100 */
+    --secondary-foreground:    215 16% 47%;    /* slate-500 medium gray */
 
-    --muted:                   222 11% 8%;
-    --muted-foreground:        215 16% 63%;
+    --muted:                   220 14% 96%;
+    --muted-foreground:        215 16% 47%;
 
     --accent:                  33 92% 53%;
     --accent-foreground:       0 0% 100%;
@@ -35,20 +35,20 @@
     --destructive:             0 84% 60%;
     --destructive-foreground:  0 0% 100%;
 
-    --border:                  215 28% 17%;    /* #1E293B dim boundary */
-    --input:                   215 28% 17%;
+    --border:                  214 32% 91%;    /* #e2e8f0 slate-200 */
+    --input:                   214 32% 91%;
     --ring:                    33 92% 53%;
 
     --radius:                  1rem;
 
     /* Sidebar */
-    --sidebar-background:          222 11% 8%;
-    --sidebar-foreground:          0 0% 100%;
+    --sidebar-background:          0 0% 100%;
+    --sidebar-foreground:          222 47% 11%;
     --sidebar-primary:             33 92% 53%;
     --sidebar-primary-foreground:  0 0% 100%;
-    --sidebar-accent:              215 28% 17%;
-    --sidebar-accent-foreground:   0 0% 100%;
-    --sidebar-border:              215 28% 17%;
+    --sidebar-accent:              220 14% 96%;
+    --sidebar-accent-foreground:   222 47% 11%;
+    --sidebar-border:              214 32% 91%;
     --sidebar-ring:                33 92% 53%;
   }
 }
@@ -63,8 +63,11 @@
   }
 
   body {
-    @apply bg-[#030304] text-white antialiased;
+    @apply antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 50%, #fff7ed 100%);
+    background-attachment: fixed;
+    color: #0f172a;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -135,38 +138,39 @@
 
   /* Glass card */
   .glass-card {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
   }
 
   /* Orange glow shadow */
   .glow-orange {
-    box-shadow: 0 0 20px -5px rgba(247, 147, 26, 0.6);
+    box-shadow: 0 0 20px -5px rgba(247, 147, 26, 0.35);
   }
 
   /* Card hover lift with orange glow */
   .card-lift {
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.7);
     transition: transform 300ms ease, box-shadow 300ms ease, border-color 300ms ease;
   }
   .card-lift:hover {
     transform: translateY(-4px);
-    border-color: rgba(247, 147, 26, 0.4);
-    box-shadow: 0 0 30px -10px rgba(247, 147, 26, 0.25);
+    border-color: rgba(247, 147, 26, 0.45);
+    box-shadow: 0 12px 40px -12px rgba(15, 23, 42, 0.12), 0 0 20px -8px rgba(247, 147, 26, 0.2);
   }
 
   /* Orange gradient button */
   .btn-btc {
     background: linear-gradient(to right, #EA580C, #F7931A);
-    box-shadow: 0 0 20px -5px rgba(234, 88, 12, 0.5);
+    box-shadow: 0 4px 20px -4px rgba(234, 88, 12, 0.4);
     border-radius: 9999px;
     transition: transform 300ms ease, box-shadow 300ms ease;
   }
   .btn-btc:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 30px -5px rgba(247, 147, 26, 0.6);
+    box-shadow: 0 8px 28px -4px rgba(234, 88, 12, 0.45);
   }
   .btn-btc:active {
     transform: scale(0.98);
@@ -176,10 +180,39 @@
   .bg-grid-pattern {
     background-size: 50px 50px;
     background-image:
-      linear-gradient(to right, rgba(30, 41, 59, 0.5) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+      linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
     -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
     mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  }
+
+  /* Ambient gradient blobs */
+  .blob-1 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(247, 147, 26, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+  .blob-2 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.10) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+  .blob-3 {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
   }
 
   /* Animations */
@@ -200,6 +233,10 @@
   }
   .animate-accordion-up {
     animation: accordion-up 0.2s ease-out;
+  }
+
+  .fade-in-section {
+    animation: fade-in-up 0.6s ease-out both;
   }
 
   /* Animation delays */

@@ -3,19 +3,19 @@ import { useState } from "react";
 
 const bundles = [
   {
-    name: "Free Trial",
-    bundleKey: null,
-    price: "$0",
-    credits: 50,
-    description: "Try it risk-free. No card needed.",
+    name: "Try Demo",
+    bundleKey: "demo",
+    price: "Free",
+    credits: 30,
+    description: "Test the tool with one search included.",
     icon: Zap,
     features: [
-      "50 credits (≈5 searches)",
+      "30 credits (1 search only)",
       "Email & WhatsApp extraction",
       "XLSX export",
-      "Google Maps data",
+      "No credit card required",
     ],
-    cta: "Get Started Free",
+    cta: "Start Free Demo",
     highlight: false,
   },
   {
@@ -157,7 +157,11 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
                 <button
                   onClick={() => {
                     setLoadingBundle(bundle.bundleKey);
+                    // For demo and paid bundles, call onGetStarted
+                    // For demo, pass "demo" to trigger demo signup flow
                     onGetStarted(bundle.bundleKey);
+                    // Reset loading state after a short delay to prevent stuck state
+                    setTimeout(() => setLoadingBundle(null), 1000);
                   }}
                   disabled={loadingBundle === bundle.bundleKey}
                   className={`mt-8 w-full py-3.5 text-xs font-bold uppercase tracking-widest text-white transition-all duration-300 ${

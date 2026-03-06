@@ -29,8 +29,8 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-[#030304]/95 backdrop-blur-md border-b border-white/10 shadow-[0_0_30px_-10px_rgba(247,147,26,0.1)]"
-          : "bg-transparent border-b border-white/5"
+          ? "bg-white/80 backdrop-blur-xl border-b border-slate-200/70 shadow-[0_2px_20px_-4px_rgba(15,23,42,0.08)]"
+          : "bg-transparent border-b border-transparent"
       }`}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -40,7 +40,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F7931A]/15 border border-[#F7931A]/40 transition-all duration-200 group-hover:shadow-[0_0_16px_rgba(247,147,26,0.4)]">
             <GlobaLeadsLogo className="h-5 w-5 text-[#F7931A]" size={24} />
           </div>
-          <span className="font-heading font-bold text-white text-[15px] tracking-tight">
+          <span className="font-heading font-bold text-slate-900 text-[15px] tracking-tight">
             GlobaLeads<span className="text-[#F7931A]">22</span>
           </span>
         </a>
@@ -62,7 +62,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
             <a
               key={l.label}
               href={l.href}
-              className="px-4 py-2 rounded-md text-[11px] font-semibold text-[#94A3B8] hover:text-white transition-colors tracking-wider uppercase"
+              className="px-4 py-2 rounded-md text-[11px] font-semibold text-slate-500 hover:text-slate-900 transition-colors tracking-wider uppercase"
             >
               {l.label}
             </a>
@@ -76,12 +76,12 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#EA580C] to-[#F7931A] text-white text-xs font-bold">
                 {user.email?.[0]?.toUpperCase() ?? "U"}
               </div>
-              <span className="text-sm text-[#94A3B8] max-w-[140px] truncate hidden lg:block font-mono-data">
+              <span className="text-sm text-slate-500 max-w-[140px] truncate hidden lg:block font-mono-data">
                 {user.email}
               </span>
               <button
                 onClick={signOut}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F7931A] transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-[#F7931A] transition-colors"
               >
                 <LogOut className="h-3 w-3" /> Sign Out
               </button>
@@ -98,7 +98,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10"
+          className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-900 transition-colors border border-slate-200"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Menu"
         >
@@ -108,13 +108,13 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
 
       {/* Mobile drawer */}
       {menuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-[#0F1115] px-4 pb-5 pt-3 animate-fade-in">
+        <div className="md:hidden border-t border-slate-200/70 bg-white/95 backdrop-blur-xl px-4 pb-5 pt-3 animate-fade-in">
           {links.map((l) => (
             <a
               key={l.label}
               href={l.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors"
+              className="flex items-center px-3 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors"
             >
               {l.label}
             </a>

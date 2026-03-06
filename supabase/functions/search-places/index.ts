@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,nextPageToken',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken',
         },
         body: JSON.stringify(body),
       });
@@ -81,6 +81,8 @@ Deno.serve(async (req) => {
       phone: place.nationalPhoneNumber || '',
       website: place.websiteUri || '',
       category: place.primaryType || place.types?.[0] || '',
+      lat: place.location?.latitude,
+      lng: place.location?.longitude,
     }));
 
     console.log(`Found ${businesses.length} businesses for "${query}"`);

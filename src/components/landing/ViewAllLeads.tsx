@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft, Lock, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import XLSX from "xlsx-js-style";
 
@@ -25,11 +27,21 @@ interface ViewAllLeadsProps {
 }
 
 const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
+  const { user } = useAuth();
+  const { profile: userProfile } = useUserProfile(user?.id);
   const [leads, setLeads] = useState<SavedLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
   const [filterByEmail, setFilterByEmail] = useState(false);
   const [emailsCopied, setEmailsCopied] = useState(false);
+  // Smart filtering state
+  const [filterText, setFilterText] = useState("");
+  const [filterByPhone, setFilterByPhone] = useState(false);
+  const [filterByWebsite, setFilterByWebsite] = useState(false);
+  const [filterByLinkedIn, setFilterByLinkedIn] = useState(false);
+  const [filterByIntelligence, setFilterByIntelligence] = useState(false);
+  const [filterScoreMin, setFilterScoreMin] = useState(0);
+  const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
   // Fetch all leads on mount
   useEffect(() => {
@@ -64,6 +76,15 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
       setEmailsCopied(true);
       setTimeout(() => setEmailsCopied(false), 2000);
       toast({ title: "Copied!", description: `${emails.length} email(s) copied to clipboard.` });
+    });
+  };
+
+  const handleCopyField = (key: string, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKeys(prev => new Set(prev).add(key));
+      setTimeout(() => setCopiedKeys(prev => {
+        const next = new Set(prev); next.delete(key); return next;
+      }), 2000);
     });
   };
 
@@ -109,21 +130,31 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
     XLSX.writeFile(wb, `GlobaLeads22-All-Leads.xlsx`);
   };
 
-  // Filter and sort
-  const filteredResults = leads.filter(r => !filterByEmail || r.emails.length > 0);
+  // Filter and sort — multi-predicate filtering
+  const filteredResults = leads.filter(r => {
+    if (filterByEmail && r.emails.length === 0) return false;
+    if (filterByPhone && !r.phone) return false;
+    if (filterByWebsite && !r.website) return false;
+    if (filterByLinkedIn && !r.linkedinUrl) return false;
+    if (filterByIntelligence && !r.intelligence) return false;
+    if (filterScoreMin > 0 && (r.intelligence?.opportunityScore ?? 0) < filterScoreMin) return false;
+    if (filterText.trim()) {
+      const q = filterText.toLowerCase();
+      if (!r.name.toLowerCase().includes(q) && !r.address.toLowerCase().includes(q) && !r.emails.join(" ").toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
   const sortedResults = [...filteredResults].sort((a, b) => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "emails") return (b.emails.length) - (a.emails.length);
-    if (sortBy === "score") {
-      const scoreA = a.intelligence?.opportunityScore ?? -1;
-      const scoreB = b.intelligence?.opportunityScore ?? -1;
-      return scoreB - scoreA;
-    }
+    if (sortBy === "score") return ((b.intelligence?.opportunityScore ?? -1) - (a.intelligence?.opportunityScore ?? -1));
     return 0;
   });
 
   const emailCount = sortedResults.reduce((acc, r) => acc + r.emails.length, 0);
   const whatsappCount = sortedResults.reduce((acc, r) => acc + r.whatsapp.length, 0);
+  const activeFilterCount = [filterByEmail, filterByPhone, filterByWebsite, filterByLinkedIn, filterByIntelligence, filterScoreMin > 0, filterText.trim() !== ""].filter(Boolean).length;
+  const totalResultCount = leads.length;
 
   return (
     <section id="tool" className="bg-[#030304] py-16 sm:py-24 flex-1 flex flex-col">
@@ -200,36 +231,68 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                 </div>
               </div>
 
-              {/* Filter + Sort Controls */}
+              {/* Row 1: Sort + Text Search */}
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Sort:</span>
                 <div className="flex gap-1.5">
                   {["name", "emails", "score"].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setSortBy(opt as typeof sortBy)}
-                      className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${
-                        sortBy === opt
-                          ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]"
-                          : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"
-                      }`}
-                    >
+                    <button key={opt} onClick={() => setSortBy(opt as typeof sortBy)}
+                      className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${sortBy === opt ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
                       {opt === "name" ? "Name" : opt === "emails" ? "Emails" : "Score"}
                     </button>
                   ))}
                 </div>
+                <div className="ml-auto">
+                  <input type="text" placeholder="Search leads..." value={filterText} onChange={e => setFilterText(e.target.value)}
+                    className="h-7 w-44 bg-black/40 border border-white/10 rounded-lg px-3 text-white text-xs placeholder:text-white/30 outline-none focus:border-[#F7931A]/50 font-mono-data" />
+                </div>
+              </div>
 
-                <span className="ml-auto font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Filter:</span>
-                <button
-                  onClick={() => setFilterByEmail(!filterByEmail)}
-                  className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${
-                    filterByEmail
-                      ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]"
-                      : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"
-                  }`}
-                >
-                  <Mail className="h-3 w-3 inline mr-1" />Has Email
-                </button>
+              {/* Row 2: Filter pills + Score threshold + Clear */}
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {([
+                  { key: "email", label: "Has Email", icon: Mail, active: filterByEmail, toggle: () => setFilterByEmail(v => !v) },
+                  { key: "phone", label: "Has Phone", icon: Phone, active: filterByPhone, toggle: () => setFilterByPhone(v => !v) },
+                  { key: "website", label: "Has Site", icon: Globe, active: filterByWebsite, toggle: () => setFilterByWebsite(v => !v) },
+                  { key: "linkedin", label: "LinkedIn", icon: Linkedin, active: filterByLinkedIn, toggle: () => setFilterByLinkedIn(v => !v) },
+                  ...(userProfile ? [{ key: "intel", label: "Has Intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
+                ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
+                  <button key={f.key} onClick={f.toggle}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${f.active ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_8px_rgba(247,147,26,0.3)]" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
+                    <f.icon className="h-3 w-3" />{f.label}
+                  </button>
+                ))}
+
+                {userProfile && (
+                  <div className="flex items-center gap-1 ml-1">
+                    <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Score≥</span>
+                    {[0, 25, 50, 75].map(n => (
+                      <button key={n} onClick={() => setFilterScoreMin(n)}
+                        className={`px-2 py-1 rounded font-mono-data text-[9px] font-bold transition-all ${filterScoreMin === n ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
+                        {n === 0 ? "All" : n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <span className="font-mono-data text-[9px] text-[#94A3B8] ml-auto">
+                  {sortedResults.length}/{totalResultCount}
+                </span>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => {
+                      setFilterByEmail(false);
+                      setFilterByPhone(false);
+                      setFilterByWebsite(false);
+                      setFilterByLinkedIn(false);
+                      setFilterByIntelligence(false);
+                      setFilterScoreMin(0);
+                      setFilterText("");
+                    }}
+                    className="px-2.5 py-1 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider text-[#ff4757] border border-[#ff4757]/30 bg-[#ff4757]/10 hover:bg-[#ff4757]/20 transition-all">
+                    Clear {activeFilterCount}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -238,7 +301,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
                   <tr>
-                    {["Business", "Phone", "Email", "Website", "LinkedIn"].map(h => (
+                    {["Business", "Phone", "Email", "Actions", "Website", "LinkedIn", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
                       <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
                         {h}
                       </th>
@@ -307,6 +370,71 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                           <span className="font-mono-data text-xs text-white/20">—</span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {r.emails.length > 0 && (
+                            <button
+                              onClick={() => handleCopyField(`${r.id}-email`, r.emails[0])}
+                              title="Copy email"
+                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                            >
+                              {copiedKeys.has(`${r.id}-email`) ? (
+                                <CheckCheck className="h-3 w-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-[#94A3B8]" />
+                              )}
+                            </button>
+                          )}
+                          {r.phone && (
+                            <button
+                              onClick={() => handleCopyField(`${r.id}-phone`, r.phone)}
+                              title="Copy phone"
+                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                            >
+                              {copiedKeys.has(`${r.id}-phone`) ? (
+                                <CheckCheck className="h-3 w-3 text-emerald-400" />
+                              ) : (
+                                <Phone className="h-3 w-3 text-[#94A3B8]" />
+                              )}
+                            </button>
+                          )}
+                          {r.emails.length > 0 && (
+                            <a
+                              href={`mailto:${r.emails[0]}`}
+                              title="Open in email client"
+                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                            >
+                              <Mail className="h-3 w-3 text-[#94A3B8]" />
+                            </a>
+                          )}
+                          {!r.emails.length && !r.phone && (
+                            <span className="font-mono-data text-xs text-white/20">—</span>
+                          )}
+                        </div>
+                      </td>
+                      {userProfile && (
+                        <td className="px-4 py-3">
+                          {r.intelligence ? (
+                            <div className="space-y-1.5 min-w-[160px]">
+                              <div className="flex items-center gap-2 bg-gradient-to-r from-[#EA580C]/20 to-[#F7931A]/10 rounded-lg p-2 border border-[#F7931A]/20">
+                                <Zap className="h-3.5 w-3.5 text-[#F7931A] flex-shrink-0" />
+                                <span className="font-mono-data text-xs font-bold text-[#F7931A]">
+                                  {r.intelligence.opportunityScore ?? 0}/100
+                                </span>
+                              </div>
+                              <div className="text-[9px] text-[#94A3B8] space-y-0.5">
+                                <p><strong>Maturity:</strong> {r.intelligence.businessMaturity}</p>
+                                <p><strong>Position:</strong> {r.intelligence.positioning}</p>
+                                {r.intelligence.detectedIssues?.length > 0 && (
+                                  <p><strong>Issues:</strong> {r.intelligence.detectedIssues.length}</p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="font-mono-data text-xs text-white/20">—</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

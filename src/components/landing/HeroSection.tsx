@@ -7,14 +7,15 @@ interface HeroSectionProps {
 
 const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
   return (
-    <section className="relative min-h-screen bg-[#030304] flex items-center overflow-hidden pt-16">
+    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
 
       {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-60 pointer-events-none" />
+      <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
 
       {/* Ambient glow blobs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#F7931A] opacity-[0.06] blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/3 w-64 h-64 bg-[#FFD600] opacity-[0.04] blur-[100px] rounded-full pointer-events-none" />
+      <div className="blob-1 top-1/4 left-1/4" />
+      <div className="blob-2 bottom-1/4 right-1/3" />
+      <div className="blob-3 top-1/3 right-1/4" />
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 py-20 sm:py-28 w-full">
         <div className="flex flex-col lg:flex-row items-center gap-16">
@@ -22,7 +23,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
           {/* ── Left column — text ── */}
           <div className="flex-1 max-w-xl">
             {/* Status badge */}
-            <div className="animate-fade-in mb-7 inline-flex items-center gap-2.5 rounded-full border border-[#F7931A]/30 bg-[#F7931A]/10 px-4 py-1.5">
+            <div className="animate-fade-in mb-7 inline-flex items-center gap-2.5 rounded-full border border-orange-200/60 bg-orange-50 px-4 py-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F7931A] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F7931A]" />
@@ -37,7 +38,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
 
             {/* Headline */}
             <div className="animate-fade-in-up mb-6">
-              <h1 className="font-heading text-5xl font-bold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
+              <h1 className="font-heading text-5xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
                 Extract Local{" "}
                 <span className="font-heading font-bold leading-tight">Business</span>
                 <br />
@@ -45,7 +46,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
               </h1>
             </div>
 
-            <p className="animate-fade-in-up delay-200 mb-8 text-lg leading-relaxed text-[#94A3B8]">
+            <p className="animate-fade-in-up delay-200 mb-8 text-lg leading-relaxed text-slate-500">
               Search any keyword&nbsp;+&nbsp;location and instantly get business names, phone numbers,
               emails, and WhatsApp — exported to a professionally styled Excel file.
             </p>
@@ -61,7 +62,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
               </button>
               <button
                 onClick={onGetStarted}
-                className="flex items-center gap-2 rounded-full border-2 border-white/20 px-6 py-4 text-sm font-bold uppercase tracking-widest text-white hover:border-white hover:bg-white/10 transition-all duration-300"
+                className="flex items-center gap-2 rounded-full border-2 border-slate-300 px-6 py-4 text-sm font-bold uppercase tracking-widest text-slate-700 hover:border-slate-500 hover:bg-slate-50 transition-all duration-300"
               >
                 See Demo
               </button>
@@ -76,7 +77,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-1.5">
                   <Icon className="h-3.5 w-3.5 text-[#F7931A]" strokeWidth={2} />
-                  <span className="font-mono-data text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8]">
+                  <span className="font-mono-data text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     {label}
                   </span>
                 </div>
@@ -89,7 +90,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                 {["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981"].map((color, i) => (
                   <div
                     key={i}
-                    className="h-8 w-8 rounded-full border-2 border-[#030304] flex items-center justify-center text-[11px] font-bold text-white"
+                    className="h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-bold text-white"
                     style={{ background: color }}
                   >
                     {["A","M","S","J","K"][i]}
@@ -104,7 +105,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
                     </svg>
                   ))}
                 </div>
-                <p className="font-mono-data text-[10px] text-[#94A3B8] mt-0.5">Loved by 1,200+ outreach teams</p>
+                <p className="font-mono-data text-[10px] text-slate-500 mt-0.5">Loved by 1,200+ outreach teams</p>
               </div>
             </div>
           </div>
@@ -114,16 +115,16 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
 
             {/* Outer spinning ring */}
             <div
-              className="absolute inset-0 rounded-full border border-[#F7931A]/20"
+              className="absolute inset-0 rounded-full border border-orange-200/50"
               style={{ animation: "spin 10s linear infinite" }}
             />
             {/* Inner spinning ring (reverse) */}
             <div
-              className="absolute inset-8 rounded-full border border-[#FFD600]/20"
+              className="absolute inset-8 rounded-full border border-orange-100/60"
               style={{ animation: "spin 15s linear infinite reverse" }}
             />
             {/* Static middle ring */}
-            <div className="absolute inset-16 rounded-full border border-white/10" />
+            <div className="absolute inset-16 rounded-full border border-slate-200/50" />
 
             {/* Central orb */}
             <div className="relative animate-float z-10">
@@ -140,24 +141,24 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
               className="absolute top-4 right-8 glass-card rounded-xl px-4 py-2.5 z-20"
               style={{ animation: "bounce 3s ease-in-out infinite" }}
             >
-              <p className="font-mono-data text-xl font-bold text-[#F7931A]">60</p>
-              <p className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-widest">Leads</p>
+              <p className="font-mono-data text-xl font-bold text-orange-500">60</p>
+              <p className="font-mono-data text-[9px] text-slate-400 uppercase tracking-widest">Leads</p>
             </div>
 
             <div
               className="absolute bottom-8 right-4 glass-card rounded-xl px-4 py-2.5 z-20"
               style={{ animation: "bounce 4s ease-in-out infinite", animationDelay: "1s" }}
             >
-              <p className="font-mono-data text-xl font-bold text-[#FFD600]">38</p>
-              <p className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-widest">Emails</p>
+              <p className="font-mono-data text-xl font-bold text-amber-500">38</p>
+              <p className="font-mono-data text-[9px] text-slate-400 uppercase tracking-widest">Emails</p>
             </div>
 
             <div
               className="absolute bottom-12 left-2 glass-card rounded-xl px-4 py-2.5 z-20"
               style={{ animation: "bounce 3.5s ease-in-out infinite", animationDelay: "0.5s" }}
             >
-              <p className="font-mono-data text-xl font-bold text-emerald-400">14</p>
-              <p className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-widest">WhatsApp</p>
+              <p className="font-mono-data text-xl font-bold text-emerald-600">14</p>
+              <p className="font-mono-data text-[9px] text-slate-400 uppercase tracking-widest">WhatsApp</p>
             </div>
 
             {/* Live badge */}
