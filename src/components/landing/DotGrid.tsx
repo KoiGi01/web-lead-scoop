@@ -1,14 +1,17 @@
 import { useEffect, useRef } from "react";
 
-const GAP = 28;
-const RADIUS = 1.2;
-const MAX_DIST = 120;
-const BASE_ALPHA = 0.10;
+// Subtle wave-ripple dot grid — hero section only
+const GAP = 26;
+const RADIUS = 1.1;
+const BASE_ALPHA = 0.06;
+const WAVE_AMP = 0.16;   // max brightness added by wave
+const WAVE_FREQ = 0.28;  // spatial frequency
+const WAVE_SPEED = 1.4;  // radians per second
 
 const DotGrid = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef = useRef({ x: -9999, y: -9999 });
   const rafRef = useRef<number>(0);
+  const startRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -17,39 +20,39 @@ const DotGrid = () => {
     if (!ctx) return;
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      canvas.width  = parent ? parent.offsetWidth  : window.innerWidth;
+      canvas.height = parent ? parent.offsetHeight : window.innerHeight;
     };
     resize();
-    window.addEventListener("resize", resize);
 
-    const onMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-    };
-    window.addEventListener("mousemove", onMove);
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
 
-    const draw = () => {
+    const draw = (ts: number) => {
+      if (startRef.current === null) startRef.current = ts;
+      const t = (ts - startRef.current) / 1000;
+
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const mx = mouseRef.current.x;
-      const my = mouseRef.current.y;
-
-      const cols = Math.ceil(width / GAP) + 1;
+      const cols = Math.ceil(width  / GAP) + 1;
       const rows = Math.ceil(height / GAP) + 1;
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const x = col * GAP;
           const y = row * GAP;
-          const dist = Math.sqrt((x - mx) ** 2 + (y - my) ** 2);
-          const proximity = Math.max(0, 1 - dist / MAX_DIST);
-          const alpha = BASE_ALPHA + proximity * 0.75;
-          const r = RADIUS + proximity * 2.2;
+
+          // Diagonal wave: sweeps top-left to bottom-right
+          const wave = Math.sin(col * WAVE_FREQ + row * WAVE_FREQ * 0.6 - t * WAVE_SPEED);
+          // Normalize 0–1 and ease
+          const intensity = (wave + 1) * 0.5;
+          const alpha = BASE_ALPHA + intensity * WAVE_AMP;
 
           ctx.beginPath();
-          ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+          ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
           ctx.fill();
         }
       }
@@ -61,15 +64,15 @@ const DotGrid = () => {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("resize", resize);
+      ro.disconnect();
     };
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0"
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: 0 }}
     />
   );
 };

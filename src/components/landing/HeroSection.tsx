@@ -1,4 +1,5 @@
 import { ArrowRight, MapPin, Mail, Phone, Download } from "lucide-react";
+import DotGrid from "./DotGrid";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -13,6 +14,9 @@ const mockLeads = [
 const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
   return (
     <section className="relative min-h-screen flex items-center pt-14 overflow-hidden">
+      {/* Wave dot grid — hero only */}
+      <DotGrid />
+
       {/* Horizontal rule lines */}
       <div className="absolute inset-0 pointer-events-none">
         {[...Array(8)].map((_, i) => (
