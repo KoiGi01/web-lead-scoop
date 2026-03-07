@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, MapPin, Mail, Phone, Download } from "lucide-react";
-import DotGrid from "./DotGrid";
+import DotGlobe from "./DotGrid";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -53,7 +53,7 @@ const HeroSection = ({ onGetStarted }: HeroSectionProps) => {
 
   return (
     <section className="relative min-h-screen flex items-center pt-14 overflow-hidden">
-      <DotGrid />
+      <DotGlobe />
 
       {/* Subtle rule lines */}
       <div className="absolute inset-0 pointer-events-none">
