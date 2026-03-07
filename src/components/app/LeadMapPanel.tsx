@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import MapHudOverlay from "./MapHudOverlay";
 
 interface LeadMapPanelProps {
   google: typeof window.google | null;
@@ -162,9 +163,18 @@ const LeadMapPanel = ({
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
+      {/* HUD Canvas Overlay */}
+      <MapHudOverlay
+        mapInstance={mapInstanceRef.current}
+        center={center}
+        radiusKm={radiusKm}
+        markers={markers}
+        isSearching={isSearching}
+      />
+
       {/* Status overlay */}
       <div className="absolute top-3 left-3 px-3 py-1.5 border border-white/[0.10]"
-        style={{ background: "rgba(8,8,8,0.9)", backdropFilter: "blur(8px)", borderRadius: "3px" }}>
+        style={{ background: "rgba(8,8,8,0.9)", backdropFilter: "blur(8px)", borderRadius: "3px", zIndex: 2 }}>
         {isSearching ? (
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
