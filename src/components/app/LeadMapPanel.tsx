@@ -9,18 +9,18 @@ interface LeadMapPanelProps {
 }
 
 const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#0f1115" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#030304" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#0f1115" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#030304" }] },
+  { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#080808" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#555" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#181818" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#0a0a0a" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
   {
     featureType: "administrative",
     elementType: "geometry.stroke",
-    stylers: [{ color: "#1e293b" }],
+    stylers: [{ color: "#1a1a1a" }],
   },
 ];
 
@@ -61,17 +61,17 @@ const LeadMapPanel = ({
       mapInstanceRef.current.panTo(center);
       mapInstanceRef.current.setZoom(11);
 
-      // Create or update circle
+      // Monochrome circle
       if (!circleRef.current) {
         circleRef.current = new google.maps.Circle({
           map: mapInstanceRef.current,
           center,
           radius: radiusKm * 1000,
-          fillColor: "#F7931A",
-          fillOpacity: 0.08,
-          strokeColor: "#F7931A",
-          strokeOpacity: 0.35,
-          strokeWeight: 1.5,
+          fillColor: "#ffffff",
+          fillOpacity: 0.04,
+          strokeColor: "#ffffff",
+          strokeOpacity: 0.15,
+          strokeWeight: 1,
         });
       } else {
         circleRef.current.setCenter(center);
@@ -88,7 +88,6 @@ const LeadMapPanel = ({
     const step = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out: sqrt gives soft landing
       const eased = Math.sqrt(progress);
       const scale = eased * targetScale;
 
@@ -111,25 +110,23 @@ const LeadMapPanel = ({
       const key = `${lat},${lng}`;
 
       if (markerInstancesRef.current.has(key)) {
-        // Update existing marker color if hasEmail changed
         const existing = markerInstancesRef.current.get(key)!;
-        const color = hasEmail ? "#F7931A" : "#94A3B8";
+        const color = hasEmail ? "#ffffff" : "#555555";
         const icon = existing.getIcon() as google.maps.Symbol;
         existing.setIcon({ ...icon, fillColor: color, strokeColor: color });
       } else {
-        // Create new marker
-        const color = hasEmail ? "#F7931A" : "#94A3B8";
+        const color = hasEmail ? "#ffffff" : "#555555";
         const marker = new google.maps.Marker({
           position: { lat, lng },
           map: mapInstanceRef.current,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
-            scale: 0, // Start at 0 — will animate in
+            scale: 0,
             fillColor: color,
             fillOpacity: 0.9,
             strokeColor: color,
             strokeWeight: 2,
-            strokeOpacity: 0.4,
+            strokeOpacity: 0.3,
           },
           title: name,
           optimized: false,
@@ -154,44 +151,33 @@ const LeadMapPanel = ({
     };
   }, []);
 
-  // Loading state
-  if (!google) {
-    return (
-      <div className="h-[260px] sm:h-[340px] rounded-2xl bg-[#0F1115] border border-white/10 animate-pulse" />
-    );
-  }
-
-  // No location state
-  if (!center) {
-    return (
-      <div className="h-[260px] sm:h-[340px] rounded-2xl bg-[#0F1115] border border-white/10 flex items-center justify-center">
-        <p className="text-[#94A3B8] text-xs font-mono-data text-center px-4">
-          Select a location to preview the map
-        </p>
-      </div>
-    );
+  // Don't render anything until we have a center point
+  if (!google || !center) {
+    return null;
   }
 
   return (
-    <div className="h-[260px] sm:h-[340px] rounded-2xl overflow-hidden border border-white/10 relative bg-[#0F1115]">
+    <div className="h-[260px] sm:h-[340px] overflow-hidden border border-white/[0.08] relative"
+      style={{ borderRadius: "4px", background: "#080808" }}>
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
       {/* Status overlay */}
-      <div className="absolute top-3 left-3 bg-[#0F1115]/90 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10">
+      <div className="absolute top-3 left-3 px-3 py-1.5 border border-white/[0.10]"
+        style={{ background: "rgba(8,8,8,0.9)", backdropFilter: "blur(8px)", borderRadius: "3px" }}>
         {isSearching ? (
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#F7931A] rounded-full animate-pulse" />
-            <span className="font-mono-data text-[9px] text-[#F7931A] font-bold uppercase tracking-widest">
-              Scanning...
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+            <span className="label-mono text-white/60">
+              SCANNING...
             </span>
           </div>
         ) : markers.length > 0 ? (
-          <span className="font-mono-data text-[9px] text-[#94A3B8] font-bold uppercase tracking-widest">
-            {markers.length} leads mapped
+          <span className="label-mono text-white/40">
+            {markers.length} LEADS MAPPED
           </span>
         ) : (
-          <span className="font-mono-data text-[9px] text-[#94A3B8] font-bold uppercase tracking-widest">
+          <span className="label-mono text-white/30">
             {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
           </span>
         )}
