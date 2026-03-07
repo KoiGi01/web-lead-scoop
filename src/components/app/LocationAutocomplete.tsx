@@ -68,32 +68,33 @@ const LocationAutocomplete = ({
 
     setIsLoading(true);
 
-    debounceTimerRef.current = setTimeout(() => {
-      autocompleteServiceRef.current!.getPlacePredictions(
-        {
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        const result = await autocompleteServiceRef.current!.getPlacePredictions({
           input: value,
           types: ["(regions)"],
           sessionToken: sessionTokenRef.current,
-        },
-        (results, status) => {
-          setIsLoading(false);
-          if (status !== google?.maps.places.PlacesServiceStatus.OK || !results) {
-            setPredictions([]);
-            setIsOpen(false);
-            return;
-          }
+        });
 
-          const newPredictions: Prediction[] = results.map((pred) => ({
-            placeId: pred.place_id,
-            mainText: pred.structured_formatting?.main_text || pred.description,
-            secondaryText: pred.structured_formatting?.secondary_text || "",
-          }));
+        // The response may be the array directly or an object with .predictions
+        const preds = Array.isArray(result) ? result : (result as any)?.predictions ?? [];
 
-          setPredictions(newPredictions);
-          setIsOpen(newPredictions.length > 0);
-          setHighlightedIndex(0);
-        }
-      );
+        const newPredictions: Prediction[] = preds.map((pred: any) => ({
+          placeId: pred.place_id,
+          mainText: pred.structured_formatting?.main_text || pred.description || "",
+          secondaryText: pred.structured_formatting?.secondary_text || "",
+        }));
+
+        setPredictions(newPredictions);
+        setIsOpen(newPredictions.length > 0);
+        setHighlightedIndex(0);
+      } catch (err) {
+        console.error("Autocomplete error:", err);
+        setPredictions([]);
+        setIsOpen(false);
+      } finally {
+        setIsLoading(false);
+      }
     }, 200);
 
     return () => {
@@ -220,8 +221,8 @@ const LocationAutocomplete = ({
         && createPortal(
           <div
             className="fixed z-50 bg-[#0a0a0a] border border-white/[0.10] shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden"
-            style={{ borderRadius: "3px" }}
             style={{
+              borderRadius: "3px",
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
               width: `${dropdownPosition.width}px`,
