@@ -17,7 +17,13 @@ function loadGoogleMaps(): Promise<void> {
     optionsSet = true;
   }
 
-  loadPromise = importLibrary("places").then(() => undefined);
+  // Load both core and places libraries so legacy classes
+  // (AutocompleteService, PlacesService, Map) are available
+  loadPromise = Promise.all([
+    importLibrary("maps"),
+    importLibrary("places"),
+  ]).then(() => undefined);
+
   return loadPromise;
 }
 
