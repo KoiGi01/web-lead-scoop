@@ -68,29 +68,32 @@ const LocationAutocomplete = ({
 
     setIsLoading(true);
 
-    debounceTimerRef.current = setTimeout(async () => {
-      try {
-        const response = await autocompleteServiceRef.current!.getPlacePredictions({
+    debounceTimerRef.current = setTimeout(() => {
+      autocompleteServiceRef.current!.getPlacePredictions(
+        {
           input: value,
-          types: ["(regions)", "geocode"],
+          types: ["(regions)"],
           sessionToken: sessionTokenRef.current,
-        });
+        },
+        (results, status) => {
+          setIsLoading(false);
+          if (status !== google?.maps.places.PlacesServiceStatus.OK || !results) {
+            setPredictions([]);
+            setIsOpen(false);
+            return;
+          }
 
-        const newPredictions: Prediction[] = (response.predictions || []).map((pred) => ({
-          placeId: pred.place_id,
-          mainText: pred.main_text,
-          secondaryText: pred.secondary_text || "",
-        }));
+          const newPredictions: Prediction[] = results.map((pred) => ({
+            placeId: pred.place_id,
+            mainText: pred.structured_formatting?.main_text || pred.description,
+            secondaryText: pred.structured_formatting?.secondary_text || "",
+          }));
 
-        setPredictions(newPredictions);
-        setIsOpen(newPredictions.length > 0);
-        setHighlightedIndex(0);
-      } catch (err) {
-        console.error("Error fetching predictions:", err);
-        setPredictions([]);
-      } finally {
-        setIsLoading(false);
-      }
+          setPredictions(newPredictions);
+          setIsOpen(newPredictions.length > 0);
+          setHighlightedIndex(0);
+        }
+      );
     }, 200);
 
     return () => {
@@ -199,16 +202,16 @@ const LocationAutocomplete = ({
             onFocus={() => value.trim() && predictions.length > 0 && setIsOpen(true)}
             disabled={disabled}
             autoComplete="off"
-            className={`w-full h-12 bg-black/50 ${
-              hasError ? "border-b-2 border-[#ff4757]" : "border-b-2 border-white/20"
-            } focus:border-[#F7931A] text-white text-sm placeholder:text-white/30 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:shadow-[0_10px_20px_-10px_rgba(247,147,26,0.3)]`}
-            style={{ paddingLeft: "2.5rem", paddingRight: "1rem" }}
+            className={`w-full h-12 bg-black/30 ${
+              hasError ? "border border-[#ff4757]" : "border border-white/[0.10]"
+            } focus:border-white/30 text-white text-sm font-mono-data placeholder:text-white/30 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+            style={{ paddingLeft: "2.5rem", paddingRight: "1rem", borderRadius: "3px" }}
           />
         </div>
 
         {/* Loading spinner */}
         {isLoading && (
-          <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#F7931A] animate-spin pointer-events-none" />
+          <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50 animate-spin pointer-events-none" />
         )}
       </div>
 
@@ -216,7 +219,8 @@ const LocationAutocomplete = ({
       {isOpen && predictions.length > 0
         && createPortal(
           <div
-            className="fixed z-50 bg-[#0F1115] border border-white/10 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden"
+            className="fixed z-50 bg-[#0a0a0a] border border-white/[0.10] shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden"
+            style={{ borderRadius: "3px" }}
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
@@ -228,13 +232,13 @@ const LocationAutocomplete = ({
                 key={pred.placeId}
                 className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 border-l-2 ${
                   idx === highlightedIndex
-                    ? "bg-[#F7931A]/10 border-[#F7931A]"
-                    : "border-transparent hover:bg-[#F7931A]/10 hover:border-[#F7931A]"
+                    ? "bg-white/[0.08] border-white/40"
+                    : "border-transparent hover:bg-white/[0.05] hover:border-white/20"
                 }`}
                 onMouseEnter={() => setHighlightedIndex(idx)}
                 onClick={() => handleSelectPrediction(pred)}
               >
-                <MapPin className="h-3.5 w-3.5 text-[#F7931A]/50 flex-shrink-0" />
+                <MapPin className="h-3.5 w-3.5 text-white/30 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="text-white/80 text-sm font-mono truncate">{pred.mainText}</div>
                   {pred.secondaryText && (
