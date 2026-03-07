@@ -224,11 +224,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     setMapMarkers([]);
     setSearchCenter(selectedPlace ? { lat: selectedPlace.lat, lng: selectedPlace.lng } : null);
 
+    let creditsDeducted = false;
     try {
       // Deduct credits BEFORE running the search
       setStatus("Deducting credits…");
       try {
         await deductCredits(10);
+        creditsDeducted = true;
       } catch (creditError) {
         const creditMsg = creditError instanceof Error ? creditError.message : "Failed to deduct credits";
         throw new Error(creditMsg);
@@ -386,6 +388,25 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       setProgress(0);
       setSteps(STEPS_INIT);
       toast({ title: "Error", description: msg, variant: "destructive" });
+
+      // Refund credits if deducted but search failed
+      if (creditsDeducted && user?.id) {
+        try {
+          const { data: current } = await supabase
+            .from("user_credits")
+            .select("balance")
+            .eq("user_id", user.id)
+            .single();
+          if (current) {
+            await supabase
+              .from("user_credits")
+              .update({ balance: current.balance + 10, updated_at: new Date().toISOString() })
+              .eq("user_id", user.id);
+          }
+        } catch {
+          console.error("Failed to refund credits");
+        }
+      }
     } finally {
       setIsProcessing(false);
     }

@@ -14,11 +14,13 @@ import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-// Map of plan names to credit limits
+// Map of plan names to credit limits (for sidebar progress bar)
 const PLAN_CREDITS: Record<string, number> = {
-  free: 50,
-  starter: 200,
-  pro: 500,
+  free: 30,
+  demo: 30,
+  starter: 100,
+  growth: 300,
+  pro: 700,
 };
 
 const AppPage = () => {
@@ -52,7 +54,7 @@ const AppPage = () => {
       });
       refetchCredits();
       // Clean up URL
-      window.history.replaceState({}, '', '/app');
+      window.history.replaceState({}, '', window.location.pathname);
     }
 
     // If demo param exists, create a demo user session
@@ -256,7 +258,7 @@ const AppPage = () => {
             onNewSearch={handleNewSearch}
             onClearHistory={handleClearHistory}
             onViewAllLeads={handleViewAllLeads}
-            onBuyCredits={() => window.location.href = '/#pricing'}
+            onBuyCredits={() => window.location.href = 'https://globaleads22.com/#pricing'}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />

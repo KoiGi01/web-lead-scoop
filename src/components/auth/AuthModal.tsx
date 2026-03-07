@@ -49,7 +49,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                     email,
                     password,
                     options: {
-                        emailRedirectTo: `${window.location.origin}/app`,
+                        emailRedirectTo: window.location.hostname.startsWith("app.") ? window.location.origin : `${window.location.origin}/app`,
                     },
                 });
                 if (error) throw error;
@@ -75,7 +75,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: `${window.location.origin}/app`,
+                redirectTo: window.location.hostname.startsWith("app.") ? window.location.origin : `${window.location.origin}/app`,
             },
         });
         if (error) {
@@ -108,7 +108,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
             if (error) throw error;
 
             if (data.user) {
-                // Add 30 demo credits to user_credits table
+                // Add 30 demo credits to user_credits table (ignore if already exists)
                 const { error: creditsError } = await supabase
                     .from('user_credits')
                     .insert({
@@ -117,7 +117,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                         plan: 'demo',
                     });
 
-                if (creditsError) throw creditsError;
+                if (creditsError && creditsError.code !== '23505') throw creditsError;
 
                 setSuccess("Demo account created! Check your email to confirm. You have 30 credits for 1 search.");
                 setTimeout(() => {

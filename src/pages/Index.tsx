@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import NavBar from "@/components/landing/NavBar";
 import HeroSection from "@/components/landing/HeroSection";
@@ -12,22 +11,25 @@ import FaqSection from "@/components/landing/FaqSection";
 import FooterSection from "@/components/landing/FooterSection";
 
 const Index = () => {
-  const navigate = useNavigate();
   const [pendingBundle, setPendingBundle] = useState<string | null>(null);
+
+  const appUrl = window.location.hostname.startsWith("app.")
+    ? window.location.origin
+    : "https://app.globaleads22.com";
 
   const handlePricingClick = (bundleKey: string | null) => {
     if (bundleKey === "demo") {
-      navigate("/app?demo=true");
+      window.location.href = `${appUrl}?demo=true`;
     } else if (!bundleKey) {
-      navigate("/app");
+      window.location.href = appUrl;
     } else {
       setPendingBundle(bundleKey);
-      navigate(`/app?bundle=${bundleKey}`);
+      window.location.href = `${appUrl}?bundle=${bundleKey}`;
     }
   };
 
-  const goToApp = () => navigate("/app");
-  const openAuth = () => navigate("/app");
+  const goToApp = () => { window.location.href = appUrl; };
+  const openAuth = () => { window.location.href = appUrl; };
 
   return (
     <div className="min-h-screen" style={{ background: "#080808" }}>

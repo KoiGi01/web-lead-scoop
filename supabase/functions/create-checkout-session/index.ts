@@ -34,7 +34,7 @@ interface CheckoutRequest {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
 };
 
 const handleCors = (req: Request) => {
@@ -110,8 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
           quantity: 1,
         },
       ],
-      customer_creation: "always",
-      success_url: `${supabaseUrl.replace("/rest/v1", "")}/app?checkout=success`,
+      success_url: "https://app.globaleads22.com/?checkout=success",
       cancel_url: "https://globaleads22.com/#pricing",
       metadata: {
         user_id: userId,
@@ -120,11 +119,12 @@ const handler = async (req: Request): Promise<Response> => {
       },
     };
 
-    // Use existing customer if available, otherwise use email
+    // Use existing customer if available, otherwise create one
     if (existingCustomerId) {
       checkoutData.customer = existingCustomerId;
     } else {
       checkoutData.customer_email = authUser.user.email;
+      checkoutData.customer_creation = "always";
     }
 
     const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {

@@ -4,14 +4,15 @@ import { Check, ArrowRight } from "lucide-react";
 const plans = [
   {
     key: "demo",
-    code: "TIER_00",
+    code: "PACK_00",
     name: "DEMO",
     price: "FREE",
-    description: "No card needed.",
+    period: null,
+    description: "Try before you buy.",
     badge: null,
     features: [
-      "30 demo credits",
-      "1 search included",
+      "30 credits included",
+      "1 search",
       "Up to 60 leads",
       "Email + phone extraction",
       "Excel export",
@@ -21,42 +22,61 @@ const plans = [
   },
   {
     key: "starter",
-    code: "TIER_01",
-    name: "STARTER",
-    price: "$19",
-    period: "/MO",
-    description: "For solo operators.",
+    code: "PACK_01",
+    name: "STARTER PACK",
+    price: "$9",
+    period: "ONE-TIME",
+    description: "100 credits — ~10 searches.",
     badge: null,
     features: [
-      "500 credits / month",
-      "40 searches / month",
-      "Up to 2,400 leads",
+      "100 credits",
+      "~10 searches",
+      "Up to 600 leads",
       "Email + phone + WhatsApp",
       "Excel export",
-      "Smart sorting",
+      "Credits never expire",
     ],
-    cta: "GET STARTED",
+    cta: "GET STARTER — $9",
     primary: false,
   },
   {
-    key: "pro",
-    code: "TIER_02",
-    name: "PROFESSIONAL",
-    price: "$49",
-    period: "/MO",
-    description: "For agencies at scale.",
-    badge: "MOST POPULAR",
+    key: "growth",
+    code: "PACK_02",
+    name: "GROWTH PACK",
+    price: "$19",
+    period: "ONE-TIME",
+    description: "300 credits — ~30 searches.",
+    badge: "BEST VALUE",
     features: [
-      "1,500 credits / month",
-      "150 searches / month",
-      "Up to 9,000 leads",
+      "300 credits",
+      "~30 searches",
+      "Up to 1,800 leads",
       "Everything in Starter",
       "AI lead scoring",
       "Opportunity insights",
-      "Priority support",
+      "Credits never expire",
     ],
-    cta: "GET PROFESSIONAL",
+    cta: "GET GROWTH — $19",
     primary: true,
+  },
+  {
+    key: "pro",
+    code: "PACK_03",
+    name: "PRO PACK",
+    price: "$39",
+    period: "ONE-TIME",
+    description: "700 credits — ~70 searches.",
+    badge: null,
+    features: [
+      "700 credits",
+      "~70 searches",
+      "Up to 4,200 leads",
+      "Everything in Growth",
+      "Priority support",
+      "Credits never expire",
+    ],
+    cta: "GET PRO — $39",
+    primary: false,
   },
 ];
 
@@ -94,11 +114,11 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
             </h2>
           </div>
           <div className="hidden md:block label-mono text-white/20 text-right">
-            03 TIERS<br />AVAILABLE
+            04 PACKS<br />AVAILABLE
           </div>
         </div>
 
-        <div ref={ref} className="grid gap-0 md:grid-cols-3">
+        <div ref={ref} className="grid gap-0 md:grid-cols-4">
           {plans.map((plan, idx) => (
             <div
               key={plan.key}
@@ -171,7 +191,7 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
           ))}
         </div>
 
-        <p className="label-mono text-white/18 text-center mt-8">NO HIDDEN FEES · 7-DAY MONEY-BACK ON PAID PLANS</p>
+        <p className="label-mono text-white/18 text-center mt-8">ONE-TIME PURCHASE · CREDITS NEVER EXPIRE · NO SUBSCRIPTIONS</p>
       </div>
     </section>
   );

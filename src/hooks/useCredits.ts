@@ -31,8 +31,33 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
         .single();
 
       if (error) {
-        console.error("Error fetching credits:", error);
-        setCredits(null);
+        // PGRST116 = row not found — auto-provision free credits for new users
+        if (error.code === "PGRST116") {
+          const { data: newRow, error: insertError } = await supabase
+            .from("user_credits")
+            .insert({ user_id: userId, balance: 30, plan: "free" })
+            .select()
+            .single();
+
+          if (insertError) {
+            // Another request may have inserted concurrently — retry fetch
+            if (insertError.code === "23505") {
+              const { data: retryData } = await supabase
+                .from("user_credits")
+                .select("*")
+                .eq("user_id", userId)
+                .single();
+              if (retryData) setCredits(retryData);
+            } else {
+              console.error("Error provisioning credits:", insertError);
+            }
+          } else if (newRow) {
+            setCredits(newRow);
+          }
+        } else {
+          console.error("Error fetching credits:", error);
+          setCredits(null);
+        }
       } else if (data) {
         setCredits(data);
       }
