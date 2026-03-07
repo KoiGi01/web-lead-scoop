@@ -1,5 +1,5 @@
+import { useEffect, useRef, useState } from "react";
 import { Check, ArrowRight } from "lucide-react";
-import { useState } from "react";
 
 const plans = [
   {
@@ -66,6 +66,14 @@ interface PricingSectionProps {
 
 const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
   const [loading, setLoading] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
 
   const handleClick = (key: string) => {
     setLoading(key);
@@ -74,12 +82,14 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
   };
 
   return (
-    <section id="pricing" className="py-24 sm:py-32 border-t border-white/[0.04]">
+    <section id="pricing" className="py-24 sm:py-32 border-t border-white/[0.04]" style={{ background: "#050505" }}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-16 flex items-end justify-between border-b border-white/[0.06] pb-8">
+
+        <div className={`mb-16 flex items-end justify-between border-b border-white/[0.06] pb-8 ${visible ? "animate-section-in" : "opacity-0"}`}>
           <div>
             <div className="label-mono mb-3 text-white/25">// PRICING MATRIX</div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight"
+              style={{ fontFamily: "'Space Mono', monospace" }}>
               START FREE.<br />SCALE WHEN READY.
             </h2>
           </div>
@@ -88,18 +98,33 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
           </div>
         </div>
 
-        <div className="grid gap-0 md:grid-cols-3 border border-white/[0.06]">
+        <div ref={ref} className="grid gap-0 md:grid-cols-3">
           {plans.map((plan, idx) => (
             <div
               key={plan.key}
-              className={`relative flex flex-col p-7 animate-fade-in-up hover:bg-white/[0.015] transition-colors ${
-                plan.primary ? "bg-white/[0.02]" : ""
-              } ${idx < plans.length - 1 ? "border-b md:border-b-0 md:border-r border-white/[0.06]" : ""}`}
-              style={{ animationDelay: `${idx * 80}ms` }}
+              className={`relative flex flex-col p-7 transition-all duration-200
+                ${visible ? "animate-fade-in-up" : "opacity-0"}
+                ${plan.primary
+                  ? "border border-white/50 bg-white/[0.03]"
+                  : "border border-white/[0.08] bg-transparent hover:bg-white/[0.02]"
+                }
+                ${idx === 1 ? "-mx-px" : ""}
+              `}
+              style={{
+                animationDelay: `${idx * 90}ms`,
+                borderRadius: "4px",
+                ...(plan.primary ? { boxShadow: "0 0 40px rgba(255,255,255,0.05), 0 0 0 1px rgba(255,255,255,0.12)" } : {}),
+              }}
             >
+              {/* MOST POPULAR badge */}
               {plan.badge && (
-                <div className="absolute top-4 right-4">
-                  <span className="label-mono text-white/90 bg-white/10 px-2 py-0.5 border border-white/20">{plan.badge}</span>
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span
+                    className="font-mono-data text-[9px] font-bold tracking-widest bg-white text-[#080808] px-3 py-1"
+                    style={{ borderRadius: "2px" }}
+                  >
+                    {plan.badge}
+                  </span>
                 </div>
               )}
 
@@ -108,9 +133,12 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
                   <span className="label-mono text-white/20">{plan.code}</span>
                 </div>
                 <h3 className="font-mono-data text-xs font-bold text-white/80 tracking-widest mb-1">{plan.name}</h3>
-                <p className="label-mono text-white/30 mb-5">{plan.description}</p>
+                <p className="font-body text-[13px] text-white/30 mb-5">{plan.description}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>{plan.price}</span>
+                  <span className="font-black text-white tracking-tight"
+                    style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(36px, 4vw, 48px)" }}>
+                    {plan.price}
+                  </span>
                   {plan.period && <span className="label-mono text-white/35 ml-1">{plan.period}</span>}
                 </div>
               </div>
@@ -118,21 +146,23 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
               <button
                 onClick={() => handleClick(plan.key)}
                 disabled={loading === plan.key}
-                className={`w-full py-3 mb-6 font-mono-data text-[10px] font-bold tracking-widest flex items-center justify-center gap-2 transition-all group ${
-                  plan.primary
-                    ? "btn-btc"
+                className={`w-full py-3.5 mb-6 font-mono-data text-[10px] font-bold tracking-widest flex items-center justify-center gap-2 transition-all duration-150 group
+                  ${plan.primary
+                    ? "bg-white text-[#080808] hover:bg-white/90"
                     : "border border-white/15 text-white/50 hover:border-white/35 hover:text-white/80"
-                }`}
+                  }`}
                 style={{ borderRadius: "3px" }}
               >
                 {loading === plan.key ? "PROCESSING..." : plan.cta}
-                {loading !== plan.key && <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />}
+                {loading !== plan.key && (
+                  <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                )}
               </button>
 
-              <ul className="space-y-2.5 border-t border-white/[0.05] pt-5 flex-1">
+              <ul className="space-y-3 border-t border-white/[0.06] pt-5 flex-1">
                 {plan.features.map((f, i) => (
-                  <li key={i} className="flex items-center gap-2 font-mono-data text-[11px] text-white/35">
-                    <Check className="h-3 w-3 flex-shrink-0 text-white/30" />
+                  <li key={i} className="flex items-start gap-2.5 font-body text-[13px] text-white/35">
+                    <Check className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-white/40" />
                     {f}
                   </li>
                 ))}
@@ -141,7 +171,7 @@ const PricingSection = ({ onGetStarted }: PricingSectionProps) => {
           ))}
         </div>
 
-        <p className="label-mono text-white/20 text-center mt-6">NO HIDDEN FEES · 7-DAY MONEY-BACK ON PAID PLANS</p>
+        <p className="label-mono text-white/18 text-center mt-8">NO HIDDEN FEES · 7-DAY MONEY-BACK ON PAID PLANS</p>
       </div>
     </section>
   );

@@ -1,26 +1,51 @@
 import { Mail, Twitter, Linkedin, ArrowRight } from "lucide-react";
 
+const marqueeItems = [
+  "TRUSTED BY SALES TEAMS IN 47 COUNTRIES",
+  "34,000+ LEADS GENERATED",
+  "NO CREDIT CARD REQUIRED",
+  "EXTRACT EMAILS · PHONES · WHATSAPP",
+  "EXPORT TO EXCEL IN ONE CLICK",
+  "GLOBAL COVERAGE · 47 COUNTRIES",
+];
+
 const FooterSection = () => (
   <footer className="border-t border-white/[0.06]" style={{ background: "#080808" }}>
 
     {/* CTA Banner */}
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16">
-      <div className="border border-white/[0.08] px-8 sm:px-16 py-12 text-center relative overflow-hidden" style={{ borderRadius: "4px" }}>
-        {/* Subtle glow */}
-        <div className="absolute inset-0 pointer-events-none opacity-20"
-          style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.15) 0%, transparent 60%)" }}
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-16 pb-8">
+      <div className="border border-white/[0.08] px-8 sm:px-16 py-14 text-center relative overflow-hidden"
+        style={{ borderRadius: "4px" }}>
+        {/* Subtle radial glow */}
+        <div className="absolute inset-0 pointer-events-none opacity-15"
+          style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.2) 0%, transparent 65%)" }}
         />
         <div className="relative">
           <div className="label-mono text-white/25 mb-4">// EXECUTE ORDER</div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mb-3 tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <h2
+            className="font-black text-white mb-3 tracking-tight"
+            style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 4.5vw, 52px)" }}
+          >
             READY TO FIND YOUR<br />NEXT 1,000 LEADS?
           </h2>
-          <p className="label-mono text-white/30 mb-8">
-            START WITH 30 FREE CREDITS. NO CREDIT CARD REQUIRED.
+          <p className="font-body text-white/35 text-[15px] mb-8">
+            Start with 30 free credits. No credit card required.
           </p>
+
+          {/* Marquee ticker above button */}
+          <div className="mb-8 overflow-hidden border-y border-white/[0.06] py-2.5">
+            <div className="flex gap-0 animate-marquee whitespace-nowrap">
+              {[...marqueeItems, ...marqueeItems].map((item, i) => (
+                <span key={i} className="label-mono text-white/25 px-6">
+                  · {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <a
             href="/app?demo=true"
-            className="inline-flex items-center gap-2 btn-btc px-8 py-3.5 text-[11px] group"
+            className="inline-flex items-center gap-2 btn-btc btn-btc-pulse px-10 py-4 text-[11px] group"
           >
             START FREE — 30 CREDITS
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
@@ -30,15 +55,18 @@ const FooterSection = () => (
     </div>
 
     {/* Footer links */}
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 pb-12 border-t border-white/[0.04]">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pb-6 border-t border-white/[0.04] mt-8">
       <div className="grid gap-10 md:grid-cols-4 py-12">
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <span className="font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace", fontSize: "13px" }}>
-              GLOBALEADS<span className="inline-flex items-center justify-center bg-white text-[#080808] ml-1 px-1" style={{ borderRadius: "2px", fontSize: "11px" }}>22</span>
+            <span className="font-black text-white tracking-tight"
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: "13px" }}>
+              GLOBALEADS
+              <span className="inline-flex items-center justify-center bg-white text-[#080808] ml-1 px-1"
+                style={{ borderRadius: "2px", fontSize: "10px" }}>22</span>
             </span>
           </div>
-          <p className="font-mono-data text-[11px] text-white/25 leading-relaxed">
+          <p className="font-body text-[13px] text-white/25 leading-relaxed">
             Find, extract, and organize qualified leads worldwide in minutes.
           </p>
         </div>
@@ -49,7 +77,7 @@ const FooterSection = () => (
             {["Features", "How It Works", "Pricing", "FAQ"].map((item) => (
               <li key={item}>
                 <a href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-                  className="font-mono-data text-[11px] text-white/25 hover:text-white/60 transition-colors">
+                  className="font-body text-[13px] text-white/30 hover:text-white/80 transition-colors duration-150">
                   {item}
                 </a>
               </li>
@@ -65,7 +93,8 @@ const FooterSection = () => (
               { label: "Terms of Service", href: "/terms" },
             ].map((link) => (
               <li key={link.label}>
-                <a href={link.href} className="font-mono-data text-[11px] text-white/25 hover:text-white/60 transition-colors">
+                <a href={link.href}
+                  className="font-body text-[13px] text-white/30 hover:text-white/80 transition-colors duration-150">
                   {link.label}
                 </a>
               </li>
@@ -82,9 +111,8 @@ const FooterSection = () => (
               { icon: Linkedin, href: "#", label: "LinkedIn" },
             ].map(({ icon: Icon, href, label }) => (
               <a key={label} href={href}
-                className="flex h-8 w-8 items-center justify-center border border-white/10 text-white/30 hover:text-white/70 hover:border-white/30 transition-colors"
-                style={{ borderRadius: "2px" }}
-              >
+                className="flex h-8 w-8 items-center justify-center border border-white/10 text-white/30 hover:text-white/80 hover:border-white/35 transition-all duration-150"
+                style={{ borderRadius: "2px" }}>
                 <Icon className="h-3.5 w-3.5" />
               </a>
             ))}
@@ -92,9 +120,20 @@ const FooterSection = () => (
         </div>
       </div>
 
-      <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p className="label-mono text-white/20">© 2024 GLOBALEADS22. ALL RIGHTS RESERVED.</p>
-        <p className="label-mono text-white/20">TRUSTED BY SALES TEAMS IN 47 COUNTRIES.</p>
+      {/* Bottom scrolling marquee strip */}
+      <div className="border-t border-white/[0.04] pt-4 pb-2 overflow-hidden">
+        <div className="flex animate-marquee whitespace-nowrap" style={{ animationDuration: "35s" }}>
+          {[...Array(4)].map((_, i) => (
+            <span key={i} className="label-mono text-white/[0.15] px-6">
+              GLOBALEADS22 · V2.4.1 · AI LEAD INTELLIGENCE ACTIVE · SYSTEM ONLINE · EXTRACT · ORGANIZE · OUTREACH ·
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-white/[0.04] pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p className="label-mono text-white/[0.18]">© 2024 GLOBALEADS22. ALL RIGHTS RESERVED.</p>
+        <p className="label-mono text-white/[0.18]">TRUSTED BY SALES TEAMS IN 47 COUNTRIES.</p>
       </div>
     </div>
   </footer>

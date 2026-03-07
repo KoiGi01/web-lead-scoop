@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Plus, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const faqs = [
   {
@@ -30,43 +29,71 @@ const faqs = [
 
 const FaqSection = () => {
   const [open, setOpen] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold: 0.08 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <section id="faq" className="py-24 sm:py-32 border-t border-white/[0.04]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-16 border-b border-white/[0.06] pb-8">
+    <section id="faq" className="py-24 sm:py-32 border-t border-white/[0.04]" style={{ background: "#050505" }}>
+      {/* Subtle scanline overlay */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+
+        <div className={`mb-16 border-b border-white/[0.06] pb-8 ${visible ? "animate-section-in" : "opacity-0"}`}>
           <div className="label-mono mb-3 text-white/25">// SYSTEM FAQ</div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight"
+            style={{ fontFamily: "'Space Mono', monospace" }}>
             COMMON<br />QUESTIONS
           </h2>
         </div>
 
-        <div className="max-w-2xl">
+        <div ref={ref} className="max-w-2xl">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="border-b border-white/[0.06] last:border-b-0"
+              className={`border-b border-white/[0.06] last:border-b-0 ${visible ? "animate-fade-in-up" : "opacity-0"}`}
+              style={{ animationDelay: `${idx * 60}ms` }}
             >
               <button
                 onClick={() => setOpen(open === idx ? null : idx)}
-                className="w-full flex items-center justify-between gap-4 py-5 text-left hover:bg-white/[0.015] px-2 -mx-2 transition-colors"
+                className="w-full flex items-start justify-between gap-4 py-5 text-left group"
               >
-                <span className="font-mono-data text-[11px] font-bold text-white/60 tracking-wide">{faq.q}</span>
-                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center border border-white/10">
-                  {open === idx
-                    ? <Minus className="h-3 w-3 text-white/40" />
-                    : <Plus className="h-3 w-3 text-white/40" />
-                  }
+                <div className="font-mono-data text-[11px] text-white/55 group-hover:text-white/80 transition-colors leading-relaxed">
+                  <span className="text-white/25 mr-2">&gt;</span>
+                  <span className="text-white/30 mr-1">Q:</span>
+                  {faq.q}
+                  {open !== idx && (
+                    <span className="animate-blink text-white/40 ml-0.5">|</span>
+                  )}
+                </div>
+                <span className="flex-shrink-0 flex h-5 w-5 items-center justify-center border border-white/10 mt-0.5 group-hover:border-white/25 transition-colors"
+                  style={{ borderRadius: "2px" }}>
+                  <span className="font-mono-data text-[10px] text-white/35">
+                    {open === idx ? "−" : "+"}
+                  </span>
                 </span>
               </button>
+
               {open === idx && (
-                <div className="pb-5 px-2 -mx-2">
-                  <p className="font-mono-data text-[11px] text-white/30 leading-relaxed">{faq.a}</p>
+                <div className="pb-5 pl-5 animate-fade-in-up">
+                  <div className="flex gap-2">
+                    <span className="font-mono-data text-[11px] text-white/25 flex-shrink-0">A:</span>
+                    <p className="font-mono-data text-[11px] text-white/40 leading-relaxed">{faq.a}</p>
+                  </div>
                 </div>
               )}
             </div>
           ))}
         </div>
+
       </div>
     </section>
   );
