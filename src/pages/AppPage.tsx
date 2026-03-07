@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { LogOut } from "lucide-react";
-import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -182,64 +182,72 @@ const AppPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#030304] flex flex-col">
+    <div className="min-h-screen flex flex-col relative" style={{ background: "#080808" }}>
+      {/* Dot-matrix ambient background */}
+      <div className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+        }}
+      />
+      {/* Scanline overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)",
+        }}
+      />
 
       {/* ── App Header ── */}
       <header
-        className="sticky top-0 z-50 border-b border-white/10 bg-[#0F1115]/95 backdrop-blur-md"
+        className="sticky top-0 z-50 border-b border-white/[0.06]"
+        style={{ background: "rgba(8,8,8,0.95)", backdropFilter: "blur(12px)" }}
       >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
 
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10"
-              style={{ boxShadow: "0 0 12px rgba(247,147,26,0.2)" }}
+          {/* Logo — dot-matrix style matching landing page */}
+          <div className="flex items-center gap-4">
+            <span
+              className="font-black text-white tracking-tight inline-flex items-center gap-0.5"
+              style={{ fontFamily: "'Space Mono', monospace", fontSize: "14px" }}
             >
-              <GlobaLeadsLogo className="h-6 w-6 text-[#F7931A]" size={28} />
-            </div>
-            <span className="font-heading font-bold text-white tracking-tight">
-              GlobaLeads<span className="text-[#F7931A]">22</span>
+              GLOBALEADS
+              <span
+                className="bg-white text-[#080808] font-black inline-flex items-center justify-center"
+                style={{ fontSize: "11px", padding: "2px 6px", borderRadius: "2px", lineHeight: 1 }}
+              >
+                22
+              </span>
             </span>
             {/* System status */}
-            <div className="hidden sm:flex items-center gap-1.5 ml-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-50" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
               </span>
-              <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-emerald-400">
-                Online
-              </span>
+              <span className="label-mono">SYSTEM ONLINE</span>
             </div>
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {user ? (
               <>
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white bg-gradient-to-br from-[#F7931A] to-[#EA580C]"
-                  style={{ boxShadow: "0 0 12px rgba(247,147,26,0.3)" }}
-                >
-                  {user.email?.[0]?.toUpperCase() ?? "U"}
-                </div>
-                <span className="hidden font-mono text-xs text-[#94A3B8] sm:block max-w-[180px] truncate">
+                <span className="hidden sm:block label-mono text-white/50 max-w-[200px] truncate">
                   {user.email}
                 </span>
                 <button
                   onClick={signOut}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] hover:text-[#F7931A] transition-colors"
+                  className="flex items-center gap-1.5 label-mono text-white/40 hover:text-white/80 transition-colors"
                 >
-                  <LogOut className="h-3 w-3" />
-                  <span className="hidden sm:inline">Sign Out</span>
+                  <LogOut className="h-3 w-3" /> SIGN OUT
                 </button>
               </>
             ) : (
               <button
-                className="btn-btc px-5 py-2.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-widest text-white"
+                className="btn-btc px-5 py-2.5 text-[11px]"
                 onClick={() => setAuthOpen(true)}
               >
-                Sign In / Sign Up
+                SIGN IN
               </button>
             )}
           </div>

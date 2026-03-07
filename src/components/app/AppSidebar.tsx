@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Search, BarChart3, Clock, Trash2, Plus, Mail, Phone, Globe,
+  Search, Clock, Trash2, Plus, Mail, Phone, Globe,
   ChevronLeft, ChevronRight, Zap, ArrowUpRight, Archive,
 } from "lucide-react";
 import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
@@ -53,48 +53,41 @@ const AppSidebar = ({
     return `${Math.floor(diffHr / 24)}d ago`;
   };
 
-  /* ── Sidebar Container with smooth width transition ── */
   return (
     <aside
-      className={`hidden md:flex flex-col flex-shrink-0 overflow-hidden border-r border-white/10 bg-[#0F1115] transition-all duration-300 ease-in-out ${
+      className={`hidden md:flex flex-col flex-shrink-0 overflow-hidden border-r border-white/[0.06] transition-all duration-300 ease-in-out relative ${
         collapsed ? "w-20" : "w-72"
       }`}
+      style={{ background: "#0a0a0a" }}
     >
-      {/* ═══ HEADER (always visible, consistent height) ═══ */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 h-14 flex-shrink-0">
+      {/* Scanline texture */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)",
+        }}
+      />
+
+      {/* ═══ HEADER ═══ */}
+      <div className="relative flex items-center justify-between px-4 py-3 border-b border-white/[0.06] h-14 flex-shrink-0">
         {!collapsed && (
-          <div className="flex items-center gap-2 min-w-0">
-            <div
-              className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#EA580C] to-[#F7931A] flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
-              style={{ boxShadow: "0 0 12px rgba(247,147,26,0.3)" }}
-            >
-              GL
-            </div>
-            <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-white truncate">
-              GlobaLeads
-            </span>
-          </div>
+          <span className="label-mono text-white/20">// PANEL</span>
         )}
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white transition-colors border border-white/10 hover:border-[#F7931A]/50 flex-shrink-0"
+          className="p-1.5 text-white/30 hover:text-white/80 transition-colors flex-shrink-0"
           title={collapsed ? "Expand" : "Collapse"}
         >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </div>
 
-      {/* ═══ NEW SEARCH BUTTON (always visible, consistent) ═══ */}
-      <div className="px-3 py-2 flex-shrink-0">
+      {/* ═══ NEW SEARCH BUTTON ═══ */}
+      <div className="relative px-3 py-3 flex-shrink-0">
         {collapsed ? (
           <button
             onClick={onNewSearch}
-            className="w-full p-2.5 rounded-lg text-white bg-gradient-to-r from-[#EA580C] to-[#F7931A] transition-all hover:shadow-lg flex items-center justify-center"
-            style={{ boxShadow: "0 0 16px rgba(247,147,26,0.3)" }}
+            className="w-full p-2.5 text-white/80 hover:text-white border border-white/[0.12] hover:border-white/30 transition-all flex items-center justify-center"
+            style={{ borderRadius: "3px" }}
             title="New Search"
           >
             <Plus className="h-5 w-5" />
@@ -102,100 +95,91 @@ const AppSidebar = ({
         ) : (
           <button
             onClick={onNewSearch}
-            className="btn-btc w-full flex items-center justify-center gap-2 rounded-lg py-2.5 font-mono text-[11px] font-bold uppercase tracking-widest text-white"
+            className="btn-btc w-full flex items-center justify-center gap-2 py-2.5 text-[11px]"
           >
-            <Plus className="h-4 w-4" /> New Search
+            <Plus className="h-4 w-4" /> NEW SEARCH
           </button>
         )}
       </div>
 
-      {/* ═══ NAVIGATION TABS (hidden when collapsed) ═══ */}
+      {/* ═══ NAVIGATION TABS ═══ */}
       {!collapsed && (
-        <div className="px-4 pt-2 border-b border-white/10 flex-shrink-0">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`flex-1 px-3 py-2.5 rounded-t-lg font-mono text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${
-                activeTab === "history"
-                  ? "text-white border-[#F7931A] bg-white/5"
-                  : "text-[#94A3B8] border-transparent hover:text-white"
-              }`}
-            >
-              <Clock className="h-3 w-3 inline mr-1" /> History
-            </button>
-            <button
-              onClick={() => setActiveTab("leads")}
-              className={`flex-1 px-3 py-2.5 rounded-t-lg font-mono text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${
-                activeTab === "leads"
-                  ? "text-white border-[#F7931A] bg-white/5"
-                  : "text-[#94A3B8] border-transparent hover:text-white"
-              }`}
-            >
-              <Archive className="h-3 w-3 inline mr-1" /> All Leads
-            </button>
+        <div className="relative px-4 pt-1 border-b border-white/[0.06] flex-shrink-0">
+          <div className="flex">
+            {([
+              { key: "history" as NavTab, label: "HISTORY", icon: Clock },
+              { key: "leads" as NavTab, label: "ALL LEADS", icon: Archive },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 px-3 py-3 font-mono-data text-[9px] font-bold uppercase tracking-[0.15em] transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+                  activeTab === tab.key
+                    ? "text-white border-white"
+                    : "text-white/25 border-transparent hover:text-white/50"
+                }`}
+              >
+                <tab.icon className="h-3 w-3" /> {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ═══ CONTENT AREA (scrollable, flex-1) ═══ */}
+      {/* ═══ CONTENT AREA ═══ */}
       {!collapsed && (
-        <div className="flex-1 overflow-hidden flex flex-col px-4 pt-3">
-          {/* History Tab */}
+        <div className="relative flex-1 overflow-hidden flex flex-col px-4 pt-3">
           {activeTab === "history" && (
             <>
-              {/* Section header */}
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
-                <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8]">
-                  Recent Searches
-                </p>
+                <span className="label-mono text-white/20">// RECENT</span>
                 {history.length > 0 && (
                   <button
                     onClick={onClearHistory}
-                    className="font-mono text-[9px] text-[#94A3B8] hover:text-[#F7931A] transition-colors flex items-center gap-1 uppercase tracking-wider"
+                    className="label-mono text-white/20 hover:text-white/60 transition-colors flex items-center gap-1"
                   >
-                    <Trash2 className="h-2.5 w-2.5" /> Clear
+                    <Trash2 className="h-2.5 w-2.5" /> CLEAR
                   </button>
                 )}
               </div>
 
-              {/* History items scroll area */}
               <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1.5">
                 {history.length === 0 && (
                   <div className="py-12 text-center flex flex-col items-center justify-center">
-                    <div
-                      className="mx-auto mb-3 h-14 w-14 rounded-full flex items-center justify-center border border-white/10 bg-white/5"
-                    >
-                      <Search className="h-6 w-6 text-[#94A3B8]" />
+                    <div className="mx-auto mb-3 h-14 w-14 flex items-center justify-center border border-white/[0.06]"
+                      style={{ borderRadius: "3px" }}>
+                      <Search className="h-6 w-6 text-white/15" />
                     </div>
-                    <p className="font-mono text-[10px] text-[#94A3B8] uppercase tracking-wider">No searches yet</p>
-                    <p className="font-mono text-[9px] text-[#94A3B8]/50 mt-1 uppercase tracking-wider">Run a search to see history</p>
+                    <p className="label-mono text-white/20">NO SEARCHES YET</p>
+                    <p className="label-mono text-white/10 mt-1">RUN A SEARCH TO BEGIN</p>
                   </div>
                 )}
                 {history.map((entry) => (
                   <button
                     key={entry.id}
                     onClick={() => onSelectEntry(entry)}
-                    className="w-full text-left rounded-lg px-3 py-2.5 transition-all bg-[#030304] border border-white/10 hover:border-[#F7931A]/50 hover:bg-[#F7931A]/5 group active:translate-y-px"
+                    className="w-full text-left px-3 py-2.5 transition-all border border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.02] group active:translate-y-px"
+                    style={{ borderRadius: "3px" }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-mono text-[11px] font-bold text-white truncate group-hover:text-[#F7931A] transition-colors">
+                        <p className="font-mono-data text-[11px] font-bold text-white/80 truncate group-hover:text-white transition-colors">
                           {entry.keyword}
                         </p>
-                        <p className="font-mono text-[9px] text-[#94A3B8] truncate uppercase tracking-wider">{entry.location}</p>
+                        <p className="label-mono text-white/20 truncate">{entry.location}</p>
                       </div>
-                      <span className="flex-shrink-0 font-mono text-[10px] font-bold text-[#F7931A]">
+                      <span className="flex-shrink-0 font-mono-data text-[11px] font-bold text-white/50">
                         {entry.leadCount}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5 font-mono text-[8px] text-[#94A3B8] uppercase tracking-wider">
-                      <span className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="label-mono text-white/15 flex items-center gap-0.5">
                         <Mail className="h-2 w-2" /> {entry.emailCount}
                       </span>
-                      <span className="flex items-center gap-0.5">
+                      <span className="label-mono text-white/15 flex items-center gap-0.5">
                         <Phone className="h-2 w-2" /> {entry.whatsappCount}
                       </span>
-                      <span className="ml-auto text-[9px]">{formatTime(entry.timestamp)}</span>
+                      <span className="label-mono text-white/15 ml-auto">{formatTime(entry.timestamp)}</span>
                     </div>
                   </button>
                 ))}
@@ -203,79 +187,77 @@ const AppSidebar = ({
             </>
           )}
 
-          {/* All Leads Tab */}
           {activeTab === "leads" && (
             <>
-              {/* Stats Grid */}
-              <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8] mb-2.5 flex-shrink-0">
-                Lifetime Stats
-              </p>
+              <span className="label-mono text-white/20 mb-3 flex-shrink-0">// LIFETIME STATS</span>
               <div className="grid grid-cols-2 gap-2 mb-4 flex-shrink-0">
                 {[
-                  { label: "Searches", value: totalSearches, icon: Search },
-                  { label: "Leads",    value: totalLeads,    icon: Globe },
-                  { label: "Emails",   value: totalEmails,   icon: Mail },
-                  { label: "WhatsApp", value: totalWhatsapp, icon: Phone },
+                  { label: "SEARCHES", value: totalSearches, icon: Search },
+                  { label: "LEADS",    value: totalLeads,    icon: Globe },
+                  { label: "EMAILS",   value: totalEmails,   icon: Mail },
+                  { label: "WHATSAPP", value: totalWhatsapp, icon: Phone },
                 ].map(({ label, value, icon: Icon }) => (
                   <div
                     key={label}
-                    className="rounded-lg px-3 py-3 text-center bg-[#030304] border border-white/10 hover:border-[#F7931A]/30 transition-all"
+                    className="px-3 py-3 text-center border border-white/[0.06] hover:border-white/[0.12] transition-all"
+                    style={{ borderRadius: "3px" }}
                   >
-                    <p className="font-mono text-base font-bold text-[#F7931A]">{value}</p>
-                    <p className="font-mono text-[8px] text-[#94A3B8] flex items-center justify-center gap-1 mt-1 uppercase tracking-wider">
+                    <p className="font-black text-white/80 tabular-nums"
+                      style={{ fontFamily: "'Space Mono', monospace", fontSize: "18px" }}>{value}</p>
+                    <p className="label-mono text-white/20 flex items-center justify-center gap-1 mt-1">
                       <Icon className="h-2.5 w-2.5" /> {label}
                     </p>
                   </div>
                 ))}
               </div>
 
-              {/* View All Leads Button */}
               <button
                 onClick={onViewAllLeads}
-                className="btn-btc w-full flex items-center justify-center gap-2 rounded-lg py-2.5 font-mono text-[11px] font-bold uppercase tracking-widest text-white mt-auto mb-4 flex-shrink-0"
+                className="btn-btc w-full flex items-center justify-center gap-2 py-2.5 text-[11px] mt-auto mb-4 flex-shrink-0"
               >
-                <Archive className="h-4 w-4" /> View All Leads
+                <Archive className="h-4 w-4" /> VIEW ALL LEADS
               </button>
             </>
           )}
         </div>
       )}
 
-      {/* ═══ CREDITS BAR (always visible at bottom) ═══ */}
-      <div className="border-t border-white/10 px-4 py-4 flex-shrink-0">
+      {/* ═══ CREDITS BAR ═══ */}
+      <div className="relative border-t border-white/[0.06] px-4 py-4 flex-shrink-0">
         {collapsed ? (
-          // Collapsed credits display
           <div className="flex flex-col items-center gap-1.5">
-            <Zap className="h-4 w-4 text-[#F7931A]" />
-            <span className="font-mono text-[10px] font-bold text-[#F7931A]">{creditsRemaining}</span>
+            <Zap className="h-4 w-4 text-white/40" />
+            <span className="font-mono-data text-[10px] font-bold text-white/60 tabular-nums">{creditsRemaining}</span>
           </div>
         ) : (
-          // Expanded credits display
           <>
             <div className="flex items-center justify-between mb-2.5">
-              <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#94A3B8]">Credits</span>
+              <span className="label-mono text-white/20">// CREDITS</span>
               <button
                 onClick={onBuyCredits}
-                className="font-mono text-[9px] font-bold text-[#F7931A] hover:underline flex items-center gap-0.5 uppercase tracking-wider hover:text-[#EA580C] transition-colors"
+                className="label-mono text-white/35 hover:text-white/70 flex items-center gap-0.5 transition-colors"
               >
-                Buy <ArrowUpRight className="h-3 w-3" />
+                BUY MORE <ArrowUpRight className="h-3 w-3" />
               </button>
             </div>
             <div className="flex items-baseline gap-1.5 mb-2.5">
-              <span className="font-mono text-2xl font-bold text-[#F7931A]">
+              <span className="font-black text-white/90 tabular-nums"
+                style={{ fontFamily: "'Space Mono', monospace", fontSize: "28px" }}>
                 {creditsRemaining}
               </span>
-              <span className="font-mono text-sm text-[#94A3B8]">/ {creditsTotal}</span>
+              <span className="label-mono text-white/20">/ {creditsTotal}</span>
             </div>
-            {/* Progress bar */}
-            <div className="h-2 rounded-full overflow-hidden bg-[#030304] border border-white/10">
+            <div className="h-1.5 overflow-hidden bg-white/[0.06]" style={{ borderRadius: "1px" }}>
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#EA580C] to-[#F7931A] transition-all duration-500"
-                style={{ width: `${creditPercent}%`, boxShadow: "0 0 12px rgba(247,147,26,0.4)" }}
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${creditPercent}%`,
+                  background: creditPercent > 25 ? "rgba(255,255,255,0.7)" : "#ff4757",
+                }}
               />
             </div>
-            <p className="font-mono text-[9px] text-[#94A3B8] mt-1.5 uppercase tracking-wider">
-              {creditsRemaining} remaining
+            <p className="label-mono text-white/15 mt-2">
+              {creditsRemaining} REMAINING
             </p>
           </>
         )}
