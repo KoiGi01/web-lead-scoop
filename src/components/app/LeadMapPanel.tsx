@@ -9,20 +9,30 @@ interface LeadMapPanelProps {
   isSearching: boolean;
 }
 
-const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: "#0a0a0a" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#080808" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#555" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#181818" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#0a0a0a" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#050505" }] },
+// Pure black wireframe — no labels, no icons, just geometry outlines
+const WIREFRAME_STYLE: google.maps.MapTypeStyle[] = [
+  // Base: pure black everything
+  { elementType: "geometry", stylers: [{ color: "#000000" }] },
+  { elementType: "labels", stylers: [{ visibility: "off" }] },
+
+  // Roads: faint cyan-white wireframe lines
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#0d1a1a" }, { visibility: "simplified" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#0a2020" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#080f0f" }] },
+  { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#050a0a" }] },
+
+  // Water: very subtle dark teal
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#020808" }] },
+
+  // Land boundaries: faint lines
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#0a1a1a" }, { weight: 0.5 }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+
+  // Hide everything unnecessary
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
-  {
-    featureType: "administrative",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#1a1a1a" }],
-  },
+  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#010101" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#000000" }] },
 ];
 
 const LeadMapPanel = ({
@@ -36,6 +46,7 @@ const LeadMapPanel = ({
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const circleRef = useRef<google.maps.Circle | null>(null);
   const markerInstancesRef = useRef<Map<string, google.maps.Marker>>(new Map());
+  const [mapReady, setMapReady] = useState(false);
 
   // Initialize map
   useEffect(() => {
@@ -44,10 +55,15 @@ const LeadMapPanel = ({
     try {
       mapInstanceRef.current = new google.maps.Map(mapRef.current, {
         center: center || { lat: 20, lng: 0 },
-        zoom: center ? 11 : 2,
+        zoom: center ? 12 : 2,
         disableDefaultUI: true,
         gestureHandling: "cooperative",
-        styles: DARK_MAP_STYLE,
+        styles: WIREFRAME_STYLE,
+        backgroundColor: "#000000",
+      });
+      // Signal map ready after tiles load
+      google.maps.event.addListenerOnce(mapInstanceRef.current, "idle", () => {
+        setMapReady(true);
       });
     } catch (err) {
       console.error("Error initializing map:", err);
@@ -60,18 +76,17 @@ const LeadMapPanel = ({
 
     if (center) {
       mapInstanceRef.current.panTo(center);
-      mapInstanceRef.current.setZoom(11);
+      mapInstanceRef.current.setZoom(12);
 
-      // Monochrome circle
       if (!circleRef.current) {
         circleRef.current = new google.maps.Circle({
           map: mapInstanceRef.current,
           center,
           radius: radiusKm * 1000,
-          fillColor: "#ffffff",
-          fillOpacity: 0.04,
-          strokeColor: "#ffffff",
-          strokeOpacity: 0.15,
+          fillColor: "#00ffaa",
+          fillOpacity: 0.02,
+          strokeColor: "#00ffaa",
+          strokeOpacity: 0.08,
           strokeWeight: 1,
         });
       } else {
@@ -84,12 +99,13 @@ const LeadMapPanel = ({
   // Animate marker in
   const animateMarkerIn = (marker: google.maps.Marker, targetScale: number) => {
     const startTime = performance.now();
-    const duration = 400;
+    const duration = 600;
 
     const step = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = Math.sqrt(progress);
+      // Elastic ease out
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress) * Math.cos((progress * 10 - 0.75) * ((2 * Math.PI) / 3));
       const scale = eased * targetScale;
 
       const icon = marker.getIcon() as google.maps.Symbol;
@@ -112,11 +128,11 @@ const LeadMapPanel = ({
 
       if (markerInstancesRef.current.has(key)) {
         const existing = markerInstancesRef.current.get(key)!;
-        const color = hasEmail ? "#ffffff" : "#555555";
+        const color = hasEmail ? "#00ffaa" : "#1a3a2a";
         const icon = existing.getIcon() as google.maps.Symbol;
         existing.setIcon({ ...icon, fillColor: color, strokeColor: color });
       } else {
-        const color = hasEmail ? "#ffffff" : "#555555";
+        const color = hasEmail ? "#00ffaa" : "#1a3a2a";
         const marker = new google.maps.Marker({
           position: { lat, lng },
           map: mapInstanceRef.current,
@@ -127,14 +143,14 @@ const LeadMapPanel = ({
             fillOpacity: 0.9,
             strokeColor: color,
             strokeWeight: 2,
-            strokeOpacity: 0.3,
+            strokeOpacity: 0.4,
           },
           title: name,
           optimized: false,
         });
 
         markerInstancesRef.current.set(key, marker);
-        animateMarkerIn(marker, 8);
+        animateMarkerIn(marker, 6);
       }
     });
   }, [markers, google]);
@@ -158,8 +174,8 @@ const LeadMapPanel = ({
   }
 
   return (
-    <div className="h-[260px] sm:h-[340px] overflow-hidden border border-white/[0.08] relative"
-      style={{ borderRadius: "4px", background: "#080808" }}>
+    <div className="h-[260px] sm:h-[340px] overflow-hidden border border-white/[0.06] relative"
+      style={{ borderRadius: "4px", background: "#000" }}>
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
@@ -173,21 +189,21 @@ const LeadMapPanel = ({
       />
 
       {/* Status overlay */}
-      <div className="absolute top-3 left-3 px-3 py-1.5 border border-white/[0.10]"
-        style={{ background: "rgba(8,8,8,0.9)", backdropFilter: "blur(8px)", borderRadius: "3px", zIndex: 2 }}>
+      <div className="absolute top-3 left-3 px-3 py-1.5 border border-[#00ffaa]/[0.15]"
+        style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", borderRadius: "3px", zIndex: 2 }}>
         {isSearching ? (
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            <span className="label-mono text-white/60">
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00ffaa" }} />
+            <span className="label-mono" style={{ color: "rgba(0,255,170,0.7)", fontSize: "10px" }}>
               SCANNING...
             </span>
           </div>
         ) : markers.length > 0 ? (
-          <span className="label-mono text-white/40">
+          <span className="label-mono" style={{ color: "rgba(0,255,170,0.5)", fontSize: "10px" }}>
             {markers.length} LEADS MAPPED
           </span>
         ) : (
-          <span className="label-mono text-white/30">
+          <span className="label-mono" style={{ color: "rgba(0,255,170,0.3)", fontSize: "10px" }}>
             {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
           </span>
         )}

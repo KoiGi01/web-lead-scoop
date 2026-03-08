@@ -13,10 +13,12 @@ interface MapHudOverlayProps {
 interface DataFragment {
   x: number;
   y: number;
+  vx: number;
   vy: number;
   text: string;
   age: number;
   maxAge: number;
+  size: number;
 }
 
 interface TargetingEvent {
@@ -34,22 +36,37 @@ interface ExtractEvent {
   particles: Array<{ angle: number; speed: number; char: string }>;
 }
 
-/* ── Helpers ────────────────────────────────────── */
+interface ConnectionLine {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  age: number;
+  maxAge: number;
+}
 
-const FONT = "'Space Mono', monospace";
+/* ── Constants ─────────────────────────────────── */
+
+const FONT = "'Space Mono', 'Courier New', monospace";
+const C = "0,255,170"; // Accent color RGB — cyber green
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 const HEX = "0123456789ABCDEF";
 const rHex = (n: number) => Array.from({ length: n }, () => HEX[(Math.random() * 16) | 0]).join("");
 const rInt = (max: number) => (Math.random() * max) | 0;
+const rFloat = (min: number, max: number) => min + Math.random() * (max - min);
 
 const DATA_TEMPLATES = [
   () => `0x${rHex(4)}`,
   () => `0x${rHex(8)}`,
   () => `${rInt(255)}.${rInt(255)}.${rInt(255)}.${rInt(255)}`,
   () => `${(Math.random() * 180 - 90).toFixed(4)},${(Math.random() * 360 - 180).toFixed(4)}`,
-  () => ["PING OK", "PORT 443", "SSL VALID", "DNS RESOLVE", "TCP ACK", "AUTH OK", "TLS 1.3", "HTTP 200", "WHOIS OK", "MX RECORD"][rInt(10)],
+  () => ["PING OK", "PORT 443", "SSL VALID", "DNS RESOLVE", "TCP ACK", "AUTH OK", "TLS 1.3", "HTTP 200", "WHOIS OK", "MX RECORD", "SMTP 250", "TRACE RT", "CERT OK", "SCAN 80"][rInt(14)],
+  () => `[${rHex(2)}:${rHex(2)}:${rHex(2)}]`,
+  () => `PKT ${rInt(9999)}`,
+  () => `TTL ${rInt(128)}`,
 ];
+
+/* ── Helpers ───────────────────────────────────── */
 
 function latLngToPixel(
   map: google.maps.Map,
@@ -89,20 +106,21 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
   const fragmentsRef = useRef<DataFragment[]>([]);
   const targetingRef = useRef<TargetingEvent[]>([]);
   const extractRef = useRef<ExtractEvent[]>([]);
+  const connectionsRef = useRef<ConnectionLine[]>([]);
   const lastFragmentSpawn = useRef(0);
   const isSearchingRef = useRef(false);
   const wasSearchingRef = useRef(false);
   const markersRef = useRef(markers);
   const centerRef = useRef(center);
   const radiusRef = useRef(radiusKm);
-  const mapRef = useRef(mapInstance);
+  const mapRefInternal = useRef(mapInstance);
 
   // Keep refs in sync
   useEffect(() => { isSearchingRef.current = isSearching; }, [isSearching]);
   useEffect(() => { markersRef.current = markers; }, [markers]);
   useEffect(() => { centerRef.current = center; }, [center]);
   useEffect(() => { radiusRef.current = radiusKm; }, [radiusKm]);
-  useEffect(() => { mapRef.current = mapInstance; }, [mapInstance]);
+  useEffect(() => { mapRefInternal.current = mapInstance; }, [mapInstance]);
 
   // Detect new markers and email changes
   useEffect(() => {
@@ -122,8 +140,15 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
           targetingRef.current.push({
             x: px.x,
             y: px.y,
-            name: m.name.substring(0, 16),
-            startTime: now + Math.random() * 300, // stagger slightly
+            name: m.name.substring(0, 20),
+            startTime: now + Math.random() * 400,
+          });
+          // Connection lines from center to new markers
+          connectionsRef.current.push({
+            from: { x: w / 2, y: h / 2 },
+            to: { x: px.x, y: px.y },
+            age: 0,
+            maxAge: 2 + Math.random(),
           });
         }
       }
@@ -139,15 +164,15 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
         if (!prevEmailKeysRef.current.has(key)) {
           const px = latLngToPixel(mapInstance, m.lat, m.lng, w, h);
           if (px) {
-            const chars = ["@", ".", "A", "Z", "#", "*", "M", "X"];
+            const chars = ["@", ".", "A", "Z", "#", "*", "M", "X", "$", "&"];
             extractRef.current.push({
               x: px.x,
               y: px.y,
-              name: m.name.substring(0, 12),
+              name: m.name.substring(0, 14),
               startTime: performance.now(),
-              particles: Array.from({ length: 6 }, (_, i) => ({
-                angle: (i / 6) * Math.PI * 2,
-                speed: 30 + Math.random() * 40,
+              particles: Array.from({ length: 8 }, (_, i) => ({
+                angle: (i / 8) * Math.PI * 2,
+                speed: 40 + Math.random() * 60,
                 char: chars[rInt(chars.length)],
               })),
             });
@@ -185,14 +210,14 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
 
     /* ── Draw sub-functions ── */
 
-    function drawGrid(w: number, h: number, searching: boolean) {
-      const alpha = searching ? 0.07 : 0.04;
+    function drawGrid(w: number, h: number, t: number, searching: boolean) {
+      const alpha = searching ? 0.06 : 0.025;
       const spacing = 40;
       ctx!.lineWidth = 0.5;
 
       for (let x = spacing; x < w; x += spacing) {
         const isMajor = (x / spacing) % 4 === 0;
-        ctx!.strokeStyle = `rgba(255,255,255,${isMajor ? alpha * 1.8 : alpha})`;
+        ctx!.strokeStyle = `rgba(${C},${isMajor ? alpha * 2 : alpha})`;
         ctx!.beginPath();
         ctx!.moveTo(x, 0);
         ctx!.lineTo(x, h);
@@ -200,20 +225,35 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       }
       for (let y = spacing; y < h; y += spacing) {
         const isMajor = (y / spacing) % 4 === 0;
-        ctx!.strokeStyle = `rgba(255,255,255,${isMajor ? alpha * 1.8 : alpha})`;
+        ctx!.strokeStyle = `rgba(${C},${isMajor ? alpha * 2 : alpha})`;
         ctx!.beginPath();
         ctx!.moveTo(0, y);
         ctx!.lineTo(w, y);
         ctx!.stroke();
       }
+
+      // Pulsing center crosshair lines when searching
+      if (searching) {
+        const pulse = 0.04 + 0.03 * Math.sin(t * 3);
+        ctx!.strokeStyle = `rgba(${C},${pulse})`;
+        ctx!.lineWidth = 0.5;
+        ctx!.beginPath();
+        ctx!.moveTo(w / 2, 0);
+        ctx!.lineTo(w / 2, h);
+        ctx!.stroke();
+        ctx!.beginPath();
+        ctx!.moveTo(0, h / 2);
+        ctx!.lineTo(w, h / 2);
+        ctx!.stroke();
+      }
     }
 
     function drawCornerBrackets(w: number, h: number, t: number, searching: boolean) {
-      const len = 24;
-      const off = 8;
-      const baseAlpha = searching ? 0.45 : 0.2 + 0.06 * Math.sin(t * 1.5);
-      ctx!.strokeStyle = `rgba(255,255,255,${baseAlpha})`;
-      ctx!.lineWidth = 1;
+      const len = 30;
+      const off = 6;
+      const baseAlpha = searching ? 0.5 + 0.15 * Math.sin(t * 3) : 0.15 + 0.05 * Math.sin(t * 1.5);
+      ctx!.strokeStyle = `rgba(${C},${baseAlpha})`;
+      ctx!.lineWidth = 1.5;
 
       // Top-left
       ctx!.beginPath();
@@ -232,25 +272,43 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       ctx!.moveTo(w - off - len, h - off); ctx!.lineTo(w - off, h - off); ctx!.lineTo(w - off, h - off - len);
       ctx!.stroke();
 
+      // Inner tick marks
       if (searching) {
-        // Small crosshair dots at corners
-        ctx!.fillStyle = `rgba(255,255,255,${baseAlpha * 0.6})`;
-        const sz = 2;
-        ctx!.fillRect(off - sz / 2, off - sz / 2, sz, sz);
-        ctx!.fillRect(w - off - sz / 2, off - sz / 2, sz, sz);
-        ctx!.fillRect(off - sz / 2, h - off - sz / 2, sz, sz);
-        ctx!.fillRect(w - off - sz / 2, h - off - sz / 2, sz, sz);
+        ctx!.lineWidth = 1;
+        ctx!.strokeStyle = `rgba(${C},${baseAlpha * 0.5})`;
+        const tick = 8;
+        const inset = 20;
+        // Top edge ticks
+        for (let x = inset + 40; x < w - inset; x += 40) {
+          ctx!.beginPath(); ctx!.moveTo(x, off); ctx!.lineTo(x, off + tick); ctx!.stroke();
+        }
+        // Left edge ticks
+        for (let y = inset + 40; y < h - inset; y += 40) {
+          ctx!.beginPath(); ctx!.moveTo(off, y); ctx!.lineTo(off + tick, y); ctx!.stroke();
+        }
       }
     }
 
-    function drawScanline(w: number, h: number, t: number) {
-      const yPos = (t * 15) % h;
-      const grad = ctx!.createLinearGradient(0, yPos - 3, 0, yPos + 3);
+    function drawScanline(w: number, h: number, t: number, searching: boolean) {
+      // Primary scanline
+      const yPos = (t * 20) % h;
+      const grad = ctx!.createLinearGradient(0, yPos - 6, 0, yPos + 6);
       grad.addColorStop(0, "transparent");
-      grad.addColorStop(0.5, "rgba(255,255,255,0.035)");
+      grad.addColorStop(0.5, `rgba(${C},${searching ? 0.06 : 0.025})`);
       grad.addColorStop(1, "transparent");
       ctx!.fillStyle = grad;
-      ctx!.fillRect(0, yPos - 3, w, 6);
+      ctx!.fillRect(0, yPos - 6, w, 12);
+
+      // Secondary scanline going opposite direction when searching
+      if (searching) {
+        const yPos2 = h - ((t * 30) % h);
+        const grad2 = ctx!.createLinearGradient(0, yPos2 - 4, 0, yPos2 + 4);
+        grad2.addColorStop(0, "transparent");
+        grad2.addColorStop(0.5, `rgba(${C},0.03)`);
+        grad2.addColorStop(1, "transparent");
+        ctx!.fillStyle = grad2;
+        ctx!.fillRect(0, yPos2 - 4, w, 8);
+      }
     }
 
     function drawStatusText(w: number, h: number, t: number, searching: boolean) {
@@ -261,11 +319,12 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       ctx!.textAlign = "right";
       const now = new Date();
       const ts = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")} | ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-      ctx!.fillStyle = `rgba(255,255,255,0.25)`;
+      ctx!.fillStyle = `rgba(${C},0.35)`;
       ctx!.fillText(ts, w - 12, 14);
 
       const c = centerRef.current;
       if (c) {
+        ctx!.fillStyle = `rgba(${C},0.25)`;
         ctx!.fillText(`LAT ${c.lat.toFixed(4)}  LON ${c.lng.toFixed(4)}`, w - 12, 26);
       }
 
@@ -273,68 +332,110 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       ctx!.textAlign = "left";
       const mCount = markersRef.current.length;
       if (searching) {
-        const pulseAlpha = 0.3 + 0.15 * Math.sin(t * 4);
-        ctx!.fillStyle = `rgba(255,255,255,${pulseAlpha})`;
-        ctx!.fillText("SYS: SCANNING", 12, h - 30);
-        ctx!.fillStyle = `rgba(255,255,255,0.25)`;
-        ctx!.fillText(`TARGETS: ${mCount}`, 12, h - 18);
+        const pulseAlpha = 0.5 + 0.3 * Math.sin(t * 5);
+        ctx!.fillStyle = `rgba(${C},${pulseAlpha})`;
+        ctx!.font = `bold 10px ${FONT}`;
+        ctx!.fillText("SYS: SCANNING", 12, h - 34);
+        ctx!.font = `9px ${FONT}`;
+        ctx!.fillStyle = `rgba(${C},0.35)`;
+        ctx!.fillText(`TARGETS: ${mCount}`, 12, h - 20);
+
+        // Animated loading bar
+        const barW = 80;
+        const barH = 2;
+        const barY = h - 12;
+        ctx!.fillStyle = `rgba(${C},0.1)`;
+        ctx!.fillRect(12, barY, barW, barH);
+        const fillW = ((t * 0.3) % 1) * barW;
+        ctx!.fillStyle = `rgba(${C},0.5)`;
+        ctx!.fillRect(12, barY, fillW, barH);
       } else if (mCount > 0) {
-        ctx!.fillStyle = `rgba(255,255,255,0.2)`;
-        ctx!.fillText("SYS: COMPLETE", 12, h - 30);
-        ctx!.fillText(`TARGETS: ${mCount}`, 12, h - 18);
+        ctx!.fillStyle = `rgba(${C},0.3)`;
+        ctx!.fillText("SYS: COMPLETE", 12, h - 34);
+        ctx!.fillStyle = `rgba(${C},0.25)`;
+        ctx!.fillText(`TARGETS: ${mCount}`, 12, h - 20);
       } else {
-        ctx!.fillStyle = `rgba(255,255,255,0.15)`;
-        ctx!.fillText("SYS: IDLE", 12, h - 18);
+        ctx!.fillStyle = `rgba(${C},0.15)`;
+        ctx!.fillText("SYS: IDLE", 12, h - 20);
       }
 
-      // Bottom-right: radius
+      // Bottom-right: radius + connection info
       ctx!.textAlign = "right";
-      ctx!.fillStyle = `rgba(255,255,255,0.15)`;
-      ctx!.fillText(`RADIUS: ${radiusRef.current}KM`, w - 12, h - 18);
+      ctx!.fillStyle = `rgba(${C},0.2)`;
+      ctx!.fillText(`RADIUS: ${radiusRef.current}KM`, w - 12, h - 20);
+
+      if (searching) {
+        ctx!.fillStyle = `rgba(${C},0.15)`;
+        ctx!.fillText(`CONN: ${mCount} ACTIVE`, w - 12, h - 34);
+      }
     }
 
     function drawRadarSweep(cx: number, cy: number, radius: number, t: number) {
-      const sweepAngle = (t * Math.PI) % (Math.PI * 2); // ~2s per revolution
-      const trailCount = lowEnd ? 10 : 30;
-      const trailArc = (Math.PI * 2) / 3; // 120 degrees
+      const sweepAngle = (t * Math.PI * 1.2) % (Math.PI * 2); // ~1.7s per revolution
+      const trailCount = lowEnd ? 15 : 40;
+      const trailArc = (Math.PI * 2) / 2.5; // 144 degrees — wider trail
 
-      // Trail
+      // Radar ring circles
+      for (let r = 1; r <= 3; r++) {
+        const ringR = (r / 3) * radius;
+        ctx!.strokeStyle = `rgba(${C},0.04)`;
+        ctx!.lineWidth = 0.5;
+        ctx!.beginPath();
+        ctx!.arc(cx, cy, ringR, 0, Math.PI * 2);
+        ctx!.stroke();
+      }
+
+      // Gradient trail (cone)
       for (let i = 0; i < trailCount; i++) {
         const frac = i / trailCount;
         const angle = sweepAngle - frac * trailArc;
-        const alpha = 0.12 * (1 - frac);
-        ctx!.strokeStyle = `rgba(255,255,255,${alpha})`;
-        ctx!.lineWidth = 0.5;
+        const alpha = 0.12 * (1 - frac) * (1 - frac);
+        ctx!.strokeStyle = `rgba(${C},${alpha})`;
+        ctx!.lineWidth = 1 - frac * 0.5;
         ctx!.beginPath();
         ctx!.moveTo(cx, cy);
         ctx!.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
         ctx!.stroke();
       }
 
-      // Main sweep line
-      ctx!.strokeStyle = `rgba(255,255,255,0.35)`;
-      ctx!.lineWidth = 1;
+      // Main sweep line — bright
+      ctx!.strokeStyle = `rgba(${C},0.6)`;
+      ctx!.lineWidth = 1.5;
       ctx!.beginPath();
       ctx!.moveTo(cx, cy);
       ctx!.lineTo(cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius);
       ctx!.stroke();
 
-      // Center dot
-      ctx!.fillStyle = `rgba(255,255,255,0.25)`;
+      // Glow at tip
+      const tipX = cx + Math.cos(sweepAngle) * radius;
+      const tipY = cy + Math.sin(sweepAngle) * radius;
+      const tipGrad = ctx!.createRadialGradient(tipX, tipY, 0, tipX, tipY, 8);
+      tipGrad.addColorStop(0, `rgba(${C},0.3)`);
+      tipGrad.addColorStop(1, "transparent");
+      ctx!.fillStyle = tipGrad;
+      ctx!.fillRect(tipX - 8, tipY - 8, 16, 16);
+
+      // Center dot with glow
+      const centerGrad = ctx!.createRadialGradient(cx, cy, 0, cx, cy, 6);
+      centerGrad.addColorStop(0, `rgba(${C},0.5)`);
+      centerGrad.addColorStop(1, "transparent");
+      ctx!.fillStyle = centerGrad;
+      ctx!.fillRect(cx - 6, cy - 6, 12, 12);
+      ctx!.fillStyle = `rgba(${C},0.8)`;
       ctx!.beginPath();
       ctx!.arc(cx, cy, 2, 0, Math.PI * 2);
       ctx!.fill();
     }
 
     function drawScanRing(cx: number, cy: number, maxRadius: number, t: number) {
-      const period = 2.5;
-      for (let offset = 0; offset < 2; offset++) {
-        const progress = ((t + offset * period * 0.5) % period) / period;
+      const period = 2;
+      for (let offset = 0; offset < 3; offset++) {
+        const progress = ((t + offset * period / 3) % period) / period;
         const r = progress * maxRadius;
-        const alpha = 0.25 * (1 - progress);
-        const lineW = 1.5 * (1 - progress * 0.7);
+        const alpha = 0.2 * (1 - progress) * (1 - progress);
+        const lineW = 2 * (1 - progress);
 
-        ctx!.strokeStyle = `rgba(255,255,255,${alpha})`;
+        ctx!.strokeStyle = `rgba(${C},${alpha})`;
         ctx!.lineWidth = lineW;
         ctx!.beginPath();
         ctx!.arc(cx, cy, r, 0, Math.PI * 2);
@@ -346,35 +447,82 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       if (lowEnd) return;
       const frags = fragmentsRef.current;
 
-      // Spawn
-      if (t - lastFragmentSpawn.current > 0.2 && frags.length < 15) {
+      // Spawn more frequently
+      if (t - lastFragmentSpawn.current > 0.1 && frags.length < 25) {
         lastFragmentSpawn.current = t;
+        const side = rInt(4); // spawn from edges
+        let x: number, y: number, vx: number, vy: number;
+        if (side === 0) { x = rFloat(20, w - 20); y = h + 10; vx = rFloat(-5, 5); vy = -(12 + Math.random() * 15); }
+        else if (side === 1) { x = rFloat(20, w - 20); y = -10; vx = rFloat(-5, 5); vy = 12 + Math.random() * 15; }
+        else if (side === 2) { x = -10; y = rFloat(20, h - 20); vx = 12 + Math.random() * 15; vy = rFloat(-5, 5); }
+        else { x = w + 10; y = rFloat(20, h - 20); vx = -(12 + Math.random() * 15); vy = rFloat(-5, 5); }
+
         frags.push({
-          x: 20 + Math.random() * (w - 40),
-          y: h * 0.3 + Math.random() * (h * 0.6),
-          vy: 8 + Math.random() * 12,
+          x, y, vx, vy,
           text: DATA_TEMPLATES[rInt(DATA_TEMPLATES.length)](),
           age: 0,
-          maxAge: 2 + Math.random() * 2,
+          maxAge: 1.5 + Math.random() * 2,
+          size: Math.random() > 0.7 ? 10 : 8,
         });
       }
 
       // Update + draw
-      ctx!.font = `9px ${FONT}`;
-      ctx!.textAlign = "left";
       ctx!.textBaseline = "top";
 
       for (let i = frags.length - 1; i >= 0; i--) {
         const f = frags[i];
-        f.y -= f.vy * dt;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
         f.age += dt;
-        if (f.age >= f.maxAge) {
+        if (f.age >= f.maxAge || f.x < -50 || f.x > w + 50 || f.y < -50 || f.y > h + 50) {
           frags.splice(i, 1);
           continue;
         }
-        const alpha = 0.25 * (1 - f.age / f.maxAge);
-        ctx!.fillStyle = `rgba(255,255,255,${alpha})`;
+        const lifeProgress = f.age / f.maxAge;
+        const alpha = 0.35 * Math.sin(lifeProgress * Math.PI); // fade in and out
+        ctx!.font = `${f.size}px ${FONT}`;
+        ctx!.textAlign = "left";
+        ctx!.fillStyle = `rgba(${C},${alpha})`;
         ctx!.fillText(f.text, f.x, f.y);
+      }
+    }
+
+    function drawConnectionLines(dt: number) {
+      const lines = connectionsRef.current;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        line.age += dt;
+        if (line.age >= line.maxAge) { lines.splice(i, 1); continue; }
+
+        const progress = line.age / line.maxAge;
+        const drawProgress = Math.min(progress * 3, 1); // draw line fast
+        const alpha = 0.15 * (1 - progress);
+
+        const dx = line.to.x - line.from.x;
+        const dy = line.to.y - line.from.y;
+        const endX = line.from.x + dx * drawProgress;
+        const endY = line.from.y + dy * drawProgress;
+
+        // Dashed line
+        ctx!.setLineDash([4, 4]);
+        ctx!.strokeStyle = `rgba(${C},${alpha})`;
+        ctx!.lineWidth = 0.5;
+        ctx!.beginPath();
+        ctx!.moveTo(line.from.x, line.from.y);
+        ctx!.lineTo(endX, endY);
+        ctx!.stroke();
+        ctx!.setLineDash([]);
+
+        // Moving dot along line
+        if (drawProgress < 1) {
+          const dotProgress = (progress * 5) % 1;
+          const dotX = line.from.x + dx * dotProgress;
+          const dotY = line.from.y + dy * dotProgress;
+          ctx!.fillStyle = `rgba(${C},${alpha * 3})`;
+          ctx!.beginPath();
+          ctx!.arc(dotX, dotY, 1.5, 0, Math.PI * 2);
+          ctx!.fill();
+        }
       }
     }
 
@@ -386,70 +534,87 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       for (let i = events.length - 1; i >= 0; i--) {
         const ev = events[i];
         const elapsed = now - ev.startTime;
-        const duration = 1500;
-        if (elapsed < 0) continue; // staggered, not started yet
+        const duration = 1800;
+        if (elapsed < 0) continue;
         const progress = elapsed / duration;
         if (progress > 1) { events.splice(i, 1); continue; }
 
         const { x, y } = ev;
 
-        if (progress < 0.4) {
-          // Phase 1: Converging brackets
-          const p = progress / 0.4;
-          const scale = 3 - 2 * easeOutCubic(p);
-          const size = 12 * scale;
-          const alpha = 0.15 + 0.35 * easeOutCubic(p);
-          ctx!.strokeStyle = `rgba(255,255,255,${alpha})`;
-          ctx!.lineWidth = 1;
+        if (progress < 0.35) {
+          // Phase 1: Converging brackets + spinning ring
+          const p = progress / 0.35;
+          const scale = 4 - 3 * easeOutCubic(p);
+          const size = 14 * scale;
+          const alpha = 0.2 + 0.5 * easeOutCubic(p);
+          ctx!.strokeStyle = `rgba(${C},${alpha})`;
+          ctx!.lineWidth = 1.5;
 
-          // 4 corner brackets
-          const halfLen = 6 * scale;
-          // TL
+          const halfLen = 7 * scale;
           ctx!.beginPath(); ctx!.moveTo(x - size, y - size + halfLen); ctx!.lineTo(x - size, y - size); ctx!.lineTo(x - size + halfLen, y - size); ctx!.stroke();
-          // TR
           ctx!.beginPath(); ctx!.moveTo(x + size - halfLen, y - size); ctx!.lineTo(x + size, y - size); ctx!.lineTo(x + size, y - size + halfLen); ctx!.stroke();
-          // BL
           ctx!.beginPath(); ctx!.moveTo(x - size, y + size - halfLen); ctx!.lineTo(x - size, y + size); ctx!.lineTo(x - size + halfLen, y + size); ctx!.stroke();
-          // BR
           ctx!.beginPath(); ctx!.moveTo(x + size - halfLen, y + size); ctx!.lineTo(x + size, y + size); ctx!.lineTo(x + size, y + size - halfLen); ctx!.stroke();
 
-          // Rotating circle
-          const rot = elapsed * 0.005;
+          // Spinning ring with gap
+          const rot = elapsed * 0.008;
+          ctx!.lineWidth = 1;
           ctx!.beginPath();
-          ctx!.arc(x, y, size * 0.8, rot, rot + Math.PI * 1.2);
+          ctx!.arc(x, y, size * 0.7, rot, rot + Math.PI * 1.5);
+          ctx!.stroke();
+          ctx!.beginPath();
+          ctx!.arc(x, y, size * 0.4, rot + Math.PI, rot + Math.PI * 2.2);
           ctx!.stroke();
 
-        } else if (progress < 0.7) {
-          // Phase 2: Locked
-          const p = (progress - 0.4) / 0.3;
-          const flashAlpha = p < 0.2 ? 0.7 : 0.4 * (1 - (p - 0.2) / 0.8);
-          const size = 12;
-          ctx!.strokeStyle = `rgba(255,255,255,${flashAlpha})`;
-          ctx!.lineWidth = 1;
+        } else if (progress < 0.65) {
+          // Phase 2: Locked — tight brackets, crosshair, name
+          const p = (progress - 0.35) / 0.3;
+          const flashAlpha = p < 0.15 ? 0.9 : 0.5 * (1 - (p - 0.15) / 0.85);
+          const size = 14;
+          ctx!.strokeStyle = `rgba(${C},${flashAlpha})`;
+          ctx!.lineWidth = 1.5;
 
-          const halfLen = 6;
+          const halfLen = 7;
           ctx!.beginPath(); ctx!.moveTo(x - size, y - size + halfLen); ctx!.lineTo(x - size, y - size); ctx!.lineTo(x - size + halfLen, y - size); ctx!.stroke();
           ctx!.beginPath(); ctx!.moveTo(x + size - halfLen, y - size); ctx!.lineTo(x + size, y - size); ctx!.lineTo(x + size, y - size + halfLen); ctx!.stroke();
           ctx!.beginPath(); ctx!.moveTo(x - size, y + size - halfLen); ctx!.lineTo(x - size, y + size); ctx!.lineTo(x - size + halfLen, y + size); ctx!.stroke();
           ctx!.beginPath(); ctx!.moveTo(x + size - halfLen, y + size); ctx!.lineTo(x + size, y + size); ctx!.lineTo(x + size, y + size - halfLen); ctx!.stroke();
 
-          // Crosshair lines
-          ctx!.beginPath(); ctx!.moveTo(x - 4, y); ctx!.lineTo(x + 4, y); ctx!.stroke();
-          ctx!.beginPath(); ctx!.moveTo(x, y - 4); ctx!.lineTo(x, y + 4); ctx!.stroke();
+          // Crosshair
+          ctx!.lineWidth = 1;
+          ctx!.beginPath(); ctx!.moveTo(x - 6, y); ctx!.lineTo(x + 6, y); ctx!.stroke();
+          ctx!.beginPath(); ctx!.moveTo(x, y - 6); ctx!.lineTo(x, y + 6); ctx!.stroke();
 
-          // "LOCKED" text
+          // "LOCKED" + name
           ctx!.font = `bold 8px ${FONT}`;
-          ctx!.fillStyle = `rgba(255,255,255,${flashAlpha * 0.8})`;
+          ctx!.fillStyle = `rgba(${C},${flashAlpha})`;
           ctx!.fillText("LOCKED", x, y + size + 4);
+          ctx!.font = `7px ${FONT}`;
+          ctx!.fillStyle = `rgba(${C},${flashAlpha * 0.6})`;
+          ctx!.fillText(ev.name, x, y + size + 15);
+
+          // Brief flash ring
+          if (p < 0.2) {
+            const flashR = size * (1 + p * 3);
+            ctx!.strokeStyle = `rgba(${C},${0.4 * (1 - p / 0.2)})`;
+            ctx!.lineWidth = 2;
+            ctx!.beginPath();
+            ctx!.arc(x, y, flashR, 0, Math.PI * 2);
+            ctx!.stroke();
+          }
 
         } else {
-          // Phase 3: Fade out
-          const p = (progress - 0.7) / 0.3;
-          const alpha = 0.35 * (1 - easeOutCubic(p));
-          ctx!.strokeStyle = `rgba(255,255,255,${alpha})`;
+          // Phase 3: Fade out with shrinking ring
+          const p = (progress - 0.65) / 0.35;
+          const alpha = 0.4 * (1 - easeOutCubic(p));
+          ctx!.strokeStyle = `rgba(${C},${alpha})`;
           ctx!.lineWidth = 1;
-          const size = 12;
-          ctx!.beginPath(); ctx!.arc(x, y, size * 0.8, 0, Math.PI * 2); ctx!.stroke();
+          const size = 14 * (1 - p * 0.3);
+          ctx!.beginPath(); ctx!.arc(x, y, size, 0, Math.PI * 2); ctx!.stroke();
+
+          // Small dot remains
+          ctx!.fillStyle = `rgba(${C},${alpha * 0.5})`;
+          ctx!.beginPath(); ctx!.arc(x, y, 2, 0, Math.PI * 2); ctx!.fill();
         }
       }
     }
@@ -462,68 +627,127 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       for (let i = events.length - 1; i >= 0; i--) {
         const ev = events[i];
         const elapsed = now - ev.startTime;
-        const duration = 2000;
+        const duration = 2500;
         const progress = elapsed / duration;
         if (progress > 1) { events.splice(i, 1); continue; }
 
         const { x, y, particles } = ev;
 
-        if (progress < 0.3) {
-          // Phase 1: EXTRACTING... with orbiting chars
-          const p = progress / 0.3;
-          const pulseAlpha = 0.3 + 0.2 * Math.sin(p * Math.PI * 6);
-          ctx!.font = `bold 8px ${FONT}`;
-          ctx!.fillStyle = `rgba(255,255,255,${pulseAlpha})`;
-          ctx!.fillText("EXTRACTING...", x, y - 18);
+        if (progress < 0.25) {
+          // Phase 1: EXTRACTING... with orbiting chars + hex stream
+          const p = progress / 0.25;
+          const pulseAlpha = 0.4 + 0.3 * Math.sin(p * Math.PI * 8);
+          ctx!.font = `bold 9px ${FONT}`;
+          ctx!.fillStyle = `rgba(${C},${pulseAlpha})`;
+          ctx!.fillText("EXTRACTING...", x, y - 22);
 
+          // Orbiting particles — two rings
           ctx!.font = `9px ${FONT}`;
           for (const part of particles) {
-            const orbitR = 16 + 4 * Math.sin(p * Math.PI * 2);
-            const angle = part.angle + elapsed * 0.004;
+            const orbitR = 18 + 5 * Math.sin(p * Math.PI * 3);
+            const angle = part.angle + elapsed * 0.006;
             const px = x + Math.cos(angle) * orbitR;
             const py = y + Math.sin(angle) * orbitR;
-            ctx!.fillStyle = `rgba(255,255,255,${0.4 * (1 - p * 0.5)})`;
+            ctx!.fillStyle = `rgba(${C},${0.5 * (1 - p * 0.3)})`;
             ctx!.fillText(part.char, px, py);
           }
 
-        } else if (progress < 0.7) {
-          // Phase 2: Particles fly outward
-          const p = (progress - 0.3) / 0.4;
+          // Inner spinning hexagon
+          ctx!.strokeStyle = `rgba(${C},${0.3 * (1 - p)})`;
+          ctx!.lineWidth = 1;
+          ctx!.beginPath();
+          for (let j = 0; j <= 6; j++) {
+            const angle = (j / 6) * Math.PI * 2 + elapsed * 0.003;
+            const r = 10;
+            const method = j === 0 ? "moveTo" : "lineTo";
+            ctx![method](x + Math.cos(angle) * r, y + Math.sin(angle) * r);
+          }
+          ctx!.stroke();
+
+        } else if (progress < 0.65) {
+          // Phase 2: Particles explode outward with trails
+          const p = (progress - 0.25) / 0.4;
           ctx!.font = `9px ${FONT}`;
           for (const part of particles) {
             const dist = part.speed * easeOutCubic(p);
             const px = x + Math.cos(part.angle) * dist;
-            const py = y + Math.sin(part.angle) * dist - p * 20;
-            const alpha = 0.35 * (1 - p);
+            const py = y + Math.sin(part.angle) * dist - p * 25;
+            const alpha = 0.5 * (1 - p);
 
-            // Trail: 3 copies
-            for (let t = 0; t < 3; t++) {
-              const trailFrac = t * 0.15;
-              const tpx = x + Math.cos(part.angle) * (dist - dist * trailFrac);
-              const tpy = y + Math.sin(part.angle) * (dist - dist * trailFrac) - (p - trailFrac * p) * 20;
-              ctx!.fillStyle = `rgba(255,255,255,${alpha * (1 - t * 0.3)})`;
+            // Trail: 4 copies with decreasing alpha
+            for (let t = 0; t < 4; t++) {
+              const trailFrac = t * 0.12;
+              const tpx = x + Math.cos(part.angle) * (dist * (1 - trailFrac));
+              const tpy = y + Math.sin(part.angle) * (dist * (1 - trailFrac)) - (p - trailFrac * p) * 25;
+              ctx!.fillStyle = `rgba(${C},${alpha * (1 - t * 0.25)})`;
               ctx!.fillText(part.char, tpx, tpy);
             }
           }
 
-        } else {
-          // Phase 3: DATA ACQUIRED + flash
-          const p = (progress - 0.7) / 0.3;
-          const flashAlpha = p < 0.15 ? 0.7 : 0.4 * (1 - (p - 0.15) / 0.85);
-          ctx!.font = `bold 8px ${FONT}`;
-          ctx!.fillStyle = `rgba(255,255,255,${flashAlpha})`;
-          ctx!.fillText("DATA ACQUIRED", x, y - 18);
+          // Center glow
+          const glowAlpha = 0.3 * (1 - p);
+          const glow = ctx!.createRadialGradient(x, y, 0, x, y, 20);
+          glow.addColorStop(0, `rgba(${C},${glowAlpha})`);
+          glow.addColorStop(1, "transparent");
+          ctx!.fillStyle = glow;
+          ctx!.fillRect(x - 20, y - 20, 40, 40);
 
-          // Brief flash ring
-          if (p < 0.3) {
-            ctx!.strokeStyle = `rgba(255,255,255,${0.5 * (1 - p / 0.3)})`;
+        } else {
+          // Phase 3: DATA ACQUIRED + bright flash + ring burst
+          const p = (progress - 0.65) / 0.35;
+          const flashAlpha = p < 0.1 ? 0.9 : 0.5 * (1 - (p - 0.1) / 0.9);
+          ctx!.font = `bold 9px ${FONT}`;
+          ctx!.fillStyle = `rgba(${C},${flashAlpha})`;
+          ctx!.fillText("DATA ACQUIRED", x, y - 22);
+
+          // Expanding ring burst
+          if (p < 0.4) {
+            const ringProgress = p / 0.4;
+            ctx!.strokeStyle = `rgba(${C},${0.6 * (1 - ringProgress)})`;
+            ctx!.lineWidth = 2 * (1 - ringProgress);
+            ctx!.beginPath();
+            ctx!.arc(x, y, 10 + ringProgress * 30, 0, Math.PI * 2);
+            ctx!.stroke();
+
+            // Second inner ring
+            ctx!.strokeStyle = `rgba(${C},${0.3 * (1 - ringProgress)})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
-            ctx!.arc(x, y, 8 + p * 20, 0, Math.PI * 2);
+            ctx!.arc(x, y, 5 + ringProgress * 20, 0, Math.PI * 2);
             ctx!.stroke();
+          }
+
+          // Glow flash
+          if (p < 0.2) {
+            const glowSize = 15 + p * 40;
+            const glow = ctx!.createRadialGradient(x, y, 0, x, y, glowSize);
+            glow.addColorStop(0, `rgba(${C},${0.4 * (1 - p / 0.2)})`);
+            glow.addColorStop(1, "transparent");
+            ctx!.fillStyle = glow;
+            ctx!.fillRect(x - glowSize, y - glowSize, glowSize * 2, glowSize * 2);
           }
         }
       }
+    }
+
+    // Edge glow effect when searching
+    function drawEdgeGlow(w: number, h: number, t: number) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 2);
+      const alpha = 0.03 + 0.02 * pulse;
+
+      // Top edge
+      const topGrad = ctx!.createLinearGradient(0, 0, 0, 30);
+      topGrad.addColorStop(0, `rgba(${C},${alpha})`);
+      topGrad.addColorStop(1, "transparent");
+      ctx!.fillStyle = topGrad;
+      ctx!.fillRect(0, 0, w, 30);
+
+      // Bottom edge
+      const botGrad = ctx!.createLinearGradient(0, h, 0, h - 30);
+      botGrad.addColorStop(0, `rgba(${C},${alpha})`);
+      botGrad.addColorStop(1, "transparent");
+      ctx!.fillStyle = botGrad;
+      ctx!.fillRect(0, h - 30, w, 30);
     }
 
     /* ── Main draw loop ── */
@@ -544,19 +768,19 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
 
       // Track search state transitions
       if (searching && !wasSearchingRef.current) {
-        // Search just started — clear old fragments
         fragmentsRef.current = [];
+        connectionsRef.current = [];
       }
       wasSearchingRef.current = searching;
 
       // 1. Grid
-      drawGrid(w, h, searching);
+      drawGrid(w, h, t, searching);
 
       // 2. Corner brackets
       drawCornerBrackets(w, h, t, searching);
 
       // 3. Scanline
-      drawScanline(w, h, t);
+      drawScanline(w, h, t, searching);
 
       // 4. Status text
       drawStatusText(w, h, t, searching);
@@ -565,22 +789,28 @@ const MapHudOverlay = ({ mapInstance, center, radiusKm, markers, isSearching }: 
       if (searching) {
         const cx = w / 2;
         const cy = h / 2;
-        const maxR = Math.min(w, h) * 0.4;
+        const maxR = Math.min(w, h) * 0.42;
 
         // 5. Radar sweep
         drawRadarSweep(cx, cy, maxR, t);
 
-        // 6. Scan ring
+        // 6. Scan rings
         drawScanRing(cx, cy, maxR, t);
 
         // 7. Data fragments
         drawDataFragments(w, h, t, dt);
+
+        // 8. Edge glow
+        drawEdgeGlow(w, h, t);
       }
 
-      // 8. Targeting reticles (triggered, can fire anytime)
+      // 9. Connection lines (triggered)
+      drawConnectionLines(dt);
+
+      // 10. Targeting reticles (triggered)
       drawTargeting(ts);
 
-      // 9. Extraction effects (triggered)
+      // 11. Extraction effects (triggered)
       drawExtraction(ts);
 
       rafRef.current = requestAnimationFrame(draw);
