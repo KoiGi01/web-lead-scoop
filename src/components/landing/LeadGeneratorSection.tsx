@@ -9,12 +9,13 @@ import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
   Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
-  Lightbulb, TrendingUp, Linkedin,
+  Lightbulb, TrendingUp, Linkedin, Shield
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
 
 import LocationAutocomplete from "@/components/app/LocationAutocomplete";
-import LeadMapPanel from "@/components/app/LeadMapPanel";
+// import LeadMapPanel from "@/components/app/LeadMapPanel";
+import MapboxPanel from "@/components/app/MapboxPanel";
 
 interface Business {
   placeId: string;
@@ -110,8 +111,7 @@ const DarkInput = ({
       onChange={onChange}
       disabled={disabled}
       className="w-full h-12 bg-black/30 border border-white/[0.10] focus:border-white/40 text-white text-sm placeholder:text-white/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-mono-data"
-      style={{ borderRadius: "3px" }}
-      style={{ paddingLeft: Icon ? "2.5rem" : "1rem", paddingRight: "1rem" }}
+      style={{ borderRadius: "3px", paddingLeft: Icon ? "2.5rem" : "1rem", paddingRight: "1rem" }}
     />
   </div>
 );
@@ -627,587 +627,393 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   }
 
   return (
-    <section id="tool" className="py-10 sm:py-16 w-full overflow-hidden" style={{ background: "transparent" }}>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 w-full">
+    <section id="tool" className="w-full pb-20 relative font-mono text-[#e5e2e1]" style={{ background: "transparent" }}>
+      {/* Absolute Grain overlay */}
+      <div className="absolute inset-0 bg-[url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQaVDAPffRmh8CSO1KPsZf25EqZARcoeQW6wntnuYT2TPvG3Rid6Co7m28Kg5wkK7o99xvzGAboo78Lz4IakvxyBI4p2JpJl3Ea1tdVdfRUArFJRJiKc3l4PgDflnG8C39mgYIxHXZ94yX_zukcM_6BViuj8n5TcWB2KO8PjGjOxxh73-m5wAvcXaSVt96raS-LO4U1wdUYmHC9TYaE--sV1CwKtWW46-uubx2SxTai4xgYH5Xy_1FLOUYFlddwz1ByjCtez5pStjr')] opacity-[0.03] pointer-events-none z-0"></div>
 
-        {/* Header — dot-matrix style */}
-        <div className="mb-8 border-b border-white/[0.06] pb-6">
-          <div className="label-mono text-white/20 mb-3">// LEAD GENERATOR</div>
-          <h2 className="font-black text-white tracking-tight"
-            style={{ fontFamily: "'Space Mono', monospace", fontSize: "clamp(28px, 4vw, 40px)" }}>
-            START YOUR SEARCH.
-          </h2>
-          <p className="font-body text-white/35 text-sm mt-2 max-w-md">
-            Enter a business type and location to extract leads instantly.
-          </p>
-        </div>
-
+      <div className="p-4 md:p-8 space-y-6 max-w-[1600px] mx-auto relative z-10 w-full mt-6">
+      
         {/* Auth loading */}
         {authLoading && (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-[#F7931A]" />
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-[#f7931a]" />
           </div>
         )}
 
         {/* ── Locked state ── */}
         {!authLoading && !user && (
-          <div className="flex flex-col items-center gap-6 p-10 text-center border border-white/[0.08] relative overflow-hidden"
-            style={{ borderRadius: "4px", background: "rgba(255,255,255,0.015)" }}>
-            {/* Scanline texture */}
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.01) 3px, rgba(255,255,255,0.01) 4px)" }}
-            />
-            <div className="relative flex h-16 w-16 items-center justify-center border border-white/[0.12]"
-              style={{ borderRadius: "3px" }}>
-              <Lock className="h-7 w-7 text-white/40" />
-            </div>
-            <div className="relative">
-              <h3 className="font-mono-data text-sm font-bold text-white/80 tracking-widest uppercase mb-2">
-                AUTHENTICATION REQUIRED
-              </h3>
-              <p className="font-body text-white/30 text-sm max-w-sm mx-auto">
-                Create a free account or sign in to start searching Google Maps and the web for business contacts.
-              </p>
-            </div>
-            <button
-              className="relative btn-btc px-8 py-3.5 text-[11px]"
-              onClick={onOpenAuth}
-            >
-              SIGN IN / SIGN UP FREE
-            </button>
-            {/* Blurred preview */}
-            <div className="relative w-full overflow-hidden mt-2 border border-white/[0.06]" style={{ borderRadius: "3px" }}>
-              <div className="absolute inset-0 bg-[#080808]/70 backdrop-blur-sm z-10" />
-              <div className="grid grid-cols-3 gap-px p-3 pointer-events-none select-none opacity-30" style={{ background: "rgba(255,255,255,0.02)" }}>
-                {["BUSINESS", "EMAIL", "PHONE"].map(h => (
-                  <div key={h} className="h-6 flex items-center justify-center label-mono text-white/30">{h}</div>
-                ))}
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-5 bg-white/[0.03]" />
-                ))}
+          <div className="flex flex-col items-center justify-center max-w-2xl mx-auto w-full relative pt-10">
+            <div className="mb-10 text-center">
+              <div className="text-[#f7931a] mb-4 flex items-center justify-center gap-2 text-[10px] tracking-widest uppercase">
+                <span className="w-1.5 h-1.5 rounded-none bg-[#f7931a] animate-pulse" />
+                // REDACTED INTELLIGENCE MODULE
               </div>
+              <h2 className="font-bold text-[#e5e2e1] tracking-tighter uppercase text-3xl md:text-5xl">
+                RESTRICTED_ACCESS
+              </h2>
+            </div>
+
+            <div className="flex flex-col items-center gap-6 p-10 text-center bg-[#0e0e0e] border border-white/10 w-full relative">
+              <div className="relative flex h-16 w-16 items-center justify-center border border-white/5 rounded-none bg-[#131313]">
+                <Lock className="h-7 w-7 text-[#dbc2ae]/50" />
+              </div>
+              <div className="relative">
+                <h3 class="text-sm font-bold text-[#e5e2e1] tracking-widest uppercase mb-2">
+                  AUTHENTICATION REQUIRED
+                </h3>
+                <p className="text-[#dbc2ae] text-xs max-w-sm mx-auto opacity-70">
+                  Establish a secure connection session to deploy extraction algorithms.
+                </p>
+              </div>
+              <button
+                className="w-full py-4 bg-[#f7931a] text-[#4b2800] font-bold uppercase tracking-widest text-sm hover:brightness-110 active:scale-[0.98] transition-all rounded-none"
+                onClick={onOpenAuth}
+              >
+                Launch Secure Session
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── Signed-in tool ── */}
-        {!authLoading && user && (<>
-
-          {/* Search Form Panel */}
-          <div className="mb-6 border border-white/[0.08] p-6 relative overflow-hidden"
-            style={{ borderRadius: "4px", background: "rgba(255,255,255,0.015)" }}>
-            {/* Corner accents — white monochrome */}
-            <div className="absolute top-0 left-0 w-5 h-5 border-t border-l border-white/20" style={{ borderRadius: "0" }} />
-            <div className="absolute bottom-0 right-0 w-5 h-5 border-b border-r border-white/20" style={{ borderRadius: "0" }} />
-            <div className="absolute top-0 right-0 w-5 h-5 border-t border-r border-white/10" style={{ borderRadius: "0" }} />
-            <div className="absolute bottom-0 left-0 w-5 h-5 border-b border-l border-white/10" style={{ borderRadius: "0" }} />
-
-            <div className="space-y-5">
-              {/* Keyword + Location */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <FieldLabel htmlFor="keyword">Business Keyword</FieldLabel>
-                  <div>
-                    <DarkInput
-                      id="keyword"
-                      placeholder='"plumber", "dentist"'
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      onBlur={() => validateField("keyword", keyword)}
-                      disabled={isProcessing}
-                      icon={Search}
-                      required
-                      style={
-                        fieldErrors.keyword
-                          ? { borderColor: '#ff4757', boxShadow: '0 0 8px rgba(255, 71, 87, 0.2)' }
-                          : undefined
-                      }
-                    />
-                  </div>
-                  {fieldErrors.keyword && (
-                    <p className="text-[#ff4757] text-xs mt-1.5 font-mono-data">{fieldErrors.keyword}</p>
-                  )}
-                </div>
-                <div>
-                  <FieldLabel htmlFor="location">Location</FieldLabel>
-                  <LocationAutocomplete
-                    google={googleApi}
-                    value={location}
-                    onChange={(val) => {
-                      setLocation(val);
-                      if (selectedPlace && val !== selectedPlace.label) {
-                        setSelectedPlace(null);
-                        setSearchCenter(null);
-                      }
-                    }}
-                    onPlaceSelect={(place) => {
-                      setLocation(place.label);
-                      setSelectedPlace(place);
-                      setSearchCenter({ lat: place.lat, lng: place.lng });
-                    }}
-                    onBlur={() => validateField("location", location)}
-                    disabled={isProcessing}
-                    hasError={!!fieldErrors.location}
-                  />
-                  {fieldErrors.location && (
-                    <p className="text-[#ff4757] text-xs mt-1.5 font-mono-data">{fieldErrors.location}</p>
-                  )}
-                </div>
+        {/* ── Signed-in tool (STITCH LAYOUT) ── */}
+        {!authLoading && user && (
+          <>
+            {/* Header / Title */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-4 mb-6">
+              <div>
+                <p className="text-[10px] text-[#f7931a] tracking-[0.4em] uppercase mb-1">Session ID: 0x{userProfile?.id ? userProfile.id.slice(0, 6).toUpperCase() : 'FF1290'}-A</p>
+                <h1 className="text-2xl md:text-4xl font-bold tracking-tighter uppercase text-[#e5e2e1]">OPERATIONAL_DASHBOARD</h1>
               </div>
+              <div className="mt-4 md:mt-0 text-left md:text-right">
+                <p className="text-[10px] text-[#dbc2ae] uppercase">Node Latitude: {searchCenter ? searchCenter.lat.toFixed(4) : "34.0522"} N</p>
+                <p className="text-[10px] text-[#dbc2ae] uppercase">Node Longitude: {searchCenter ? searchCenter.lng.toFixed(4) : "118.2437"} W</p>
+              </div>
+            </div>
 
-              {/* Radius + Max results */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel htmlFor="radius">
-                    Radius (km) <span className="text-white/20 normal-case font-normal">(optional)</span>
-                  </FieldLabel>
-                  <DarkInput
-                    id="radius"
-                    type="number"
-                    min="1"
-                    placeholder="50"
-                    value={radius}
-                    onChange={(e) => setRadius(e.target.value)}
-                    disabled={isProcessing}
-                  />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="max-results">
-                    Max Results: <span className="text-[#F7931A]">{maxResults}</span>
-                  </FieldLabel>
-                  <div className="flex gap-2">
-                    {[20, 40, 60].map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => setMaxResults(v)}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* ── LEFT COLUMN: INPUTS & STATUS (4 columns) ── */}
+              <div className="lg:col-span-4 lg:col-start-1 lg:sticky lg:top-[90px] flex flex-col gap-6">
+                
+                {/* Form Input Card */}
+                <div className="bg-[#0e0e0e] p-6 border-l-2 border-[#f7931a] relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+                    <Shield className="w-16 h-16" />
+                  </div>
+                  <h2 className="text-xs font-bold tracking-[0.2em] text-[#f7931a] uppercase mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[#f7931a]"></span> INITIATE EXTRACTION
+                  </h2>
+
+                  <div className="space-y-5">
+                    {/* Keyword */}
+                    <div className="space-y-1">
+                      <label htmlFor="keyword" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_KEYWORD_QUERY</label>
+                      <input
+                        id="keyword"
+                        placeholder='e.g. CYBER_PROTOCOL'
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        onBlur={() => validateField("keyword", keyword)}
                         disabled={isProcessing}
-                        className={`flex-1 py-3 font-mono-data text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
-                          maxResults === v
-                            ? "bg-white text-[#080808]"
-                            : "bg-transparent border border-white/[0.10] text-white/35 hover:border-white/25 hover:text-white/60"
-                        }`}
-                        style={{ borderRadius: "3px" }}
-                      >
-                        {v}
-                      </button>
-                    ))}
+                        className={`w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] placeholder:text-white/20 focus:ring-0 focus:border-[#f7931a] font-mono text-xs p-3 rounded-none ${fieldErrors.keyword ? 'border-[#ffb4ab]' : ''}`}
+                      />
+                      {fieldErrors.keyword && <p className="text-[#ffb4ab] text-[9px] mt-1 uppercase">{fieldErrors.keyword}</p>}
+                    </div>
+
+                    {/* Location */}
+                    <div className="space-y-1">
+                      <label htmlFor="location" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_LOCATION_NODE</label>
+                      <div className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 focus-within:border-[#f7931a] relative text-[#f7931a]">
+                        <LocationAutocomplete
+                          google={googleApi}
+                          value={location}
+                          onChange={(val) => {
+                            setLocation(val);
+                            if (selectedPlace && val !== selectedPlace.label) { setSelectedPlace(null); setSearchCenter(null); }
+                          }}
+                          onPlaceSelect={(place) => {
+                            setLocation(place.label);
+                            setSelectedPlace(place);
+                            setSearchCenter({ lat: place.lat, lng: place.lng });
+                          }}
+                          onBlur={() => validateField("location", location)}
+                          disabled={isProcessing}
+                          hasError={!!fieldErrors.location}
+                        />
+                      </div>
+                      {fieldErrors.location && <p className="text-[#ffb4ab] text-[9px] mt-1 uppercase">{fieldErrors.location}</p>}
+                    </div>
+
+                    {/* Radios & Max Results */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label htmlFor="radius" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_RADIUS_KM</label>
+                        <input
+                          id="radius"
+                          type="number"
+                          min="1"
+                          placeholder="50"
+                          value={radius}
+                          onChange={(e) => setRadius(e.target.value)}
+                          disabled={isProcessing}
+                          className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] focus:ring-0 focus:border-[#f7931a] font-mono text-xs text-center p-3 rounded-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-[#dbc2ae] uppercase font-bold">_YIELD_LIMITS</label>
+                        <select
+                          value={maxResults}
+                          onChange={(e) => setMaxResults(Number(e.target.value))}
+                          disabled={isProcessing}
+                          className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] focus:ring-0 focus:border-[#f7931a] font-mono text-xs text-center p-3 rounded-none appearance-none cursor-pointer"
+                        >
+                          <option value={20}>20_NODES</option>
+                          <option value={40}>40_NODES</option>
+                          <option value={60}>60_NODES</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Submit Action */}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isProcessing}
+                      className={`w-full py-4 font-bold uppercase tracking-widest text-sm transition-all rounded-none mt-2 ${isProcessing ? 'bg-[#f7931a]/30 text-[#4b2800]/50 cursor-not-allowed' : 'bg-[#f7931a] text-[#4b2800] hover:brightness-110 active:scale-[0.98]'}`}
+                    >
+                      {isProcessing ? 'DEPLOYING...' : 'DEPLOY ANALYSIS NODE'}
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Generate button */}
-              <button
-                onClick={handleGenerate}
-                disabled={isProcessing}
-                className="btn-btc btn-btc-pulse w-full flex items-center justify-center gap-2.5 py-4 text-[12px] disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none disabled:animate-none"
-              >
-                {isProcessing ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</>
-                ) : (
-                  <><Search className="h-4 w-4" /> Generate Leads</>
+                {/* Progress Panel */}
+                {(isProcessing || (results && progress > 0)) && (
+                  <div className="bg-[#0e0e0e] p-6 border border-white/10 relative">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-[10px] font-bold text-[#e5e2e1] uppercase tracking-widest">SCAN_PROGRESS</h3>
+                      <span className="text-[10px] text-[#f7931a] animate-pulse">LIVE_STREAM</span>
+                    </div>
+
+                    <div className="w-full h-1 bg-white/5 mb-4 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 h-full bg-[#f7931a] shadow-[0_0_10px_#F7931A] transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                    </div>
+
+                    <div className="h-40 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1 text-[#dbc2ae] opacity-80 pl-1 pr-2">
+                       {STEPS_INIT.map((step, i) => {
+                          const current = steps[i];
+                          if(current.status === "pending") return null;
+                          return (
+                            <p key={step.label} className={current.status === "active" ? "text-[#f7931a]" : ""}>
+                              {">"} {step.label}... {current.status === "active" ? <span><span className="blinking-cursor"></span></span> : "[OK]"}
+                            </p>
+                          )
+                       })}
+                       <p className="text-[9px] text-[#f7931a] uppercase mt-2 opacity-70">
+                         {status} {progress}%
+                       </p>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
-          </div>
+              </div>
 
-          {/* ── Map Panel ── */}
-          {(selectedPlace !== null || isProcessing || results !== null) && (
-            <div className="mb-6">
-              <LeadMapPanel
-                google={googleApi}
-                center={searchCenter}
-                radiusKm={radius ? Number(radius) : 50}
-                markers={mapMarkers}
-                isSearching={isProcessing}
-              />
-            </div>
-          )}
-
-          {/* ── Progress Panel ── */}
-          {(isProcessing || (results && progress > 0)) && (
-            <div className="mb-6 border border-white/[0.08] p-5 relative overflow-hidden"
-              style={{ borderRadius: "4px", background: "rgba(255,255,255,0.015)" }}>
-              {/* Scanline */}
-              <div className="absolute inset-0 pointer-events-none"
-                style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)" }}
-              />
-              {/* Step indicators */}
-              <div className="relative flex items-center justify-between mb-5">
-                {STEPS_INIT.map((step, i) => {
-                  const current = steps[i];
-                  return (
-                    <div key={step.label} className="flex items-center gap-1.5 flex-1">
-                      <div
-                        className="flex h-7 w-7 items-center justify-center font-mono-data text-xs font-bold flex-shrink-0 transition-all duration-300"
-                        style={{
-                          borderRadius: "3px",
-                          ...(current.status === "done"
-                            ? { background: "#fff", color: "#080808" }
-                            : current.status === "active"
-                            ? { background: "transparent", color: "#fff", border: "2px solid rgba(255,255,255,0.6)" }
-                            : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.08)" }),
-                        }}
-                      >
-                        {current.status === "done" ? "✓" : i + 1}
-                      </div>
-                      <span
-                        className="font-mono-data text-[9px] font-bold hidden sm:inline uppercase tracking-[0.12em] transition-colors"
-                        style={{ color: current.status === "done" ? "rgba(255,255,255,0.8)" : current.status === "active" ? "#ffffff" : "rgba(255,255,255,0.2)" }}
-                      >
-                        {step.label}
-                      </span>
-                      {i < STEPS_INIT.length - 1 && (
-                        <ChevronRight className="h-3.5 w-3.5 text-white/15 mx-1 flex-shrink-0" />
-                      )}
+              {/* ── RIGHT COLUMN: VISUALS & DATA (8 columns) ── */}
+              <div className="lg:col-span-8 space-y-6">
+                
+                {/* Map View - Only show if NO results OR actively searching */}
+                {(!results || isSearching) && (
+                <div className="bg-[#1c1b1b] border border-white/10 h-[600px] w-full relative overflow-hidden flex flex-col transition-all duration-700">
+                  <div className="absolute top-4 left-4 z-10 space-y-2 pointer-events-none">
+                    <div className="bg-[#0e0e0e]/80 backdrop-blur-md p-2 border border-white/10 text-[10px] font-mono shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                      <span className="text-[#f7931a]">VISUALIZER:</span> GLOBAL_NET_FLOW (V2.0)
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Status + percentage */}
-              <div className="relative flex items-center justify-between mb-2">
-                <span className="label-mono text-white/30 truncate max-w-[75%]">{status}</span>
-                <span className="font-mono-data text-sm font-bold text-white/80">{progress}%</span>
-              </div>
-
-              {/* Progress bar — monochrome */}
-              <div className="relative h-1.5 overflow-hidden bg-white/[0.06]" style={{ borderRadius: "1px" }}>
-                <div
-                  className="h-full transition-all duration-300"
-                  style={{ width: `${progress}%`, background: "rgba(255,255,255,0.75)" }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ── Results Panel ── */}
-          {results && !isProcessing && (
-            <div className="border border-white/[0.08] overflow-hidden relative"
-              style={{ borderRadius: "4px", background: "rgba(255,255,255,0.015)" }}>
-              {/* Summary header */}
-              <div className="px-5 py-4 border-b border-white/[0.06] space-y-3" style={{ background: "rgba(0,0,0,0.3)" }}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex gap-4 font-mono-data text-xs font-bold uppercase tracking-wider">
-                    <span className="text-white">{sortedResults?.length ?? 0} results</span>
-                    <span className="flex items-center gap-1 text-[#94A3B8]">
-                      <Mail className="h-3 w-3" /> {emailCount} emails
-                    </span>
-                    <span className="flex items-center gap-1 text-[#94A3B8]">
-                      <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
-                    </span>
                   </div>
-                  {confirmUnlockAll && leadsNeedingIntelligence > 0 && (
-                    <div className="mb-3 p-3 rounded-lg bg-[#F7931A]/10 border border-[#F7931A]/30 flex items-center justify-between">
-                      <span className="font-mono-data text-xs text-[#F7931A]">
-                        Unlock intelligence for {leadsNeedingIntelligence} leads ({leadsNeedingIntelligence} credit{leadsNeedingIntelligence !== 1 ? 's' : ''})? This action cannot be undone.
-                      </span>
-                      <div className="flex gap-2 ml-3">
-                        <button
-                          onClick={() => setConfirmUnlockAll(false)}
-                          className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider text-[#94A3B8] hover:text-white transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleUnlockAllIntelligence}
-                          className="px-3 py-1 rounded bg-[#F7931A]/20 border border-[#F7931A]/40 text-[#F7931A] font-bold uppercase tracking-wider text-xs hover:border-[#F7931A]/60 transition-all"
-                        >
-                          Confirm
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    {leadsNeedingIntelligence > 0 && userProfile && !confirmUnlockAll && (
-                      <button
-                        onClick={handleUnlockAllIntelligence}
-                        className="flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider border border-white/20 text-white/60 hover:border-white/40 hover:text-white/90 transition-all"
-                        style={{ borderRadius: "3px" }}
-                      >
-                        <Zap className="h-3 w-3" />
-                        Unlock All ({leadsNeedingIntelligence})
-                      </button>
-                    )}
-                    <button
-                      onClick={handleCopyEmails}
-                      disabled={emailCount === 0}
-                      className="flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider text-white/40 border border-white/[0.10] hover:border-white/25 hover:text-white/70 transition-all disabled:opacity-40"
-                      style={{ borderRadius: "3px" }}
-                    >
-                      {emailsCopied ? (
-                        <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
-                      ) : (
-                        <><Copy className="h-3.5 w-3.5" />Copy Emails</>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleDownload}
-                      className="btn-btc flex items-center gap-1.5 px-3.5 py-2 text-[10px]"
-                    >
-                      <Download className="h-3.5 w-3.5" />Download XLSX
-                    </button>
-                  </div>
-                </div>
-
-                {/* Row 1: Sort + Text Search */}
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Sort:</span>
-                  <div className="flex gap-1.5">
-                    {["name", "emails", "score"].map(opt => (
-                      <button
-                        key={opt}
-                        onClick={() => setSortBy(opt as typeof sortBy)}
-                        className={`px-2.5 py-1.5 font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${sortBy === opt ? "bg-white text-[#080808]" : "border border-white/[0.10] text-white/35 hover:border-white/25"}`}
-                        style={{ borderRadius: "3px" }}
-                      >
-                        {opt === "name" ? "Name" : opt === "emails" ? "Emails" : "Score"}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="ml-auto">
-                    <input
-                      type="text"
-                      placeholder="Search leads..."
-                      value={filterText}
-                      onChange={e => setFilterText(e.target.value)}
-                      className="h-7 w-44 bg-black/30 border border-white/[0.10] px-3 text-white text-xs placeholder:text-white/20 outline-none focus:border-white/30 font-mono-data"
-                      style={{ borderRadius: "3px" }}
+                  
+                  {/* Actual Map Panel */}
+                  <div className="flex-1 w-full h-full grayscale brightness-50 opacity-80 mix-blend-screen overflow-hidden">
+                    <MapboxPanel
+                      center={searchCenter}
+                      radiusKm={radius ? Number(radius) : 50}
+                      markers={mapMarkers}
+                      isSearching={isProcessing}
                     />
                   </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none"></div>
                 </div>
+                )}
+                
+                {/* Data Table Panel */}
+{/* Data Table Panel */}
+                {results && !isProcessing && (
+                  <div className="animate-fade-in-up">
+                    <div className="mb-6 p-6 bg-[#0e0e0e] border border-[#f7931a]/30 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
+                        <CheckCheck className="w-24 h-24" />
+                      </div>
+                      <h2 className="text-2xl font-bold tracking-tighter text-[#f7931a] uppercase mb-2 flex items-center gap-2">
+                         [ TASK COMPLETED ]
+                      </h2>
+                      <p className="text-[#dbc2ae] text-[10px] uppercase tracking-widest font-mono">
+                        EXTRACTION SUCCESSFUL. {sortedResults?.length ?? 0} NODES SECURED. AWAITING COMMAND.
+                      </p>
+                    </div>
 
-                {/* Row 2: Filter pills + Score threshold + Clear */}
-                <div className="flex flex-wrap gap-1.5 items-center">
-                  {([
-                    { key: "email", label: "Has Email", icon: Mail, active: filterByEmail, toggle: () => setFilterByEmail(v => !v) },
-                    { key: "phone", label: "Has Phone", icon: Phone, active: filterByPhone, toggle: () => setFilterByPhone(v => !v) },
-                    { key: "website", label: "Has Site", icon: Globe, active: filterByWebsite, toggle: () => setFilterByWebsite(v => !v) },
-                    { key: "linkedin", label: "LinkedIn", icon: Linkedin, active: filterByLinkedIn, toggle: () => setFilterByLinkedIn(v => !v) },
-                    ...(userProfile ? [{ key: "intel", label: "Has Intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
-                  ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
-                    <button
-                      key={f.key}
-                      onClick={f.toggle}
-                      className={`flex items-center gap-1 px-2.5 py-1 font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${f.active ? "bg-white text-[#080808]" : "border border-white/[0.10] text-white/35 hover:border-white/25"}`}
-                      style={{ borderRadius: "3px" }}
-                    >
-                      <f.icon className="h-3 w-3" />{f.label}
-                    </button>
-                  ))}
-
-                  {userProfile && (
-                    <div className="flex items-center gap-1 ml-1">
-                      <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Score≥</span>
-                      {[0, 25, 50, 75].map(n => (
+                  {/* Toolkit Actions & Filters */}
+                  <div className="bg-[#0e0e0e] border border-white/10 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <div className="flex items-center relative w-full md:w-64">
+                          <Search className="h-4 w-4 absolute left-3 text-[#dbc2ae]/40" />
+                          <input
+                            type="text"
+                            placeholder="QUERY_PAYLOAD..."
+                            value={filterText}
+                            onChange={e => setFilterText(e.target.value)}
+                            className="h-10 w-full bg-[#1c1b1b] border border-white/10 pl-9 pr-3 text-[#e5e2e1] text-[10px] placeholder:text-[#dbc2ae]/30 outline-none focus:border-[#f7931a] font-mono transition-none rounded-none"
+                          />
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2">
+                       {leadsNeedingIntelligence > 0 && userProfile && !confirmUnlockAll && (
+                          <button
+                            onClick={handleUnlockAllIntelligence}
+                            className="bg-[#f7931a]/10 border border-[#f7931a]/30 text-[#f7931a] hover:bg-[#f7931a]/20 px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
+                          >
+                            <Zap className="h-3.5 w-3.5" /> [ UNLOCK_ALL ({leadsNeedingIntelligence}) ]
+                          </button>
+                        )}
                         <button
-                          key={n}
-                          onClick={() => setFilterScoreMin(n)}
-                          className={`px-2 py-1 font-mono-data text-[9px] font-bold transition-all ${filterScoreMin === n ? "bg-white text-[#080808]" : "border border-white/[0.10] text-white/35 hover:border-white/25"}`}
-                          style={{ borderRadius: "3px" }}
+                          onClick={handleCopyEmails}
+                          disabled={emailCount === 0}
+                          className="bg-[#1c1b1b] border border-white/10 text-[#e5e2e1] hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2 disabled:opacity-30"
                         >
-                          {n === 0 ? "All" : n}
+                          {emailsCopied ? <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" /> [ COPIED_EMAILS ]</> : <><Copy className="h-3.5 w-3.5" /> [ DUMP_EMAILS ]</>}
                         </button>
-                      ))}
+                        <button
+                          onClick={handleDownload}
+                          className="bg-[#1c1b1b] border border-white/10 text-emerald-500 hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
+                        >
+                          <Download className="h-3.5 w-3.5" /> [ EXPORT_CSV ]
+                        </button>
+                    </div>
+                  </div>
+
+                  {/* Unlock Confirm Banner */}
+                  {confirmUnlockAll && leadsNeedingIntelligence > 0 && (
+                    <div className="p-4 bg-[#93000a] border border-[#ffb4ab] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <span className="font-mono text-xs text-[#ffdad6] uppercase">
+                        WARNING: Deduct {leadsNeedingIntelligence} credits to uncover intelligence for {leadsNeedingIntelligence} target{leadsNeedingIntelligence !== 1 ? 's' : ''}?
+                      </span>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => setConfirmUnlockAll(false)} className="px-4 py-2 text-[10px] uppercase text-[#ffdad6] border border-[#ffdad6]/20 hover:bg-[#ffdad6]/10">Abort</button>
+                        <button onClick={handleUnlockAllIntelligence} className="px-4 py-2 bg-[#ffb4ab] text-[#690005] font-bold uppercase text-[10px] hover:brightness-110">Confirm_Deploy</button>
+                      </div>
                     </div>
                   )}
 
-                  <span className="font-mono-data text-[9px] text-[#94A3B8] ml-auto">
-                    {sortedResults?.length ?? 0}/{totalResultCount}
-                  </span>
-                  {activeFilterCount > 0 && (
-                    <button
-                      onClick={() => {
-                        setFilterByEmail(false);
-                        setFilterByPhone(false);
-                        setFilterByWebsite(false);
-                        setFilterByLinkedIn(false);
-                        setFilterByIntelligence(false);
-                        setFilterScoreMin(0);
-                        setFilterText("");
-                      }}
-                      className="px-2.5 py-1 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider text-[#ff4757] border border-[#ff4757]/30 bg-[#ff4757]/10 hover:bg-[#ff4757]/20 transition-all"
-                    >
-                      Clear {activeFilterCount}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Skeleton loading rows */}
-              {isProcessing && !results && (
-                <div className="space-y-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-12 bg-white/5 rounded animate-pulse"></div>
-                  ))}
-                </div>
-              )}
-
-              {/* Results table */}
-              <div className="overflow-x-auto max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 border-b border-white/[0.06]" style={{ background: "#0a0a0a" }}>
-                    <tr>
-                      {["Business", "Phone", "Email", "Actions", "Website", "LinkedIn", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.04]">
-                    {sortedResults?.map((r, i) => (
-                      <tr
-                        key={r.placeId || i}
-                        className="transition-colors hover:bg-white/[0.03]"
-                        style={{ background: i % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent" }}
-                      >
-                        <td className="px-4 py-3">
-                          <p className="font-heading font-medium text-white truncate max-w-[180px]">{r.name}</p>
-                          {r.category && (
-                            <p className="font-mono-data text-[9px] text-[#94A3B8] capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-mono-data text-xs text-[#94A3B8] whitespace-nowrap">
-                          {r.phone || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          {r.emails.length > 0 ? (
-                            <div className="space-y-0.5">
-                              {r.emails.slice(0, 2).map((e) => (
-                                <p key={e} className="font-mono-data text-xs text-[#F7931A] truncate max-w-[200px]">{e}</p>
-                              ))}
-                              {r.emails.length > 2 && (
-                                <p className="font-mono-data text-[9px] text-[#94A3B8]">+{r.emails.length - 2} more</p>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="font-mono-data text-xs text-white/20">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {r.website ? (
-                            <a
-                              href={r.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 font-mono-data text-xs text-[#94A3B8] hover:text-[#F7931A] transition-colors"
-                            >
-                              <Globe className="h-3.5 w-3.5 flex-shrink-0" />
-                              <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="font-mono-data text-xs text-white/20">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {r.linkedinUrl ? (
-                            <a
-                              href={r.linkedinUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 font-mono-data text-xs text-[#0A66C2] hover:text-[#004182] transition-colors"
-                            >
-                              <Linkedin className="h-3.5 w-3.5 flex-shrink-0" />
-                              <span className="truncate max-w-[100px]">Profile</span>
-                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="font-mono-data text-xs text-white/20">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            {r.emails.length > 0 && (
-                              <button
-                                onClick={() => handleCopyField(`${r.placeId}-email`, r.emails[0])}
-                                title="Copy email"
-                                className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
-                              >
-                                {copiedKeys.has(`${r.placeId}-email`) ? (
-                                  <CheckCheck className="h-3 w-3 text-emerald-400" />
-                                ) : (
-                                  <Copy className="h-3 w-3 text-[#94A3B8]" />
-                                )}
-                              </button>
-                            )}
-                            {r.phone && (
-                              <button
-                                onClick={() => handleCopyField(`${r.placeId}-phone`, r.phone)}
-                                title="Copy phone"
-                                className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
-                              >
-                                {copiedKeys.has(`${r.placeId}-phone`) ? (
-                                  <CheckCheck className="h-3 w-3 text-emerald-400" />
-                                ) : (
-                                  <Phone className="h-3 w-3 text-[#94A3B8]" />
-                                )}
-                              </button>
-                            )}
-                            {r.emails.length > 0 && (
-                              <a
-                                href={`mailto:${r.emails[0]}`}
-                                title="Open in email client"
-                                className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
-                              >
-                                <Mail className="h-3 w-3 text-[#94A3B8]" />
-                              </a>
-                            )}
-                            {!r.emails.length && !r.phone && (
-                              <span className="font-mono-data text-xs text-white/20">—</span>
-                            )}
-                          </div>
-                        </td>
-                        {userProfile && (
-                          <td className="px-4 py-3">
-                            {r.intelligenceLoading ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-[#F7931A]" />
-                                <span className="font-mono-data text-[9px] text-[#94A3B8]">Analyzing…</span>
+                  <div className="bg-[#0e0e0e] border border-white/10 overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left font-mono text-[11px] leading-tight border-collapse">
+                      <thead>
+                        <tr className="bg-[#2a2a2a] border-b border-white/10">
+                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Target Identity</th>
+                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Comms Protocol</th>
+                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a] min-w-[200px]">Web Footprint</th>
+                          {userProfile && <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Opp. Score / Action</th>}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {sortedResults?.map((r, i) => (
+                          <tr key={r.placeId || i} className="hover:bg-white/5 transition-colors group align-top">
+                            <td className="p-4">
+                              <div className="flex flex-col gap-1 max-w-[200px]">
+                                <span className="font-bold text-[#e5e2e1] truncate block">{r.name}</span>
+                                {r.category && <span className="text-[9px] text-[#dbc2ae]/60 uppercase tracking-widest">{r.category.replace(/_/g, " ")}</span>}
                               </div>
-                            ) : r.intelligence ? (
-                              <div className="space-y-2">
-                                {/* Intelligence card - click to expand */}
-                                <div className="bg-gradient-to-r from-[#EA580C]/10 to-[#F7931A]/10 border border-[#F7931A]/30 rounded-lg p-3 hover:border-[#F7931A]/50 transition-all cursor-default">
-                                  <div className="flex items-center justify-between gap-2">
+                            </td>
+
+                            <td className="p-4 text-[#dbc2ae]">
+                                <div className="space-y-3">
+                                  {r.phone ? (
                                     <div className="flex items-center gap-2">
-                                      <TrendingUp className="h-3.5 w-3.5 text-[#F7931A]" />
-                                      <span className="font-mono-data font-bold text-[#F7931A]">{r.intelligence.opportunityScore}/100</span>
+                                      <span className="text-[10px]">{r.phone}</span>
+                                      <button onClick={() => handleCopyField(`${r.placeId}-phone`, r.phone)} className="opacity-50 hover:opacity-100 hover:text-[#f7931a]" title="Copy Phone">
+                                        {copiedKeys.has(`${r.placeId}-phone`) ? <CheckCheck className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                                      </button>
                                     </div>
-                                  </div>
-                                  <div className="mt-2 space-y-1 text-[9px]">
-                                    <p className="text-[#94A3B8]"><span className="font-semibold text-white">Maturity:</span> {r.intelligence.businessMaturity}</p>
-                                    <p className="text-[#94A3B8]"><span className="font-semibold text-white">Pitch:</span> {r.intelligence.suggestedPitchAngle}</p>
-                                    {r.intelligence.detectedIssues.length > 0 && (
-                                      <p className="text-[#94A3B8]"><span className="font-semibold text-white">{r.intelligence.detectedIssues.length} issues</span></p>
-                                    )}
-                                  </div>
+                                  ) : <span className="text-[10px] opacity-30">NO_PHONE_NODE</span>}
+                                  
+                                  {r.emails.length > 0 ? (
+                                    <div className="space-y-1.5 pl-2 border-l border-[#f7931a]/30">
+                                      {r.emails.slice(0, 2).map((e, eIdx) => (
+                                        <div key={e} className="flex items-center gap-2">
+                                          <span className="text-[#f7931a] text-[10px] truncate max-w-[150px]">{e}</span>
+                                          <button onClick={() => handleCopyField(`${r.placeId}-email-${eIdx}`, e)} className="opacity-50 hover:opacity-100 hover:text-[#f7931a]" title="Copy Email">
+                                            {copiedKeys.has(`${r.placeId}-email-${eIdx}`) ? <CheckCheck className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                                          </button>
+                                        </div>
+                                      ))}
+                                      {r.emails.length > 2 && <p className="text-[8px] text-white/30 pt-1">+{r.emails.length - 2} HIDDEN_NODES</p>}
+                                    </div>
+                                  ) : <span className="text-[10px] opacity-30 block">NO_EMAIL_NODE</span>}
                                 </div>
-                              </div>
-                            ) : r.website ? (
-                              <button
-                                onClick={() => handleUnlockIntelligence(i)}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#F7931A]/40 bg-[#F7931A]/10 hover:bg-[#F7931A]/20 transition-all"
-                              >
-                                <Lock className="h-3 w-3 text-[#F7931A]" />
-                                <span className="font-mono-data text-[9px] font-bold uppercase tracking-wider text-[#F7931A]">Unlock</span>
-                              </button>
-                            ) : (
-                              <span className="font-mono-data text-xs text-white/20">—</span>
+                            </td>
+
+                            <td className="p-4">
+                               <div className="flex flex-col gap-2">
+                                {r.website ? (
+                                  <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-white/50 hover:text-white transition-colors w-max p-1 hover:bg-[#353534]">
+                                    <Globe className="h-3 w-3 opacity-60" /> 
+                                    <span className="truncate max-w-[160px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                                  </a>
+                                ) : <span className="text-[10px] opacity-30">NO_WEB_FOOTPRINT</span>}
+
+                                {r.linkedinUrl && (
+                                  <a href={r.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-[#0A66C2]/80 hover:text-[#0A66C2] transition-colors w-max p-1 hover:bg-[#0A66C2]/10 mt-1">
+                                    <Linkedin className="h-3 w-3" /> LINKEDIN_PROF
+                                  </a>
+                                )}
+                               </div>
+                            </td>
+
+                            {userProfile && (
+                              <td className="p-4">
+                                {r.intelligenceLoading ? (
+                                  <span className="text-[10px] text-[#f7931a] animate-pulse">DECRYPTING...</span>
+                                ) : r.intelligence ? (
+                                  <div className="flex gap-1 flex-col">
+                                    <span className="font-bold text-[#f7931a] text-xs mb-1">{r.intelligence.opportunityScore}%</span>
+                                    <span className="text-[9px] text-[#dbc2ae] leading-snug"><span className="text-[#e5e2e1] font-bold">HOOK:</span> {r.intelligence.outreachHook}</span>
+                                  </div>
+                                ) : r.website ? (
+                                  <button onClick={() => handleUnlockIntelligence(i)} className="px-2 py-1.5 border border-[#f7931a]/30 text-[#f7931a] bg-[#f7931a]/5 hover:bg-[#f7931a] hover:text-[#131313] transition-all text-[9px] uppercase tracking-tighter w-full max-w-[140px] flex justify-center mt-2 group/btn">
+                                    [ EXTRACT ]
+                                  </button>
+                                ) : (
+                                  <span className="text-[10px] opacity-30 block mt-2">N/A</span>
+                                )}
+                              </td>
                             )}
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {sortedResults?.length === 0 && (
+                      <div className="p-10 text-center text-[#ffb4ab] border-t border-[#ffb4ab]/20 bg-[#93000a]/10">
+                        <span className="material-symbols-outlined block text-3xl mb-2 opacity-50">warning</span>
+                        <p className="text-xs uppercase tracking-widest font-bold">DATASTREAM_EMPTY</p>
+                      </div>
+                    )}
+                  </div>
+                  </div>
+                )}
+
               </div>
             </div>
-          )}
-        </>)}
+          </>
+        )}
       </div>
     </section>
   );
+
 };
 
 export default LeadGeneratorSection;

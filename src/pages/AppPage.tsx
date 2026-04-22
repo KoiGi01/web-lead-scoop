@@ -273,7 +273,7 @@ const AppPage = () => {
         )}
 
         {/* Tool Content */}
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
           <ErrorBoundary>
             {viewMode === "search" ? (
               <LeadGeneratorSection
