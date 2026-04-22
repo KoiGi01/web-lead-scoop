@@ -819,7 +819,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
               <div className="lg:col-span-8 space-y-6">
                 
                 {/* Map View - Only show if NO results OR actively searching */}
-                {(!results || isSearching) && (
+                {(!results || isProcessing) && (
                 <div className="bg-[#1c1b1b] border border-white/10 h-[600px] w-full relative overflow-hidden flex flex-col transition-all duration-700">
                   <div className="absolute top-4 left-4 z-10 space-y-2 pointer-events-none">
                     <div className="bg-[#0e0e0e]/80 backdrop-blur-md p-2 border border-white/10 text-[10px] font-mono shadow-[0_0_15px_rgba(0,0,0,0.5)]">
