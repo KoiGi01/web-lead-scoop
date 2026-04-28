@@ -11,6 +11,7 @@ const AppPage = lazy(() => import("./pages/AppPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const DemoPreview = lazy(() => import("./pages/DemoPreview"));
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
                 <Route path="/app" element={<AppPage />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/demo-preview" element={<DemoPreview />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             )}
