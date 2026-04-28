@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 @tailwind base;
@@ -108,27 +108,45 @@
 
   body {
     @apply antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #00272B;
-    color: #ECDCC9;
+    font-family: 'Archivo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #000;
+    color: #EFEDE6;
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.5;
+    font-feature-settings: "ss01", "cv11";
+    overflow-x: hidden;
+  }
+
+  /* Film grain overlay — fixed, mix-blend-mode overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 200;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .25 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.4;
+    mix-blend-mode: overlay;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Archivo', sans-serif;
     letter-spacing: -0.02em;
-    color: #ECDCC9;
+    color: #EFEDE6;
     line-height: 1.2;
   }
 
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #00272B; }
-  ::-webkit-scrollbar-thumb { background: #082E33; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #0F3A40; }
+  ::-webkit-scrollbar-track { background: #000; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #333; }
 }
 
 /* ─── Keyframes ─────────────────────────────────────────────────────────── */
+@keyframes march {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }

@@ -17,9 +17,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["'Space Grotesk'", "sans-serif"],
-        body:    ["'Inter'", "sans-serif"],
-        mono:    ["'JetBrains Mono'", "monospace"],
+        heading:  ["'Archivo'", "'Space Grotesk'", "sans-serif"],
+        display:  ["'Archivo'", "system-ui", "sans-serif"],
+        serif:    ["'Newsreader'", "'Times New Roman'", "serif"],
+        body:     ["'Inter'", "sans-serif"],
+        mono:     ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
       colors: {
         // shadcn semantic tokens (resolved via CSS vars)
@@ -67,7 +69,20 @@ export default {
           ring:                 "hsl(var(--sidebar-ring))",
         },
 
-        // ── Editorial brand palette ────────────────────────────────────────
+        // ── Landing page palette (v5 design) ─────────────────────────────────
+        // Pure black ground + bone paper + electric yellow accent
+        paper: {
+          DEFAULT: "#EFEDE6",
+          dim:     "#A8A59C",
+          mid:     "#67645B",
+          low:     "#3A3833",
+        },
+        lemon: {
+          DEFAULT: "#F5FF3D",
+          soft:    "#FFFE7A",
+        },
+
+        // ── App palette (wine/petrol/cream) ───────────────────────────────────
         // Deep aubergine wine — accent, links, badges, logo mark
         wine: {
           50:  "#F9EFF5",
@@ -123,6 +138,25 @@ export default {
       },
 
       keyframes: {
+        "march": {
+          from: { transform: "translateX(0)" },
+          to:   { transform: "translateX(-50%)" },
+        },
+        "lift": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%":      { transform: "translateY(-10px)" },
+        },
+        "pulse-dot": {
+          "0%, 100%": { opacity: "1" },
+          "50%":      { opacity: "0.4" },
+        },
+        "caret-blink": {
+          "50%": { opacity: "0" },
+        },
+        "pulse-btn": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(245,255,61,0)" },
+          "50%":      { boxShadow: "0 0 0 8px rgba(245,255,61,0.18)" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to:   { height: "var(--radix-accordion-content-height)" },
@@ -150,6 +184,12 @@ export default {
       },
 
       animation: {
+        "march":       "march 60s linear infinite",
+        "march-fast":  "march 50s linear infinite",
+        "lift":        "lift 2.4s ease-in-out infinite",
+        "pulse-dot":   "pulse-dot 1.6s ease-in-out infinite",
+        "caret-blink": "caret-blink 1s steps(2) infinite",
+        "pulse-btn":   "pulse-btn 1.4s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up":   "accordion-up 0.2s ease-out",
         "fade-in-up":     "fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",

@@ -1,48 +1,41 @@
-import { useState } from "react";
-import NavBar from "@/components/landing/NavBar";
-import HeroSection from "@/components/landing/HeroSection";
-import StatsBar from "@/components/landing/StatsBar";
-import FeaturesSection from "@/components/landing/FeaturesSection";
-import HowItWorksSection from "@/components/landing/HowItWorksSection";
-import UseCasesSection from "@/components/landing/UseCasesSection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
-import PricingSection from "@/components/landing/PricingSection";
-import FaqSection from "@/components/landing/FaqSection";
-import FooterSection from "@/components/landing/FooterSection";
+import NavBarV2 from "@/components/landing/NavBarV2";
+import TickerStrip from "@/components/landing/TickerStrip";
+import HeroSectionV2 from "@/components/landing/HeroSectionV2";
+import MarqueeStrip from "@/components/landing/MarqueeStrip";
+import StatsBandSection from "@/components/landing/StatsBandSection";
+import HowItWorksV2 from "@/components/landing/HowItWorksV2";
+import FeaturesSectionV2 from "@/components/landing/FeaturesSectionV2";
+import QuoteSection from "@/components/landing/QuoteSection";
+import PricingSectionV2 from "@/components/landing/PricingSectionV2";
+import FaqSectionV2 from "@/components/landing/FaqSectionV2";
+import CTASection from "@/components/landing/CTASection";
+import FooterSectionV2 from "@/components/landing/FooterSectionV2";
 
 const Index = () => {
-  const [pendingBundle, setPendingBundle] = useState<string | null>(null);
-
   const appUrl = window.location.hostname.startsWith("app.")
     ? window.location.origin
     : "https://app.globaleads22.com";
 
-  const handlePricingClick = (bundleKey: string | null) => {
-    if (bundleKey === "demo") {
-      window.location.href = `${appUrl}?demo=true`;
-    } else if (!bundleKey) {
-      window.location.href = appUrl;
-    } else {
-      setPendingBundle(bundleKey);
-      window.location.href = `${appUrl}?bundle=${bundleKey}`;
-    }
+  const goToApp = () => { window.location.href = appUrl; };
+
+  const handlePricingClick = (bundleKey: string) => {
+    window.location.href = `${appUrl}?bundle=${bundleKey}`;
   };
 
-  const goToApp = () => { window.location.href = appUrl; };
-  const openAuth = () => { window.location.href = appUrl; };
-
   return (
-    <div className="light min-h-screen bg-cream-50">
-      <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
-      <HeroSection onGetStarted={goToApp} />
-      <StatsBar />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <UseCasesSection />
-      <TestimonialsSection />
-      <PricingSection onGetStarted={handlePricingClick} />
-      <FaqSection />
-      <FooterSection />
+    <div style={{ background: '#000', minHeight: '100vh' }}>
+      <NavBarV2 onGetStarted={goToApp} onOpenAuth={goToApp} />
+      <TickerStrip />
+      <HeroSectionV2 onGetStarted={goToApp} />
+      <MarqueeStrip />
+      <StatsBandSection />
+      <HowItWorksV2 />
+      <FeaturesSectionV2 />
+      <QuoteSection />
+      <PricingSectionV2 onGetStarted={handlePricingClick} />
+      <FaqSectionV2 />
+      <CTASection onGetStarted={goToApp} />
+      <FooterSectionV2 />
     </div>
   );
 };
