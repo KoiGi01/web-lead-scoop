@@ -1,72 +1,134 @@
 @charset "UTF-8";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ─────────────────────────────────────────────────────────
+   Dark theme (default — app.globaleads22.com)
+   Light theme (.light class — globaleads22.com marketing)
+
+   Palette:
+     wine    #4D243D   deep aubergine — accent, links, logo mark
+     cream   #ECDCC9   warm parchment — text on dark, surfaces on light
+     petrol  #00272B   deep teal-black — dark canvas
+   ─────────────────────────────────────────────────────────────────────────── */
+
 @layer base {
+  /* ── Dark theme (default) ─────────────────────────────────────────────── */
   :root {
-    --background:    0 0% 3%;
-    --foreground:    0 0% 98%;
-    --card:          0 0% 5%;
-    --card-foreground: 0 0% 98%;
-    --popover:       0 0% 5%;
-    --popover-foreground: 0 0% 98%;
-    --primary:       0 0% 98%;
-    --primary-foreground: 0 0% 3%;
-    --secondary:     0 0% 10%;
-    --secondary-foreground: 0 0% 70%;
-    --muted:         0 0% 10%;
-    --muted-foreground: 0 0% 45%;
-    --accent:        0 0% 98%;
-    --accent-foreground: 0 0% 3%;
-    --destructive:   0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border:        0 0% 12%;
-    --input:         0 0% 12%;
-    --ring:          0 0% 98%;
-    --radius:        0.5rem;
-    --sidebar-background:    0 0% 3%;
-    --sidebar-foreground:    0 0% 98%;
-    --sidebar-primary:       0 0% 98%;
-    --sidebar-primary-foreground: 0 0% 3%;
-    --sidebar-accent:        0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border:        0 0% 12%;
-    --sidebar-ring:          0 0% 98%;
+    --background:              186 100% 8%;   /* petrol-900  #00272B */
+    --foreground:              33 47% 86%;    /* cream-100   #ECDCC9 */
+
+    --card:                    185 84% 10%;   /* petrol-800  #042B2F */
+    --card-foreground:         33 47% 86%;
+
+    --popover:                 185 76% 12%;   /* petrol-700  #082E33 */
+    --popover-foreground:      33 47% 86%;
+
+    --primary:                 33 47% 86%;    /* cream-100 — Aesop button bg */
+    --primary-foreground:      186 100% 8%;   /* petrol-900 — text on cream btn */
+
+    --secondary:               185 84% 10%;   /* petrol-800 */
+    --secondary-foreground:    33 47% 86%;
+
+    --muted:                   185 76% 12%;   /* petrol-700 */
+    --muted-foreground:        33 26% 64%;    /* cream-300 approx */
+
+    --accent:                  323 36% 22%;   /* wine-700   #4D243D */
+    --accent-foreground:       33 47% 86%;
+
+    --destructive:             0 84% 60%;
+    --destructive-foreground:  33 47% 86%;
+
+    --border:                  186 28% 15%;   /* subtle cream-tint on petrol */
+    --input:                   185 84% 10%;   /* petrol-800 */
+    --ring:                    323 36% 22%;   /* wine-700 focus ring */
+
+    --radius: 0.5rem;
+
+    --sidebar-background:      186 100% 8%;
+    --sidebar-foreground:      33 47% 86%;
+    --sidebar-primary:         33 47% 86%;
+    --sidebar-primary-foreground: 186 100% 8%;
+    --sidebar-accent:          185 84% 10%;
+    --sidebar-accent-foreground: 33 47% 86%;
+    --sidebar-border:          186 28% 15%;
+    --sidebar-ring:            323 36% 22%;
+  }
+
+  /* ── Light theme (.light class on marketing pages) ────────────────────── */
+  .light {
+    --background:              39 65% 95%;    /* cream-50    #FAF5EC */
+    --foreground:              186 100% 8%;   /* petrol-900  #00272B */
+
+    --card:                    0 0% 100%;     /* white */
+    --card-foreground:         186 100% 8%;
+
+    --popover:                 0 0% 100%;
+    --popover-foreground:      186 100% 8%;
+
+    --primary:                 186 100% 8%;   /* petrol-900 — dark btn on light */
+    --primary-foreground:      39 65% 95%;    /* cream-50 text on dark btn */
+
+    --secondary:               33 47% 86%;    /* cream-100 */
+    --secondary-foreground:    186 100% 8%;
+
+    --muted:                   33 30% 91%;    /* between cream-50 and cream-100 */
+    --muted-foreground:        186 20% 40%;
+
+    --accent:                  323 36% 22%;   /* wine-700 — same accent both themes */
+    --accent-foreground:       39 65% 95%;
+
+    --destructive:             0 84% 60%;
+    --destructive-foreground:  0 0% 100%;
+
+    --border:                  186 15% 87%;   /* faint petrol-tint border */
+    --input:                   33 47% 86%;    /* cream-100 */
+    --ring:                    323 36% 22%;
+
+    --sidebar-background:      39 65% 95%;
+    --sidebar-foreground:      186 100% 8%;
+    --sidebar-primary:         186 100% 8%;
+    --sidebar-primary-foreground: 39 65% 95%;
+    --sidebar-accent:          33 47% 86%;
+    --sidebar-accent-foreground: 186 100% 8%;
+    --sidebar-border:          186 15% 87%;
+    --sidebar-ring:            323 36% 22%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
+
   html { scroll-behavior: smooth; }
 
   body {
     @apply antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #080808;
-    color: #f0f0f0;
+    background: #00272B;
+    color: #ECDCC9;
     font-size: 15px;
     line-height: 1.6;
   }
 
-  /* Headings use Space Mono */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Mono', 'JetBrains Mono', monospace;
+    font-family: 'Space Grotesk', sans-serif;
     letter-spacing: -0.02em;
-    color: #f0f0f0;
+    color: #ECDCC9;
+    line-height: 1.2;
   }
 
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #080808; }
-  ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #333; }
+  ::-webkit-scrollbar-track { background: #00272B; }
+  ::-webkit-scrollbar-thumb { background: #082E33; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #0F3A40; }
 }
 
-/* ─── Keyframes ─────────────────────── */
+/* ─── Keyframes ─────────────────────────────────────────────────────────── */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -74,34 +136,6 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
-}
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
-}
-@keyframes scan-line {
-  0%   { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-@keyframes accordion-down {
-  from { height: 0; }
-  to   { height: var(--radix-accordion-content-height); }
-}
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to   { height: 0; }
-}
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-@keyframes dot-pulse {
-  0%, 100% { opacity: 0.12; transform: scale(1); }
-  50%       { opacity: 1; transform: scale(1.8); }
-}
-@keyframes cta-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
-  50%       { box-shadow: 0 0 0 6px rgba(255,255,255,0.08); }
 }
 @keyframes row-in {
   from { opacity: 0; transform: translateX(-6px); }
@@ -111,100 +145,84 @@
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+@keyframes wine-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(77, 36, 61, 0); }
+  50%       { box-shadow: 0 0 0 6px rgba(77, 36, 61, 0.25); }
+}
 
-/* ─── Utilities ─────────────────────── */
+/* ─── Utilities ─────────────────────────────────────────────────────────── */
 @layer utilities {
-  /* Monospace data font */
-  .font-mono-data {
-    font-family: 'Space Mono', 'JetBrains Mono', monospace;
-  }
-  /* Body copy font */
-  .font-body {
-    font-family: 'Inter', -apple-system, sans-serif;
+
+  /* Typography */
+  .font-heading { font-family: 'Space Grotesk', sans-serif; }
+  .font-body    { font-family: 'Inter', -apple-system, sans-serif; }
+  .font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+  /* Label — small mono cap labels (// SECTION style, used sparingly) */
+  .label-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(236, 220, 201, 0.35);
   }
 
+  /* Gradient text — cream fading to wine-400 */
   .gradient-text {
-    background: linear-gradient(90deg, #fff 0%, #777 100%);
+    background: linear-gradient(135deg, #ECDCC9 0%, #A05F84 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* ─── Cards ─── */
-  .glass-card {
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 4px;
+  /* Wine accent glow — for key CTA hover states */
+  .glow-accent {
+    box-shadow: 0 0 0 1px rgba(122, 61, 99, 0.4), 0 0 24px rgba(77, 36, 61, 0.22);
   }
+
+  /* Cards */
+  .glass-card {
+    background: rgba(4, 43, 47, 0.8);
+    border: 1px solid rgba(236, 220, 201, 0.08);
+    border-radius: 8px;
+  }
+
   .card-lift {
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 4px;
-    transition: background 200ms ease, border-color 200ms ease;
+    background: #042B2F;
+    border: 1px solid rgba(236, 220, 201, 0.08);
+    border-radius: 8px;
+    transition: background 200ms ease, border-color 200ms ease, transform 200ms ease;
   }
   .card-lift:hover {
-    background: rgba(255,255,255,0.055);
-    border-color: rgba(255,255,255,0.22);
-  }
-
-  /* ─── Primary CTA ─── */
-  .btn-btc {
-    background: #f0f0f0;
-    color: #080808;
-    border-radius: 3px;
-    font-family: 'Space Mono', monospace;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    transition: background 150ms ease, transform 150ms ease, box-shadow 300ms ease;
-  }
-  .btn-btc:hover {
-    background: #ffffff;
+    background: #082E33;
+    border-color: rgba(236, 220, 201, 0.18);
     transform: translateY(-1px);
   }
-  .btn-btc:active { transform: translateY(0); }
 
-  /* Pulsing variant for hero primary CTA */
-  .btn-btc-pulse {
-    animation: cta-pulse 2.4s ease-in-out infinite;
+  /* Inner top-edge highlight — Linear/Vercel signature on dark cards */
+  .surface-highlight {
+    box-shadow: inset 0 1px 0 rgba(236, 220, 201, 0.06);
   }
 
-  .glow-white { box-shadow: 0 0 30px rgba(255,255,255,0.06); }
-
-  /* ─── Labels ─── */
-  .label-mono {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.35);
-  }
-
-  /* ─── Scanline overlay ─── */
-  .scanline-overlay::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(255,255,255,0.012) 3px,
-      rgba(255,255,255,0.012) 4px
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  /* ─── Animations ─── */
-  .animate-fade-in-up  { animation: fade-in-up 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+  /* Animations */
+  .animate-fade-in-up  { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .animate-fade-in     { animation: fade-in 0.4s ease both; }
-  .animate-marquee     { animation: marquee 28s linear infinite; }
+  .animate-row-in      { animation: row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-section-in  { animation: section-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .animate-accordion-down { animation: accordion-down 0.2s ease-out; }
   .animate-accordion-up   { animation: accordion-up 0.2s ease-out; }
-  .animate-blink       { animation: blink 1.2s step-end infinite; }
-  .animate-row-in      { animation: row-in 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-  .animate-section-in  { animation: section-in 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+  .animate-wine-pulse  { animation: wine-pulse 2.4s ease-in-out infinite; }
 
+  /* Animation delays */
+  .delay-75  { animation-delay: 75ms; }
   .delay-100 { animation-delay: 100ms; }
   .delay-150 { animation-delay: 150ms; }
   .delay-200 { animation-delay: 200ms; }

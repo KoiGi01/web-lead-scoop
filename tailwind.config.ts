@@ -2,15 +2,18 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       fontFamily: {
@@ -19,11 +22,12 @@ export default {
         mono:    ["'JetBrains Mono'", "monospace"],
       },
       colors: {
-        border: "hsl(var(--border))",
-        input:  "hsl(var(--input))",
-        ring:   "hsl(var(--ring))",
+        // shadcn semantic tokens (resolved via CSS vars)
+        border:     "hsl(var(--border))",
+        input:      "hsl(var(--input))",
+        ring:       "hsl(var(--ring))",
         background: "hsl(var(--background))",
-        foreground:  "hsl(var(--foreground))",
+        foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT:    "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -52,13 +56,6 @@ export default {
           DEFAULT:    "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        /* Bitcoin DeFi palette */
-        void:    "#030304",
-        surface: "#0F1115",
-        btc:     "#F7931A",
-        "btc-deep": "#EA580C",
-        gold:    "#FFD600",
-        stardust:"#94A3B8",
         sidebar: {
           DEFAULT:              "hsl(var(--sidebar-background))",
           foreground:           "hsl(var(--sidebar-foreground))",
@@ -69,17 +66,62 @@ export default {
           border:               "hsl(var(--sidebar-border))",
           ring:                 "hsl(var(--sidebar-ring))",
         },
+
+        // ── Editorial brand palette ────────────────────────────────────────
+        // Deep aubergine wine — accent, links, badges, logo mark
+        wine: {
+          50:  "#F9EFF5",
+          100: "#F0DAE6",
+          200: "#E0B5CC",
+          300: "#C788A7",
+          400: "#A05F84",
+          500: "#7A3D63",
+          600: "#5E2D4B",
+          700: "#4D243D",
+          800: "#3A1B2E",
+          900: "#251220",
+        },
+        // Deep teal-black — primary dark background canvas
+        petrol: {
+          50:  "#E0F0F2",
+          100: "#B5DBDF",
+          200: "#7FB9C0",
+          300: "#4D9099",
+          400: "#2C6B73",
+          500: "#1A4F56",
+          600: "#0F3A40",
+          700: "#082E33",
+          800: "#042B2F",
+          900: "#00272B",
+          950: "#001A1D",
+        },
+        // Warm parchment cream — primary text on dark, light theme surfaces
+        cream: {
+          50:  "#FAF5EC",
+          100: "#ECDCC9",
+          200: "#DCC5A8",
+          300: "#C5A983",
+          400: "#A88862",
+          500: "#8B6B47",
+          600: "#6E5436",
+          700: "#523F28",
+          800: "#3A2C1C",
+          900: "#1F1810",
+        },
       },
+
       borderRadius: {
-        sm:    "4px",
-        DEFAULT:"8px",
-        md:    "8px",
-        lg:    "var(--radius)",
-        xl:    "12px",
-        "2xl": "16px",
-        "3xl": "24px",
-        full:  "9999px",
+        xs:      "2px",
+        sm:      "6px",
+        DEFAULT: "8px",
+        md:      "8px",
+        lg:      "12px",
+        xl:      "16px",
+        "2xl":   "20px",
+        "3xl":   "24px",
+        full:    "9999px",
       },
+
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -89,27 +131,33 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to:   { height: "0" },
         },
-        "float": {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%":      { transform: "translateY(-20px)" },
-        },
         "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to:   { opacity: "1" },
+        },
+        "row-in": {
+          from: { opacity: "0", transform: "translateX(-6px)" },
+          to:   { opacity: "1", transform: "translateX(0)" },
+        },
+        "section-in": {
           from: { opacity: "0", transform: "translateY(24px)" },
           to:   { opacity: "1", transform: "translateY(0)" },
         },
-        "marquee": {
-          "0%":   { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
-        },
       },
+
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up":   "accordion-up 0.2s ease-out",
-        "float":          "float 8s ease-in-out infinite",
-        "fade-in-up":     "fade-in-up 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both",
-        "marquee":        "marquee 30s linear infinite",
+        "fade-in-up":     "fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "fade-in":        "fade-in 0.4s ease both",
+        "row-in":         "row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "section-in":     "section-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

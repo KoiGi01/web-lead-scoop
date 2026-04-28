@@ -58,8 +58,12 @@
 - [x] Fix any broken nav links in footer
 - [x] Add Google Analytics 4 snippet to `index.html`
 
+### ✅ 4.0 Bug Fixes (session 2026-04-27)
+- [x] Fixed onboarding modal looping on every page load (race condition in `useUserProfile` — added `checked` flag)
+- [x] Fixed layout stretching vertically when search results load (`min-h-screen` → `h-screen overflow-hidden`)
+
 ### 4.3 Error Handling & UX
-- [ ] Add React Error Boundary component wrapping app
+- [x] Add React Error Boundary component wrapping app
 - [ ] Friendly error messages when edge functions fail (API limits, timeouts)
 - [ ] Skeleton loading states for results table
 - [ ] Empty state illustration when no results found
@@ -75,38 +79,31 @@
 
 ---
 
-## PHASE 5 — Billing with Stripe (Hard, 3–4 days)
-*Payment processing to unlock revenue. Depends on working credits system (Phase 3).*
+## ✅ PHASE 5 — Billing with Stripe ✅ MOSTLY DONE
+*One-time credit pack purchases (not subscriptions). Model: Starter $9/100cr, Growth $19/300cr, Pro $39/700cr.*
 
-### 5.1 Stripe Setup
-- [ ] Create Stripe account, get API keys
-- [ ] Create 2 products in Stripe dashboard:
-  - **Starter** — $19/month (100 credits/month = 10 searches)
-  - **Pro** — $49/month (300 credits/month = 30 searches)
-- [ ] Add Stripe keys to Vercel/Supabase env vars:
-  - `STRIPE_SECRET_KEY` (server-side only, in edge functions)
-  - `VITE_STRIPE_PUBLISHABLE_KEY` (frontend)
+### ✅ 5.1 Stripe Setup
+- [x] Created 3 one-time products in Stripe dashboard (Starter $9, Growth $19, Pro $39)
+- [x] `STRIPE_SECRET_KEY`, `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_PRO`, `STRIPE_WEBHOOK_SECRET` added to Supabase secrets
+- [x] `VITE_STRIPE_PUBLISHABLE_KEY` added to Vercel env vars
+- [x] Added `stripe_customer_id` column to `user_credits` table
 
-### 5.2 Stripe Edge Functions (Supabase Deno)
-Create new edge functions:
+### ✅ 5.2 Stripe Edge Functions
+- [x] `create-checkout-session` — deployed and working (one-time payment mode)
+- [x] `stripe-webhook` — deployed, handles `checkout.session.completed` → adds credits + stores `stripe_customer_id`
 
-- [ ] **`create-checkout-session`**: Stripe Checkout session for a given plan. Returns `checkout_url`.
-- [ ] **`stripe-webhook`**: Handles Stripe events:
-  - `checkout.session.completed` → update `user_credits.plan`, `balance`, store customer/subscription IDs
-  - `customer.subscription.updated` → handle plan changes
-  - `customer.subscription.deleted` → downgrade to free, reset to 50 credits
-- [ ] **`create-portal-session`**: Stripe Customer Portal for subscription management
+### ✅ 5.3 Frontend Billing UI
+- [x] Pricing section buttons → call `create-checkout-session` → redirect to Stripe Checkout
+- [x] Success redirect (`?checkout=success`) shows toast and refetches credits
 
-### 5.3 Frontend Billing UI
-- [ ] Pricing section buttons → call `create-checkout-session` → redirect to Stripe
-- [ ] "Manage Subscription" button in AppPage header (visible if on paid plan)
-- [ ] Show current plan badge (Free / Starter / Pro) in header
-- [ ] Show upgrade modal when user hits credit limit
-- [ ] Display subscription status in AppPage
+### ✅ 5.4 Stripe Webhook Registration
+- [x] Webhook registered in Stripe dashboard pointing to Supabase edge function URL
+- [x] `STRIPE_WEBHOOK_SECRET` configured
 
-### 5.4 Stripe Webhook Registration
-- [ ] Register webhook in Stripe dashboard: `https://[supabase-project].supabase.co/functions/v1/stripe-webhook`
-- [ ] Add `STRIPE_WEBHOOK_SECRET` env var in Supabase
+### 5.5 Remaining Billing Polish (optional pre-launch)
+- [ ] Show upgrade modal when user hits 0 credits (instead of silent failure)
+- [ ] End-to-end test with real card purchase + verify credits added
+- [ ] Test webhook delivery in Stripe dashboard (Developers → Webhooks → recent events)
 
 ---
 

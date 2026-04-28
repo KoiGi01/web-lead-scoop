@@ -1,5 +1,5 @@
 import React from "react";
-import GlobaLeadsLogo from "@/components/icons/GlobaLeadsLogo";
+import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 
 interface Props {
   children: React.ReactNode;
@@ -31,7 +31,7 @@ class ErrorBoundary extends React.Component<Props, State> {
           <div className="max-w-md rounded-2xl bg-[#0F1115] border border-white/10 p-8 text-center">
             <div className="flex justify-center mb-6">
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#F7931A]/40 bg-[#F7931A]/10">
-                <GlobaLeadsLogo className="h-8 w-8 text-[#F7931A]" size={32} />
+                <GlobaLeadsLogo size="sm" theme="dark" showMark={true} className="opacity-90" />
               </div>
             </div>
             <h2 className="font-heading text-xl font-bold text-white mb-3">

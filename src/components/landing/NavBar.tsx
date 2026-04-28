@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import DotMatrixLogo from "./DotMatrixLogo";
+import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 
 interface NavBarProps {
   onGetStarted: () => void;
@@ -35,7 +35,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="/" className="flex items-center">
-          <DotMatrixLogo size="md" />
+          <GlobaLeadsLogo size="md" theme="dark" />
         </a>
 
         {/* Status indicator */}
