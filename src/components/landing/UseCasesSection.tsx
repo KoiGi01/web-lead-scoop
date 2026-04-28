@@ -1,4 +1,4 @@
-import { Briefcase, Building2, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Briefcase, Building2, TrendingUp } from "lucide-react";
 
 const cases = [
   {
@@ -22,33 +22,40 @@ const cases = [
 ];
 
 const UseCasesSection = () => (
-  <section className="py-24 sm:py-32 border-t border-white/[0.04]">
+  <section className="py-24 sm:py-32 border-t border-petrol-900/[0.06] bg-white">
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-      <div className="mb-16 flex items-end justify-between border-b border-white/[0.06] pb-8">
+      <div className="mb-16 flex items-end justify-between border-b border-petrol-900/[0.08] pb-8">
         <div>
-          <div className="label-mono mb-3 text-white/25">// TARGET PROFILES</div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight" style={{ fontFamily: "'Space Mono', monospace" }}>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/25 mb-3">// TARGET PROFILES</div>
+          <h2
+            className="text-3xl sm:text-4xl font-black text-petrol-900 tracking-tight"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
             BUILT FOR EVERY<br />GROWTH OPERATOR
           </h2>
         </div>
       </div>
-      <div className="grid gap-0 md:grid-cols-3 border border-white/[0.06]">
+      <div className="grid gap-0 md:grid-cols-3 border border-petrol-900/[0.08]">
         {cases.map((c, i) => (
-          <div key={i} className={`p-7 flex flex-col gap-5 hover:bg-white/[0.02] transition-colors animate-fade-in-up ${i < cases.length - 1 ? "border-b md:border-b-0 md:border-r border-white/[0.06]" : ""}`} style={{ animationDelay: `${i * 80}ms` }}>
+          <div
+            key={i}
+            className={`p-7 bg-white flex flex-col gap-5 hover:bg-cream-50 transition-colors animate-fade-in-up ${i < cases.length - 1 ? "border-b md:border-b-0 md:border-r border-petrol-900/[0.08]" : ""}`}
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
             <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center border border-white/10">
-                <c.icon className="h-4 w-4 text-white/40" strokeWidth={1.5} />
+              <div className="flex h-10 w-10 items-center justify-center border border-petrol-900/[0.10] bg-wine-700/10">
+                <c.icon className="h-4 w-4 text-wine-700" strokeWidth={1.5} />
               </div>
-              <span className="label-mono text-white/20">{c.code}</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/25">{c.code}</span>
             </div>
             <div>
-              <h3 className="font-mono-data text-xs font-bold text-white/80 tracking-widest mb-1">{c.title}</h3>
-              <p className="label-mono text-white/30">{c.sub}</p>
+              <h3 className="font-mono text-xs font-bold text-petrol-900 tracking-widest mb-1">{c.title}</h3>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-cream-700">{c.sub}</p>
             </div>
-            <ul className="space-y-2 border-t border-white/[0.05] pt-4">
+            <ul className="space-y-2 border-t border-petrol-900/[0.06] pt-4">
               {c.bullets.map((b, j) => (
-                <li key={j} className="flex items-start gap-2 font-mono-data text-[11px] text-white/35">
-                  <span className="text-white/20 mt-0.5 flex-shrink-0">—</span>
+                <li key={j} className="flex items-start gap-2 font-mono text-[11px] text-petrol-700/70">
+                  <span className="text-wine-700/50 mt-0.5 flex-shrink-0">—</span>
                   {b}
                 </li>
               ))}

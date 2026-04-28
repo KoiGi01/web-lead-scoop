@@ -23,7 +23,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ErrorBoundary>
-          <Suspense fallback={<div className="min-h-screen bg-[#080808]" />}>
+          <Suspense fallback={<div className="min-h-screen bg-petrol-900" />}>
             {isAppSubdomain ? (
               <Routes>
                 <Route path="/" element={<AppPage />} />

@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -128,9 +129,9 @@ export function OnboardingModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border border-white/10 bg-[#0F1115]">
+      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border border-cream-100/10 bg-petrol-800">
         {/* Header gradient */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#EA580C] to-[#F7931A]" />
+        <div className="h-1.5 w-full bg-gradient-to-r from-wine-700 to-wine-500" />
 
         <div className="p-6 sm:p-8">
           {/* Progress dots */}
@@ -139,20 +140,20 @@ export function OnboardingModal({
               <div
                 key={s}
                 className={`h-2 rounded-full transition-all ${
-                  s <= step ? "bg-[#F7931A] w-8" : "bg-white/10 w-2"
+                  s <= step ? "bg-wine-700 w-8" : "bg-cream-100/10 w-2"
                 }`}
               />
             ))}
           </div>
 
           <DialogHeader className="mb-6 text-center">
-            <DialogTitle className="text-2xl font-heading font-bold text-white">
+            <DialogTitle className="text-2xl font-heading font-bold text-cream-100">
               {step === 1 && "What service do you offer?"}
               {step === 2 && "Who is your ideal client?"}
               {step === 3 && "Your pricing range per project?"}
               {step === 4 && "Almost there! (Optional)"}
             </DialogTitle>
-            <DialogDescription className="text-[#94A3B8] mt-2">
+            <DialogDescription className="text-cream-300 mt-2">
               {step === 1 &&
                 "This helps us personalize pitch angles for your leads"}
               {step === 2 && "We'll tailor recommendations to your focus"}
@@ -174,8 +175,8 @@ export function OnboardingModal({
                     }}
                     className={`p-4 rounded-xl border-2 transition-all text-left font-semibold ${
                       serviceType === service
-                        ? "border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]"
-                        : "border-white/10 bg-white/5 text-[#94A3B8] hover:border-white/20"
+                        ? "border-wine-700 bg-wine-700/10 text-wine-500"
+                        : "border-cream-100/10 bg-cream-100/5 text-cream-300 hover:border-cream-100/20"
                     }`}
                   >
                     {service}
@@ -189,8 +190,8 @@ export function OnboardingModal({
                   onClick={() => setServiceType("Other")}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left font-semibold ${
                     serviceType === "Other"
-                      ? "border-[#F7931A] bg-[#F7931A]/10 text-[#F7931A]"
-                      : "border-white/10 bg-white/5 text-[#94A3B8] hover:border-white/20"
+                      ? "border-wine-700 bg-wine-700/10 text-wine-500"
+                      : "border-cream-100/10 bg-cream-100/5 text-cream-300 hover:border-cream-100/20"
                   }`}
                 >
                   Other
@@ -201,7 +202,7 @@ export function OnboardingModal({
                     placeholder="Specify your service..."
                     value={serviceOther}
                     onChange={(e) => setServiceOther(e.target.value)}
-                    className="mt-2 w-full px-3 py-2 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30 outline-none"
+                    className="mt-2 w-full px-3 py-2 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30 outline-none"
                   />
                 )}
               </div>
@@ -217,15 +218,15 @@ export function OnboardingModal({
                   onClick={() => setClientType(option.value)}
                   className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                     clientType === option.value
-                      ? "border-[#F7931A] bg-[#F7931A]/10"
-                      : "border-white/10 bg-white/5 hover:border-white/20"
+                      ? "border-wine-700 bg-wine-700/10"
+                      : "border-cream-100/10 bg-cream-100/5 hover:border-cream-100/20"
                   }`}
                 >
                   <div
                     className={`font-semibold ${
                       clientType === option.value
-                        ? "text-[#F7931A]"
-                        : "text-[#94A3B8]"
+                        ? "text-wine-500"
+                        : "text-cream-300"
                     }`}
                   >
                     {option.label}
@@ -244,20 +245,20 @@ export function OnboardingModal({
                   onClick={() => setPricingTier(tier.value)}
                   className={`p-4 rounded-xl border-2 transition-all text-center ${
                     pricingTier === tier.value
-                      ? "border-[#F7931A] bg-[#F7931A]/10"
-                      : "border-white/10 bg-white/5 hover:border-white/20"
+                      ? "border-wine-700 bg-wine-700/10"
+                      : "border-cream-100/10 bg-cream-100/5 hover:border-cream-100/20"
                   }`}
                 >
                   <div
                     className={`font-semibold text-sm ${
                       pricingTier === tier.value
-                        ? "text-[#F7931A]"
-                        : "text-[#94A3B8]"
+                        ? "text-wine-500"
+                        : "text-cream-300"
                     }`}
                   >
                     {tier.label}
                   </div>
-                  <div className="text-xs text-[#94A3B8] mt-1">
+                  <div className="text-xs text-cream-300 mt-1">
                     {tier.description}
                   </div>
                 </button>
@@ -269,7 +270,7 @@ export function OnboardingModal({
           {step === 4 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#94A3B8] mb-2">
+                <label className="block text-sm font-semibold text-cream-300 mb-2">
                   Location (optional)
                 </label>
                 <input
@@ -277,11 +278,11 @@ export function OnboardingModal({
                   placeholder="e.g., Miami, FL or New York"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30 outline-none text-sm"
+                  className="w-full px-3 py-2 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30 outline-none text-sm"
                 />
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-cream-100/5 border border-cream-100/10">
                 <input
                   type="checkbox"
                   id="sells_online"
@@ -291,7 +292,7 @@ export function OnboardingModal({
                 />
                 <label
                   htmlFor="sells_online"
-                  className="flex-1 text-sm text-[#94A3B8] cursor-pointer"
+                  className="flex-1 text-sm text-cream-300 cursor-pointer"
                 >
                   I provide online services (not location-specific)
                 </label>
@@ -301,7 +302,7 @@ export function OnboardingModal({
 
           {/* Error message */}
           {error && (
-            <div className="mt-4 p-3 rounded-lg bg-orange-500/10 border border-orange-400/30 text-sm text-orange-400">
+            <div className="mt-4 p-3 rounded-lg bg-wine-700/10 border border-wine-700/30 text-sm text-wine-300">
               {error}
             </div>
           )}
@@ -311,7 +312,7 @@ export function OnboardingModal({
             <button
               onClick={handleBack}
               disabled={step === 1}
-              className="px-4 py-2 rounded-full border border-white/20 text-[#94A3B8] hover:text-white hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+              className="px-4 py-2 rounded-full border border-cream-100/20 text-cream-300 hover:text-cream-100 hover:border-cream-100/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
             >
               Back
             </button>
@@ -321,33 +322,35 @@ export function OnboardingModal({
                 <button
                   onClick={handleSkip}
                   disabled={saving}
-                  className="px-4 py-2 rounded-full border border-white/20 text-[#94A3B8] hover:text-white hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+                  className="px-4 py-2 rounded-full border border-cream-100/20 text-cream-300 hover:text-cream-100 hover:border-cream-100/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
                 >
                   Skip
                 </button>
               )}
 
               {step < 4 ? (
-                <button
+                <Button
+                  variant="accent"
+                  className="px-6 py-2 rounded-full font-semibold text-sm"
                   onClick={handleNext}
                   disabled={
                     (step === 1 && !isStep1Valid) ||
                     (step === 2 && !isStep2Valid) ||
                     (step === 3 && !isStep3Valid)
                   }
-                  className="px-6 py-2 rounded-full btn-btc disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold"
                 >
                   Next
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  variant="accent"
+                  className="px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2"
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-6 py-2 rounded-full btn-btc disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold flex items-center gap-2"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? "Saving..." : "Finish Setup"}
-                </button>
+                </Button>
               )}
             </div>
           </div>

@@ -45,7 +45,7 @@ interface ConnectionLine {
 
 /* ── Constants ─────────────────────────────────── */
 
-const FONT = "'Space Mono', 'Courier New', monospace";
+const FONT = "'JetBrains Mono', 'Courier New', monospace";
 const C = "0,255,170"; // Accent color RGB — cyber green
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;

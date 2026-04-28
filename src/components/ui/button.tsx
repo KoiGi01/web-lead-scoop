@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-cream-100 text-petrol-900 hover:bg-cream-50 active:scale-[0.98]",
+          "bg-petrol-900 text-cream-50 hover:bg-petrol-700 active:scale-[0.98]",
         accent:
           "bg-wine-700 text-cream-100 hover:bg-wine-500 active:scale-[0.98] focus-visible:ring-wine-400/40",
         secondary:

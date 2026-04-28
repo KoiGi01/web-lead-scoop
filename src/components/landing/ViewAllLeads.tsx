@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import XLSX from "xlsx-js-style";
+import { Button } from "@/components/ui/button";
 
 interface SavedLead {
   id: string;
@@ -157,23 +158,23 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   const totalResultCount = leads.length;
 
   return (
-    <section id="tool" className="bg-[#030304] py-16 sm:py-24 flex-1 flex flex-col">
+    <section id="tool" className="bg-petrol-950 py-16 sm:py-24 flex-1 flex flex-col">
       <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 flex flex-col flex-1">
 
         {/* Header */}
         <div className="mb-10">
           <button
             onClick={onBackToSearch}
-            className="mb-4 flex items-center gap-2 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#F7931A] hover:text-white transition-colors"
+            className="mb-4 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-wine-500 hover:text-cream-100 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Search
           </button>
           <div className="text-center">
-            <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            <h2 className="font-heading text-4xl font-bold tracking-tight text-cream-100 sm:text-5xl">
               Your <span className="gradient-text">Leads</span>
             </h2>
-            <p className="mt-4 text-[#94A3B8] text-lg">
+            <p className="mt-4 text-cream-300 text-lg">
               All leads from your searches in one place.
             </p>
           </div>
@@ -182,30 +183,30 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
         {/* Loading state */}
         {loading && (
           <div className="flex items-center justify-center py-20 flex-1">
-            <Loader2 className="h-8 w-8 animate-spin text-[#F7931A]" />
+            <Loader2 className="h-8 w-8 animate-spin text-wine-500" />
           </div>
         )}
 
         {/* Empty state */}
         {!loading && leads.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 flex-1 text-center">
-            <p className="text-[#94A3B8] text-base">No leads found. Run a search to get started!</p>
+            <p className="text-cream-300 text-base">No leads found. Run a search to get started!</p>
           </div>
         )}
 
         {/* Content */}
         {!loading && leads.length > 0 && (
-          <div className="rounded-2xl bg-[#0F1115] border border-white/10 overflow-hidden flex flex-col flex-1">
+          <div className="rounded-2xl bg-petrol-800 border border-cream-100/10 overflow-hidden flex flex-col flex-1">
 
             {/* Summary + Controls */}
-            <div className="px-5 py-4 border-b border-white/10 bg-black/30 space-y-3">
+            <div className="px-5 py-4 border-b border-cream-100/10 bg-black/30 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex gap-4 font-mono-data text-xs font-bold uppercase tracking-wider">
-                  <span className="text-white">{sortedResults.length} results</span>
-                  <span className="flex items-center gap-1 text-[#94A3B8]">
+                <div className="flex gap-4 font-mono text-xs font-bold uppercase tracking-wider">
+                  <span className="text-cream-100">{sortedResults.length} results</span>
+                  <span className="flex items-center gap-1 text-cream-300">
                     <Mail className="h-3 w-3" /> {emailCount} emails
                   </span>
-                  <span className="flex items-center gap-1 text-[#94A3B8]">
+                  <span className="flex items-center gap-1 text-cream-300">
                     <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
                   </span>
                 </div>
@@ -213,7 +214,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                   <button
                     onClick={handleCopyEmails}
                     disabled={emailCount === 0}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono-data text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] border border-white/10 bg-white/5 hover:border-[#F7931A]/30 hover:text-white transition-all disabled:opacity-40"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider text-cream-300 border border-cream-100/10 bg-cream-100/5 hover:border-wine-700/30 hover:text-cream-100 transition-all disabled:opacity-40"
                   >
                     {emailsCopied ? (
                       <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
@@ -221,30 +222,31 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                       <><Copy className="h-3.5 w-3.5" />Copy Emails</>
                     )}
                   </button>
-                  <button
+                  <Button
+                    variant="accent"
+                    className="flex items-center gap-1.5 px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider"
                     onClick={handleDownload}
-                    className="btn-btc flex items-center gap-1.5 px-3.5 py-2 font-mono-data text-[10px] font-bold uppercase tracking-wider text-white"
                     style={{ borderRadius: "8px" }}
                   >
                     <Download className="h-3.5 w-3.5" />Download XLSX
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Row 1: Sort + Text Search */}
               <div className="flex flex-wrap gap-2 items-center">
-                <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Sort:</span>
+                <span className="font-mono text-[9px] text-cream-300 uppercase tracking-wider">Sort:</span>
                 <div className="flex gap-1.5">
                   {["name", "emails", "score"].map(opt => (
                     <button key={opt} onClick={() => setSortBy(opt as typeof sortBy)}
-                      className={`px-2.5 py-1.5 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${sortBy === opt ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_12px_rgba(247,147,26,0.3)]" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
+                      className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider transition-all ${sortBy === opt ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
                       {opt === "name" ? "Name" : opt === "emails" ? "Emails" : "Score"}
                     </button>
                   ))}
                 </div>
                 <div className="ml-auto">
                   <input type="text" placeholder="Search leads..." value={filterText} onChange={e => setFilterText(e.target.value)}
-                    className="h-7 w-44 bg-black/40 border border-white/10 rounded-lg px-3 text-white text-xs placeholder:text-white/30 outline-none focus:border-[#F7931A]/50 font-mono-data" />
+                    className="h-7 w-44 bg-petrol-900/60 border border-cream-100/10 rounded-lg px-3 text-cream-100 text-xs placeholder:text-cream-100/30 outline-none focus:border-wine-700/50 font-mono" />
                 </div>
               </div>
 
@@ -258,24 +260,24 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                   ...(userProfile ? [{ key: "intel", label: "Has Intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
                 ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
                   <button key={f.key} onClick={f.toggle}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider transition-all ${f.active ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white shadow-[0_0_8px_rgba(247,147,26,0.3)]" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider transition-all ${f.active ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
                     <f.icon className="h-3 w-3" />{f.label}
                   </button>
                 ))}
 
                 {userProfile && (
                   <div className="flex items-center gap-1 ml-1">
-                    <span className="font-mono-data text-[9px] text-[#94A3B8] uppercase tracking-wider">Score≥</span>
+                    <span className="font-mono text-[9px] text-cream-300 uppercase tracking-wider">Score≥</span>
                     {[0, 25, 50, 75].map(n => (
                       <button key={n} onClick={() => setFilterScoreMin(n)}
-                        className={`px-2 py-1 rounded font-mono-data text-[9px] font-bold transition-all ${filterScoreMin === n ? "bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-white" : "bg-white/5 border border-white/10 text-[#94A3B8] hover:border-[#F7931A]/30"}`}>
+                        className={`px-2 py-1 rounded font-mono text-[9px] font-bold transition-all ${filterScoreMin === n ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
                         {n === 0 ? "All" : n}
                       </button>
                     ))}
                   </div>
                 )}
 
-                <span className="font-mono-data text-[9px] text-[#94A3B8] ml-auto">
+                <span className="font-mono text-[9px] text-cream-300 ml-auto">
                   {sortedResults.length}/{totalResultCount}
                 </span>
                 {activeFilterCount > 0 && (
@@ -289,7 +291,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                       setFilterScoreMin(0);
                       setFilterText("");
                     }}
-                    className="px-2.5 py-1 rounded-lg font-mono-data text-[9px] font-bold uppercase tracking-wider text-[#ff4757] border border-[#ff4757]/30 bg-[#ff4757]/10 hover:bg-[#ff4757]/20 transition-all">
+                    className="px-2.5 py-1 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider text-red-400 border border-red-400/30 bg-red-400/10 hover:bg-red-400/20 transition-all">
                     Clear {activeFilterCount}
                   </button>
                 )}
@@ -299,10 +301,10 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
             {/* Results Table */}
             <div className="overflow-x-auto overflow-y-auto flex-1">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-[#0F1115] border-b border-white/10">
+                <thead className="sticky top-0 bg-petrol-800 border-b border-cream-100/10">
                   <tr>
                     {["Business", "Phone", "Email", "Actions", "Website", "LinkedIn", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
-                      <th key={h} className="px-4 py-3 text-left font-mono-data text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">
+                      <th key={h} className="px-4 py-3 text-left font-mono text-[9px] font-bold uppercase tracking-widest text-cream-300">
                         {h}
                       </th>
                     ))}
@@ -312,30 +314,30 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                   {sortedResults.map((r, i) => (
                     <tr
                       key={r.id}
-                      className="transition-colors hover:bg-[#F7931A]/5"
+                      className="transition-colors hover:bg-wine-700/5"
                       style={{ background: i % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent" }}
                     >
                       <td className="px-4 py-3">
-                        <p className="font-heading font-medium text-white truncate max-w-[180px]">{r.name}</p>
+                        <p className="font-heading font-medium text-cream-100 truncate max-w-[180px]">{r.name}</p>
                         {r.category && (
-                          <p className="font-mono-data text-[9px] text-[#94A3B8] capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
+                          <p className="font-mono text-[9px] text-cream-300 capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono-data text-xs text-[#94A3B8] whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono text-xs text-cream-300 whitespace-nowrap">
                         {r.phone || "—"}
                       </td>
                       <td className="px-4 py-3">
                         {r.emails.length > 0 ? (
                           <div className="space-y-0.5">
                             {r.emails.slice(0, 2).map((e) => (
-                              <p key={e} className="font-mono-data text-xs text-[#F7931A] truncate max-w-[200px]">{e}</p>
+                              <p key={e} className="font-mono text-xs text-wine-500 truncate max-w-[200px]">{e}</p>
                             ))}
                             {r.emails.length > 2 && (
-                              <p className="font-mono-data text-[9px] text-[#94A3B8]">+{r.emails.length - 2} more</p>
+                              <p className="font-mono text-[9px] text-cream-300">+{r.emails.length - 2} more</p>
                             )}
                           </div>
                         ) : (
-                          <span className="font-mono-data text-xs text-white/20">—</span>
+                          <span className="font-mono text-xs text-cream-100/20">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -344,14 +346,14 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                             href={r.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono-data text-xs text-[#94A3B8] hover:text-[#F7931A] transition-colors"
+                            className="flex items-center gap-1 font-mono text-xs text-cream-300 hover:text-wine-500 transition-colors"
                           >
                             <Globe className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                             <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         ) : (
-                          <span className="font-mono-data text-xs text-white/20">—</span>
+                          <span className="font-mono text-xs text-cream-100/20">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -360,14 +362,14 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                             href={r.linkedinUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono-data text-xs text-[#0A66C2] hover:text-[#004182] transition-colors"
+                            className="flex items-center gap-1 font-mono text-xs text-[#0A66C2] hover:text-[#004182] transition-colors"
                           >
                             <Linkedin className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate max-w-[100px]">Profile</span>
                             <ExternalLink className="h-3 w-3 flex-shrink-0" />
                           </a>
                         ) : (
-                          <span className="font-mono-data text-xs text-white/20">—</span>
+                          <span className="font-mono text-xs text-cream-100/20">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -376,12 +378,12 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                             <button
                               onClick={() => handleCopyField(`${r.id}-email`, r.emails[0])}
                               title="Copy email"
-                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
                             >
                               {copiedKeys.has(`${r.id}-email`) ? (
                                 <CheckCheck className="h-3 w-3 text-emerald-400" />
                               ) : (
-                                <Copy className="h-3 w-3 text-[#94A3B8]" />
+                                <Copy className="h-3 w-3 text-cream-300" />
                               )}
                             </button>
                           )}
@@ -389,12 +391,12 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                             <button
                               onClick={() => handleCopyField(`${r.id}-phone`, r.phone)}
                               title="Copy phone"
-                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
                             >
                               {copiedKeys.has(`${r.id}-phone`) ? (
                                 <CheckCheck className="h-3 w-3 text-emerald-400" />
                               ) : (
-                                <Phone className="h-3 w-3 text-[#94A3B8]" />
+                                <Phone className="h-3 w-3 text-cream-300" />
                               )}
                             </button>
                           )}
@@ -402,13 +404,13 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                             <a
                               href={`mailto:${r.emails[0]}`}
                               title="Open in email client"
-                              className="p-1.5 rounded-md bg-white/5 border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/10 transition-all"
+                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
                             >
-                              <Mail className="h-3 w-3 text-[#94A3B8]" />
+                              <Mail className="h-3 w-3 text-cream-300" />
                             </a>
                           )}
                           {!r.emails.length && !r.phone && (
-                            <span className="font-mono-data text-xs text-white/20">—</span>
+                            <span className="font-mono text-xs text-cream-100/20">—</span>
                           )}
                         </div>
                       </td>
@@ -416,13 +418,13 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                         <td className="px-4 py-3">
                           {r.intelligence ? (
                             <div className="space-y-1.5 min-w-[160px]">
-                              <div className="flex items-center gap-2 bg-gradient-to-r from-[#EA580C]/20 to-[#F7931A]/10 rounded-lg p-2 border border-[#F7931A]/20">
-                                <Zap className="h-3.5 w-3.5 text-[#F7931A] flex-shrink-0" />
-                                <span className="font-mono-data text-xs font-bold text-[#F7931A]">
+                              <div className="flex items-center gap-2 bg-wine-700/15 rounded-lg p-2 border border-wine-700/20">
+                                <Zap className="h-3.5 w-3.5 text-wine-500 flex-shrink-0" />
+                                <span className="font-mono text-xs font-bold text-wine-500">
                                   {r.intelligence.opportunityScore ?? 0}/100
                                 </span>
                               </div>
-                              <div className="text-[9px] text-[#94A3B8] space-y-0.5">
+                              <div className="text-[9px] text-cream-300 space-y-0.5">
                                 <p><strong>Maturity:</strong> {r.intelligence.businessMaturity}</p>
                                 <p><strong>Position:</strong> {r.intelligence.positioning}</p>
                                 {r.intelligence.detectedIssues?.length > 0 && (
@@ -431,7 +433,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                               </div>
                             </div>
                           ) : (
-                            <span className="font-mono-data text-xs text-white/20">—</span>
+                            <span className="font-mono text-xs text-cream-100/20">—</span>
                           )}
                         </td>
                       )}

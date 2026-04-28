@@ -133,9 +133,9 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
             "circle-radius": {
               stops: [[0, 0], [20, radiusKm * 1000]] // rough estimation for pixel radius
             },
-            "circle-color": "#F7931A",
+            "circle-color": "#7A3D63",
             "circle-opacity": 0.05,
-            "circle-stroke-color": "#F7931A",
+            "circle-stroke-color": "#7A3D63",
             "circle-stroke-opacity": 0.3,
             "circle-stroke-width": 1
           }
@@ -180,8 +180,8 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
         const el = document.createElement('div');
         el.style.width = '8px';
         el.style.height = '8px';
-        el.style.backgroundColor = hasEmail ? '#F7931A' : '#7f4f14';
-        el.style.boxShadow = hasEmail ? '0 0 10px #F7931A' : 'none';
+        el.style.backgroundColor = hasEmail ? '#7A3D63' : '#3A1B2E';
+        el.style.boxShadow = hasEmail ? '0 0 10px rgba(122,61,99,0.6)' : 'none';
         el.style.borderRadius = '0'; // Pure blocky aesthetic
         
         // Add a pulse ring behind it
@@ -191,7 +191,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
         pulse.style.left = '50%';
         pulse.style.width = '100%';
         pulse.style.height = '100%';
-        pulse.style.backgroundColor = '#F7931A';
+        pulse.style.backgroundColor = '#7A3D63';
         pulse.style.transform = 'translate(-50%, -50%)';
         pulse.style.borderRadius = '50%';
         pulse.style.animation = 'dot-pulse 1.5s infinite';
@@ -210,7 +210,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
   }, [markers, mapLoaded]);
 
   return (
-    <div className="w-full h-full relative" style={{ borderRadius: "0px", background: "#080808" }}>
+    <div className="w-full h-full relative bg-petrol-900" style={{ borderRadius: "0px" }}>
       <div ref={mapContainer} className="w-full h-full" />
       
       {/* Map Overlay Grid lines */}
@@ -219,9 +219,9 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
       </div>
 
       <div className="absolute bottom-4 right-4 z-10 p-4 border border-white/10" style={{ background: "rgba(15, 15, 15, 0.6)", backdropFilter: "blur(20px)" }}>
-        <div className="flex gap-2 items-center text-[10px] font-mono text-white/50">
-          <div className="w-2 h-2 bg-[#F7931A] shadow-[0_0_5px_#F7931A]"></div> ACTIVE_TARGET
-          <div className="w-2 h-2 bg-[#7f4f14] ml-4"></div> GHOST_NODE
+        <div className="flex gap-2 items-center text-[10px] font-mono text-cream-100/50">
+          <div className="w-2 h-2 bg-wine-500 shadow-wine-500/50"></div> <span className="text-cream-100">ACTIVE_TARGET</span>
+          <div className="w-2 h-2 bg-wine-700 ml-4"></div> GHOST_NODE
         </div>
       </div>
     </div>

@@ -13,8 +13,9 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
+import { Button } from "@/components/ui/button";
 
-// Map of plan names to credit limits (for sidebar progress bar)
 const PLAN_CREDITS: Record<string, number> = {
   free: 30,
   demo: 30,
@@ -35,7 +36,6 @@ const AppPage = () => {
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  // Show onboarding for new users (first sign-up) - only once per session
   useEffect(() => {
     if (user && profileChecked && !hasProfile && !onboardingShown) {
       setOnboardingOpen(true);
@@ -43,7 +43,6 @@ const AppPage = () => {
     }
   }, [user, profileChecked, hasProfile, onboardingShown]);
 
-  // Handle demo signup, checkout success, and bundle query param
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
@@ -53,42 +52,33 @@ const AppPage = () => {
         description: "Your credits have been added to your account.",
       });
       refetchCredits();
-      // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
 
-    // If demo param exists, create a demo user session
     if (params.get('demo') === 'true' && !user) {
       setAuthOpen(true);
-      // Remove demo param from URL
       const newUrl = new URL(window.location);
       newUrl.searchParams.delete('demo');
       window.history.replaceState({}, '', newUrl.pathname);
     }
 
-    // If bundle param exists and user is logged in, trigger checkout
     const bundleParam = params.get('bundle');
     if (bundleParam && user && !checkoutLoading) {
       handleBuyCredits(bundleParam);
-      // Remove bundle param from URL
       const newUrl = new URL(window.location);
       newUrl.searchParams.delete('bundle');
       window.history.replaceState({}, '', newUrl.pathname);
     }
   }, [user]);
 
-  // Handle search completion - refresh credits and history
   const handleSearchComplete = async () => {
     await Promise.all([refetchCredits(), refetchHistory()]);
   };
 
-  // Handle sidebar callbacks
   const handleSelectEntry = (entry: any) => {
-    // Dispatch custom event with search data
     const event = new CustomEvent('loadSearch', { detail: { keyword: entry.keyword, location: entry.location } });
     window.dispatchEvent(event);
 
-    // Scroll to search form
     setTimeout(() => {
       const searchForm = document.querySelector('input[placeholder*="plumber"]');
       if (searchForm) {
@@ -103,7 +93,6 @@ const AppPage = () => {
   };
 
   const handleNewSearch = () => {
-    // Scroll to search form
     const searchForm = document.querySelector('input[placeholder*="plumber"]');
     if (searchForm) {
       searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -142,7 +131,6 @@ const AppPage = () => {
 
   const handleOnboardingClose = async () => {
     setOnboardingOpen(false);
-    // Refetch profile to update hasProfile state after onboarding completes
     await refetchProfile();
   };
 
@@ -168,7 +156,6 @@ const AppPage = () => {
         return;
       }
 
-      // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (err) {
       console.error('Checkout error:', err);
@@ -182,73 +169,39 @@ const AppPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#080808" }}>
-      {/* Dot-matrix ambient background */}
-      <div className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage: "radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
-        }}
-      />
-      {/* Scanline overlay */}
-      <div className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)",
-        }}
-      />
-
+    <div className="h-screen flex flex-col relative overflow-hidden bg-petrol-900">
       {/* ── App Header ── */}
-      <header
-        className="sticky top-0 z-50 border-b border-white/[0.06]"
-        style={{ background: "rgba(8,8,8,0.95)", backdropFilter: "blur(12px)" }}
-      >
+      <header className="sticky top-0 z-50 border-b border-cream-100/[0.06] bg-petrol-800/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
 
-          {/* Logo — dot-matrix style matching landing page */}
           <div className="flex items-center gap-4">
-            <span
-              className="font-black text-white tracking-tight inline-flex items-center gap-0.5"
-              style={{ fontFamily: "'Space Mono', monospace", fontSize: "14px" }}
-            >
-              GLOBALEADS
-              <span
-                className="bg-white text-[#080808] font-black inline-flex items-center justify-center"
-                style={{ fontSize: "11px", padding: "2px 6px", borderRadius: "2px", lineHeight: 1 }}
-              >
-                22
-              </span>
-            </span>
-            {/* System status */}
+            <GlobaLeadsLogo size="md" theme="dark" />
             <div className="hidden sm:flex items-center gap-2">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-50" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-wine-500/50" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-wine-500" />
               </span>
-              <span className="label-mono">SYSTEM ONLINE</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-cream-100/30">SYSTEM ONLINE</span>
             </div>
           </div>
 
-          {/* Right side */}
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <span className="hidden sm:block label-mono text-white/50 max-w-[200px] truncate">
+                <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-cream-400 max-w-[200px] truncate">
                   {user.email}
                 </span>
                 <button
                   onClick={signOut}
-                  className="flex items-center gap-1.5 label-mono text-white/40 hover:text-white/80 transition-colors"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-cream-400/60 hover:text-cream-100 transition-colors"
                 >
                   <LogOut className="h-3 w-3" /> SIGN OUT
                 </button>
               </>
             ) : (
-              <button
-                className="btn-btc px-5 py-2.5 text-[11px]"
-                onClick={() => setAuthOpen(true)}
-              >
+              <Button variant="accent" size="sm" onClick={() => setAuthOpen(true)}>
                 SIGN IN
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -256,7 +209,6 @@ const AppPage = () => {
 
       {/* ── Main Content with Sidebar ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         {user && (
           <AppSidebar
             creditsUsed={Math.max(0, (PLAN_CREDITS[creditsPlan] ?? 50) - creditsBalance)}
@@ -272,8 +224,7 @@ const AppPage = () => {
           />
         )}
 
-        {/* Tool Content */}
-        <main className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
+        <main className="flex-1 overflow-y-auto flex flex-col">
           <ErrorBoundary>
             {viewMode === "search" ? (
               <LeadGeneratorSection

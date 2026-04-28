@@ -101,7 +101,7 @@ const DarkInput = ({
   disabled?: boolean; icon?: React.ComponentType<{ className?: string }>; type?: string; min?: string;
 }) => (
   <div className="relative">
-    {Icon && <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30 pointer-events-none" />}
+    {Icon && <Icon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream-100/30 pointer-events-none" />}
     <input
       id={id}
       type={type}
@@ -110,7 +110,7 @@ const DarkInput = ({
       value={value}
       onChange={onChange}
       disabled={disabled}
-      className="w-full h-12 bg-black/30 border border-white/[0.10] focus:border-white/40 text-white text-sm placeholder:text-white/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-mono-data"
+      className="w-full h-12 bg-petrol-800/80 border border-cream-100/[0.10] focus:border-cream-100/30 text-cream-100 text-sm placeholder:text-cream-100/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-mono"
       style={{ borderRadius: "3px", paddingLeft: Icon ? "2.5rem" : "1rem", paddingRight: "1rem" }}
     />
   </div>
@@ -120,7 +120,7 @@ const DarkInput = ({
 const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) => (
   <label
     htmlFor={htmlFor}
-    className="block mb-2 font-mono-data text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]"
+    className="block mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-cream-300"
   >
     {children}
   </label>
@@ -627,16 +627,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   }
 
   return (
-    <section id="tool" className="w-full pb-20 relative font-mono text-[#e5e2e1]" style={{ background: "transparent" }}>
-      {/* Absolute Grain overlay */}
-      <div className="absolute inset-0 bg-[url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQaVDAPffRmh8CSO1KPsZf25EqZARcoeQW6wntnuYT2TPvG3Rid6Co7m28Kg5wkK7o99xvzGAboo78Lz4IakvxyBI4p2JpJl3Ea1tdVdfRUArFJRJiKc3l4PgDflnG8C39mgYIxHXZ94yX_zukcM_6BViuj8n5TcWB2KO8PjGjOxxh73-m5wAvcXaSVt96raS-LO4U1wdUYmHC9TYaE--sV1CwKtWW46-uubx2SxTai4xgYH5Xy_1FLOUYFlddwz1ByjCtez5pStjr')] opacity-[0.03] pointer-events-none z-0"></div>
-
+    <section id="tool" className="w-full pb-20 relative font-mono text-cream-100 bg-petrol-900">
       <div className="p-4 md:p-8 space-y-6 max-w-[1600px] mx-auto relative z-10 w-full mt-6">
-      
+
         {/* Auth loading */}
         {authLoading && (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-[#f7931a]" />
+            <Loader2 className="h-10 w-10 animate-spin text-wine-500" />
           </div>
         )}
 
@@ -644,29 +641,29 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         {!authLoading && !user && (
           <div className="flex flex-col items-center justify-center max-w-2xl mx-auto w-full relative pt-10">
             <div className="mb-10 text-center">
-              <div className="text-[#f7931a] mb-4 flex items-center justify-center gap-2 text-[10px] tracking-widest uppercase">
-                <span className="w-1.5 h-1.5 rounded-none bg-[#f7931a] animate-pulse" />
+              <div className="text-wine-500 mb-4 flex items-center justify-center gap-2 text-[10px] tracking-widest uppercase">
+                <span className="w-1.5 h-1.5 rounded-none bg-wine-500 animate-pulse" />
                 // REDACTED INTELLIGENCE MODULE
               </div>
-              <h2 className="font-bold text-[#e5e2e1] tracking-tighter uppercase text-3xl md:text-5xl">
+              <h2 className="font-bold text-cream-100 tracking-tighter uppercase text-3xl md:text-5xl">
                 RESTRICTED_ACCESS
               </h2>
             </div>
 
-            <div className="flex flex-col items-center gap-6 p-10 text-center bg-[#0e0e0e] border border-white/10 w-full relative">
-              <div className="relative flex h-16 w-16 items-center justify-center border border-white/5 rounded-none bg-[#131313]">
-                <Lock className="h-7 w-7 text-[#dbc2ae]/50" />
+            <div className="flex flex-col items-center gap-6 p-10 text-center bg-petrol-800 border border-cream-100/10 w-full relative">
+              <div className="relative flex h-16 w-16 items-center justify-center border border-cream-100/5 rounded-none bg-[#131313]">
+                <Lock className="h-7 w-7 text-cream-200/50" />
               </div>
               <div className="relative">
-                <h3 class="text-sm font-bold text-[#e5e2e1] tracking-widest uppercase mb-2">
+                <h3 className="text-sm font-bold text-cream-100 tracking-widest uppercase mb-2">
                   AUTHENTICATION REQUIRED
                 </h3>
-                <p className="text-[#dbc2ae] text-xs max-w-sm mx-auto opacity-70">
+                <p className="text-cream-200 text-xs max-w-sm mx-auto opacity-70">
                   Establish a secure connection session to deploy extraction algorithms.
                 </p>
               </div>
               <button
-                className="w-full py-4 bg-[#f7931a] text-[#4b2800] font-bold uppercase tracking-widest text-sm hover:brightness-110 active:scale-[0.98] transition-all rounded-none"
+                className="w-full py-4 bg-wine-700 text-cream-100 font-bold uppercase tracking-widest text-sm hover:brightness-110 active:scale-[0.98] transition-all rounded-none"
                 onClick={onOpenAuth}
               >
                 Launch Secure Session
@@ -679,35 +676,35 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         {!authLoading && user && (
           <>
             {/* Header / Title */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-cream-100/10 pb-4 mb-6">
               <div>
-                <p className="text-[10px] text-[#f7931a] tracking-[0.4em] uppercase mb-1">Session ID: 0x{userProfile?.id ? userProfile.id.slice(0, 6).toUpperCase() : 'FF1290'}-A</p>
-                <h1 className="text-2xl md:text-4xl font-bold tracking-tighter uppercase text-[#e5e2e1]">OPERATIONAL_DASHBOARD</h1>
+                <p className="text-[10px] text-wine-500 tracking-[0.4em] uppercase mb-1">Session ID: 0x{userProfile?.id ? userProfile.id.slice(0, 6).toUpperCase() : 'FF1290'}-A</p>
+                <h1 className="text-2xl md:text-4xl font-bold tracking-tighter uppercase text-cream-100">OPERATIONAL_DASHBOARD</h1>
               </div>
               <div className="mt-4 md:mt-0 text-left md:text-right">
-                <p className="text-[10px] text-[#dbc2ae] uppercase">Node Latitude: {searchCenter ? searchCenter.lat.toFixed(4) : "34.0522"} N</p>
-                <p className="text-[10px] text-[#dbc2ae] uppercase">Node Longitude: {searchCenter ? searchCenter.lng.toFixed(4) : "118.2437"} W</p>
+                <p className="text-[10px] text-cream-200 uppercase">Node Latitude: {searchCenter ? searchCenter.lat.toFixed(4) : "34.0522"} N</p>
+                <p className="text-[10px] text-cream-200 uppercase">Node Longitude: {searchCenter ? searchCenter.lng.toFixed(4) : "118.2437"} W</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              
+
               {/* ── LEFT COLUMN: INPUTS & STATUS (4 columns) ── */}
               <div className="lg:col-span-4 lg:col-start-1 lg:sticky lg:top-[90px] flex flex-col gap-6">
-                
+
                 {/* Form Input Card */}
-                <div className="bg-[#0e0e0e] p-6 border-l-2 border-[#f7931a] relative overflow-hidden">
+                <div className="bg-petrol-800 p-6 border-l-2 border-wine-700 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
                     <Shield className="w-16 h-16" />
                   </div>
-                  <h2 className="text-xs font-bold tracking-[0.2em] text-[#f7931a] uppercase mb-6 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-[#f7931a]"></span> INITIATE EXTRACTION
+                  <h2 className="text-xs font-bold tracking-[0.2em] text-wine-500 uppercase mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-wine-700"></span> INITIATE EXTRACTION
                   </h2>
 
                   <div className="space-y-5">
                     {/* Keyword */}
                     <div className="space-y-1">
-                      <label htmlFor="keyword" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_KEYWORD_QUERY</label>
+                      <label htmlFor="keyword" className="text-[10px] text-cream-200 uppercase font-bold">_KEYWORD_QUERY</label>
                       <input
                         id="keyword"
                         placeholder='e.g. CYBER_PROTOCOL'
@@ -715,15 +712,15 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                         onChange={(e) => setKeyword(e.target.value)}
                         onBlur={() => validateField("keyword", keyword)}
                         disabled={isProcessing}
-                        className={`w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] placeholder:text-white/20 focus:ring-0 focus:border-[#f7931a] font-mono text-xs p-3 rounded-none ${fieldErrors.keyword ? 'border-[#ffb4ab]' : ''}`}
+                        className={`w-full bg-[#1c1b1b] border-0 border-b border-cream-100/10 text-wine-500 placeholder:text-cream-100/20 focus:ring-0 focus:border-wine-700 font-mono text-xs p-3 rounded-none ${fieldErrors.keyword ? 'border-[#ffb4ab]' : ''}`}
                       />
                       {fieldErrors.keyword && <p className="text-[#ffb4ab] text-[9px] mt-1 uppercase">{fieldErrors.keyword}</p>}
                     </div>
 
                     {/* Location */}
                     <div className="space-y-1">
-                      <label htmlFor="location" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_LOCATION_NODE</label>
-                      <div className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 focus-within:border-[#f7931a] relative text-[#f7931a]">
+                      <label htmlFor="location" className="text-[10px] text-cream-200 uppercase font-bold">_LOCATION_NODE</label>
+                      <div className="w-full bg-[#1c1b1b] border-0 border-b border-cream-100/10 focus-within:border-wine-700 relative text-wine-500">
                         <LocationAutocomplete
                           google={googleApi}
                           value={location}
@@ -747,7 +744,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                     {/* Radios & Max Results */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label htmlFor="radius" className="text-[10px] text-[#dbc2ae] uppercase font-bold">_RADIUS_KM</label>
+                        <label htmlFor="radius" className="text-[10px] text-cream-200 uppercase font-bold">_RADIUS_KM</label>
                         <input
                           id="radius"
                           type="number"
@@ -756,16 +753,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                           value={radius}
                           onChange={(e) => setRadius(e.target.value)}
                           disabled={isProcessing}
-                          className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] focus:ring-0 focus:border-[#f7931a] font-mono text-xs text-center p-3 rounded-none"
+                          className="w-full bg-[#1c1b1b] border-0 border-b border-cream-100/10 text-wine-500 focus:ring-0 focus:border-wine-700 font-mono text-xs text-center p-3 rounded-none"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-[#dbc2ae] uppercase font-bold">_YIELD_LIMITS</label>
+                        <label className="text-[10px] text-cream-200 uppercase font-bold">_YIELD_LIMITS</label>
                         <select
                           value={maxResults}
                           onChange={(e) => setMaxResults(Number(e.target.value))}
                           disabled={isProcessing}
-                          className="w-full bg-[#1c1b1b] border-0 border-b border-white/10 text-[#f7931a] focus:ring-0 focus:border-[#f7931a] font-mono text-xs text-center p-3 rounded-none appearance-none cursor-pointer"
+                          className="w-full bg-[#1c1b1b] border-0 border-b border-cream-100/10 text-wine-500 focus:ring-0 focus:border-wine-700 font-mono text-xs text-center p-3 rounded-none appearance-none cursor-pointer"
                         >
                           <option value={20}>20_NODES</option>
                           <option value={40}>40_NODES</option>
@@ -778,7 +775,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                     <button
                       onClick={handleGenerate}
                       disabled={isProcessing}
-                      className={`w-full py-4 font-bold uppercase tracking-widest text-sm transition-all rounded-none mt-2 ${isProcessing ? 'bg-[#f7931a]/30 text-[#4b2800]/50 cursor-not-allowed' : 'bg-[#f7931a] text-[#4b2800] hover:brightness-110 active:scale-[0.98]'}`}
+                      className={`w-full py-4 font-bold uppercase tracking-widest text-sm transition-all rounded-none mt-2 ${isProcessing ? 'bg-wine-700/30 text-cream-100/50 cursor-not-allowed' : 'bg-wine-700 text-cream-100 hover:brightness-110 active:scale-[0.98]'}`}
                     >
                       {isProcessing ? 'DEPLOYING...' : 'DEPLOY ANALYSIS NODE'}
                     </button>
@@ -787,27 +784,27 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
 
                 {/* Progress Panel */}
                 {(isProcessing || (results && progress > 0)) && (
-                  <div className="bg-[#0e0e0e] p-6 border border-white/10 relative">
+                  <div className="bg-petrol-800 p-6 border border-cream-100/10 relative">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-[10px] font-bold text-[#e5e2e1] uppercase tracking-widest">SCAN_PROGRESS</h3>
-                      <span className="text-[10px] text-[#f7931a] animate-pulse">LIVE_STREAM</span>
+                      <h3 className="text-[10px] font-bold text-cream-100 uppercase tracking-widest">SCAN_PROGRESS</h3>
+                      <span className="text-[10px] text-wine-500 animate-pulse">LIVE_STREAM</span>
                     </div>
 
-                    <div className="w-full h-1 bg-white/5 mb-4 relative overflow-hidden">
-                      <div className="absolute top-0 left-0 h-full bg-[#f7931a] shadow-[0_0_10px_#F7931A] transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                    <div className="w-full h-1 bg-cream-100/5 mb-4 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 h-full bg-wine-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
                     </div>
 
-                    <div className="h-40 overflow-y-auto custom-scrollbar font-mono text-[10px] space-y-1 text-[#dbc2ae] opacity-80 pl-1 pr-2">
+                    <div className="h-40 overflow-y-auto font-mono text-[10px] space-y-1 text-cream-200 opacity-80 pl-1 pr-2">
                        {STEPS_INIT.map((step, i) => {
                           const current = steps[i];
                           if(current.status === "pending") return null;
                           return (
-                            <p key={step.label} className={current.status === "active" ? "text-[#f7931a]" : ""}>
+                            <p key={step.label} className={current.status === "active" ? "text-wine-500" : ""}>
                               {">"} {step.label}... {current.status === "active" ? <span><span className="blinking-cursor"></span></span> : "[OK]"}
                             </p>
                           )
                        })}
-                       <p className="text-[9px] text-[#f7931a] uppercase mt-2 opacity-70">
+                       <p className="text-[9px] text-wine-500 uppercase mt-2 opacity-70">
                          {status} {progress}%
                        </p>
                     </div>
@@ -817,16 +814,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
 
               {/* ── RIGHT COLUMN: VISUALS & DATA (8 columns) ── */}
               <div className="lg:col-span-8 space-y-6">
-                
+
                 {/* Map View - Only show if NO results OR actively searching */}
                 {(!results || isProcessing) && (
-                <div className="bg-[#1c1b1b] border border-white/10 h-[600px] w-full relative overflow-hidden flex flex-col transition-all duration-700">
+                <div className="bg-[#1c1b1b] border border-cream-100/10 h-[600px] w-full relative overflow-hidden flex flex-col transition-all duration-700">
                   <div className="absolute top-4 left-4 z-10 space-y-2 pointer-events-none">
-                    <div className="bg-[#0e0e0e]/80 backdrop-blur-md p-2 border border-white/10 text-[10px] font-mono shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                      <span className="text-[#f7931a]">VISUALIZER:</span> GLOBAL_NET_FLOW (V2.0)
+                    <div className="bg-petrol-800/80 backdrop-blur-md p-2 border border-cream-100/10 text-[10px] font-mono shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                      <span className="text-wine-500">VISUALIZER:</span> GLOBAL_NET_FLOW (V2.0)
                     </div>
                   </div>
-                  
+
                   {/* Actual Map Panel */}
                   <div className="flex-1 w-full h-full grayscale brightness-50 opacity-80 mix-blend-screen overflow-hidden">
                     <MapboxPanel
@@ -839,43 +836,43 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                   <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-transparent to-transparent pointer-events-none"></div>
                 </div>
                 )}
-                
+
                 {/* Data Table Panel */}
 {/* Data Table Panel */}
                 {results && !isProcessing && (
                   <div className="animate-fade-in-up">
-                    <div className="mb-6 p-6 bg-[#0e0e0e] border border-[#f7931a]/30 relative overflow-hidden">
+                    <div className="mb-6 p-6 bg-petrol-800 border border-wine-700/30 relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none">
                         <CheckCheck className="w-24 h-24" />
                       </div>
-                      <h2 className="text-2xl font-bold tracking-tighter text-[#f7931a] uppercase mb-2 flex items-center gap-2">
+                      <h2 className="text-2xl font-bold tracking-tighter text-wine-500 uppercase mb-2 flex items-center gap-2">
                          [ TASK COMPLETED ]
                       </h2>
-                      <p className="text-[#dbc2ae] text-[10px] uppercase tracking-widest font-mono">
+                      <p className="text-cream-200 text-[10px] uppercase tracking-widest font-mono">
                         EXTRACTION SUCCESSFUL. {sortedResults?.length ?? 0} NODES SECURED. AWAITING COMMAND.
                       </p>
                     </div>
 
                   {/* Toolkit Actions & Filters */}
-                  <div className="bg-[#0e0e0e] border border-white/10 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="bg-petrol-800 border border-cream-100/10 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex gap-2 w-full md:w-auto">
                         <div className="flex items-center relative w-full md:w-64">
-                          <Search className="h-4 w-4 absolute left-3 text-[#dbc2ae]/40" />
+                          <Search className="h-4 w-4 absolute left-3 text-cream-200/40" />
                           <input
                             type="text"
                             placeholder="QUERY_PAYLOAD..."
                             value={filterText}
                             onChange={e => setFilterText(e.target.value)}
-                            className="h-10 w-full bg-[#1c1b1b] border border-white/10 pl-9 pr-3 text-[#e5e2e1] text-[10px] placeholder:text-[#dbc2ae]/30 outline-none focus:border-[#f7931a] font-mono transition-none rounded-none"
+                            className="h-10 w-full bg-[#1c1b1b] border border-cream-100/10 pl-9 pr-3 text-cream-100 text-[10px] placeholder:text-cream-200/30 outline-none focus:border-wine-700/50 font-mono transition-none rounded-none"
                           />
                         </div>
                     </div>
-                    
+
                     <div className="flex flex-wrap items-center gap-2">
                        {leadsNeedingIntelligence > 0 && userProfile && !confirmUnlockAll && (
                           <button
                             onClick={handleUnlockAllIntelligence}
-                            className="bg-[#f7931a]/10 border border-[#f7931a]/30 text-[#f7931a] hover:bg-[#f7931a]/20 px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
+                            className="bg-wine-700/10 border border-wine-700/30 text-wine-500 hover:bg-wine-700/20 px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
                           >
                             <Zap className="h-3.5 w-3.5" /> [ UNLOCK_ALL ({leadsNeedingIntelligence}) ]
                           </button>
@@ -883,13 +880,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                         <button
                           onClick={handleCopyEmails}
                           disabled={emailCount === 0}
-                          className="bg-[#1c1b1b] border border-white/10 text-[#e5e2e1] hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2 disabled:opacity-30"
+                          className="bg-[#1c1b1b] border border-cream-100/10 text-cream-100 hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2 disabled:opacity-30"
                         >
                           {emailsCopied ? <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" /> [ COPIED_EMAILS ]</> : <><Copy className="h-3.5 w-3.5" /> [ DUMP_EMAILS ]</>}
                         </button>
                         <button
                           onClick={handleDownload}
-                          className="bg-[#1c1b1b] border border-white/10 text-emerald-500 hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
+                          className="bg-[#1c1b1b] border border-cream-100/10 text-emerald-500 hover:bg-[#353534] px-4 py-2 font-mono text-[10px] tracking-wider uppercase transition-all flex items-center gap-2"
                         >
                           <Download className="h-3.5 w-3.5" /> [ EXPORT_CSV ]
                         </button>
@@ -909,48 +906,48 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                     </div>
                   )}
 
-                  <div className="bg-[#0e0e0e] border border-white/10 overflow-x-auto custom-scrollbar">
+                  <div className="bg-petrol-800 border border-cream-100/10 overflow-x-auto">
                     <table className="w-full text-left font-mono text-[11px] leading-tight border-collapse">
                       <thead>
-                        <tr className="bg-[#2a2a2a] border-b border-white/10">
-                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Target Identity</th>
-                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Comms Protocol</th>
-                          <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a] min-w-[200px]">Web Footprint</th>
-                          {userProfile && <th className="p-4 font-bold uppercase tracking-widest text-[#f7931a]">Opp. Score / Action</th>}
+                        <tr className="bg-[#2a2a2a] border-b border-cream-100/10">
+                          <th className="p-4 font-bold uppercase tracking-widest text-wine-500">Target Identity</th>
+                          <th className="p-4 font-bold uppercase tracking-widest text-wine-500">Comms Protocol</th>
+                          <th className="p-4 font-bold uppercase tracking-widest text-wine-500 min-w-[200px]">Web Footprint</th>
+                          {userProfile && <th className="p-4 font-bold uppercase tracking-widest text-wine-500">Opp. Score / Action</th>}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5">
+                      <tbody className="divide-y divide-cream-100/5">
                         {sortedResults?.map((r, i) => (
-                          <tr key={r.placeId || i} className="hover:bg-white/5 transition-colors group align-top">
+                          <tr key={r.placeId || i} className="hover:bg-cream-100/5 transition-colors group align-top">
                             <td className="p-4">
                               <div className="flex flex-col gap-1 max-w-[200px]">
-                                <span className="font-bold text-[#e5e2e1] truncate block">{r.name}</span>
-                                {r.category && <span className="text-[9px] text-[#dbc2ae]/60 uppercase tracking-widest">{r.category.replace(/_/g, " ")}</span>}
+                                <span className="font-bold text-cream-100 truncate block">{r.name}</span>
+                                {r.category && <span className="text-[9px] text-cream-200/60 uppercase tracking-widest">{r.category.replace(/_/g, " ")}</span>}
                               </div>
                             </td>
 
-                            <td className="p-4 text-[#dbc2ae]">
+                            <td className="p-4 text-cream-200">
                                 <div className="space-y-3">
                                   {r.phone ? (
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px]">{r.phone}</span>
-                                      <button onClick={() => handleCopyField(`${r.placeId}-phone`, r.phone)} className="opacity-50 hover:opacity-100 hover:text-[#f7931a]" title="Copy Phone">
+                                      <button onClick={() => handleCopyField(`${r.placeId}-phone`, r.phone)} className="opacity-50 hover:opacity-100 hover:text-wine-500" title="Copy Phone">
                                         {copiedKeys.has(`${r.placeId}-phone`) ? <CheckCheck className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                                       </button>
                                     </div>
                                   ) : <span className="text-[10px] opacity-30">NO_PHONE_NODE</span>}
-                                  
+
                                   {r.emails.length > 0 ? (
-                                    <div className="space-y-1.5 pl-2 border-l border-[#f7931a]/30">
+                                    <div className="space-y-1.5 pl-2 border-l border-wine-700/30">
                                       {r.emails.slice(0, 2).map((e, eIdx) => (
                                         <div key={e} className="flex items-center gap-2">
-                                          <span className="text-[#f7931a] text-[10px] truncate max-w-[150px]">{e}</span>
-                                          <button onClick={() => handleCopyField(`${r.placeId}-email-${eIdx}`, e)} className="opacity-50 hover:opacity-100 hover:text-[#f7931a]" title="Copy Email">
+                                          <span className="text-wine-500 text-[10px] truncate max-w-[150px]">{e}</span>
+                                          <button onClick={() => handleCopyField(`${r.placeId}-email-${eIdx}`, e)} className="opacity-50 hover:opacity-100 hover:text-wine-500" title="Copy Email">
                                             {copiedKeys.has(`${r.placeId}-email-${eIdx}`) ? <CheckCheck className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                                           </button>
                                         </div>
                                       ))}
-                                      {r.emails.length > 2 && <p className="text-[8px] text-white/30 pt-1">+{r.emails.length - 2} HIDDEN_NODES</p>}
+                                      {r.emails.length > 2 && <p className="text-[8px] text-cream-100/30 pt-1">+{r.emails.length - 2} HIDDEN_NODES</p>}
                                     </div>
                                   ) : <span className="text-[10px] opacity-30 block">NO_EMAIL_NODE</span>}
                                 </div>
@@ -959,8 +956,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                             <td className="p-4">
                                <div className="flex flex-col gap-2">
                                 {r.website ? (
-                                  <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-white/50 hover:text-white transition-colors w-max p-1 hover:bg-[#353534]">
-                                    <Globe className="h-3 w-3 opacity-60" /> 
+                                  <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] text-cream-100/50 hover:text-cream-100 transition-colors w-max p-1 hover:bg-[#353534]">
+                                    <Globe className="h-3 w-3 opacity-60" />
                                     <span className="truncate max-w-[160px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                                   </a>
                                 ) : <span className="text-[10px] opacity-30">NO_WEB_FOOTPRINT</span>}
@@ -976,14 +973,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                             {userProfile && (
                               <td className="p-4">
                                 {r.intelligenceLoading ? (
-                                  <span className="text-[10px] text-[#f7931a] animate-pulse">DECRYPTING...</span>
+                                  <span className="text-[10px] text-wine-500 animate-pulse">DECRYPTING...</span>
                                 ) : r.intelligence ? (
                                   <div className="flex gap-1 flex-col">
-                                    <span className="font-bold text-[#f7931a] text-xs mb-1">{r.intelligence.opportunityScore}%</span>
-                                    <span className="text-[9px] text-[#dbc2ae] leading-snug"><span className="text-[#e5e2e1] font-bold">HOOK:</span> {r.intelligence.outreachHook}</span>
+                                    <span className="font-bold text-wine-500 text-xs mb-1">{r.intelligence.opportunityScore}%</span>
+                                    <span className="text-[9px] text-cream-200 leading-snug"><span className="text-cream-100 font-bold">HOOK:</span> {r.intelligence.outreachHook}</span>
                                   </div>
                                 ) : r.website ? (
-                                  <button onClick={() => handleUnlockIntelligence(i)} className="px-2 py-1.5 border border-[#f7931a]/30 text-[#f7931a] bg-[#f7931a]/5 hover:bg-[#f7931a] hover:text-[#131313] transition-all text-[9px] uppercase tracking-tighter w-full max-w-[140px] flex justify-center mt-2 group/btn">
+                                  <button onClick={() => handleUnlockIntelligence(i)} className="px-2 py-1.5 border border-wine-700/30 text-wine-500 bg-wine-700/5 hover:bg-wine-700 hover:text-cream-100 transition-all text-[9px] uppercase tracking-tighter w-full max-w-[140px] flex justify-center mt-2 group/btn">
                                     [ EXTRACT ]
                                   </button>
                                 ) : (

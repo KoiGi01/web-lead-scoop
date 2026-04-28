@@ -32,7 +32,7 @@ const Index = () => {
   const openAuth = () => { window.location.href = appUrl; };
 
   return (
-    <div className="min-h-screen" style={{ background: "#080808" }}>
+    <div className="light min-h-screen bg-cream-50">
       <NavBar onGetStarted={goToApp} onOpenAuth={openAuth} />
       <HeroSection onGetStarted={goToApp} />
       <StatsBar />

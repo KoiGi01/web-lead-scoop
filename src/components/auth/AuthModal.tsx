@@ -134,22 +134,22 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
 
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-white/10 bg-[#0F1115]">
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-cream-100/10 bg-petrol-800">
                 {/* Header gradient band */}
-                <div className="h-1.5 w-full bg-gradient-to-r from-[#EA580C] to-[#F7931A]" />
+                <div className="h-1.5 w-full bg-gradient-to-r from-wine-700 to-wine-500" />
 
                 <div className="p-6">
                     <DialogHeader className="mb-6">
-                        <DialogTitle className="text-xl font-heading font-bold text-white text-center">
+                        <DialogTitle className="text-xl font-heading font-bold text-cream-100 text-center">
                             {mode === "demo" ? (
-                                <>Try the <span className="text-[#F7931A]">demo</span></>
+                                <>Try the <span className="text-wine-500">demo</span></>
                             ) : mode === "signin" ? (
-                                <>Welcome <span className="text-[#F7931A]">back</span></>
+                                <>Welcome <span className="text-wine-500">back</span></>
                             ) : (
-                                <>Create your <span className="text-[#F7931A]">account</span></>
+                                <>Create your <span className="text-wine-500">account</span></>
                             )}
                         </DialogTitle>
-                        <p className="text-sm text-[#94A3B8] text-center mt-1">
+                        <p className="text-sm text-cream-300 text-center mt-1">
                             {mode === "demo"
                                 ? "Enter your email for 30 demo credits (1 search)"
                                 : mode === "signin"
@@ -162,16 +162,16 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                     {mode === "demo" && (
                         <form onSubmit={handleDemoSignup} className="space-y-4 mb-4">
                             <div className="space-y-1.5">
-                                <Label htmlFor="demo-email" className="text-sm text-[#94A3B8] font-mono">Email</Label>
+                                <Label htmlFor="demo-email" className="text-sm text-cream-300 font-mono">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cream-300" />
                                     <Input
                                         id="demo-email"
                                         type="email"
                                         placeholder="you@example.com"
                                         value={demoEmail}
                                         onChange={(e) => setDemoEmail(e.target.value)}
-                                        className="pl-9 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30"
+                                        className="pl-9 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30"
                                         required
                                         disabled={loading}
                                     />
@@ -185,18 +185,18 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                                 <p className="text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">{success}</p>
                             )}
 
-                            <button type="submit" className="btn-btc w-full font-semibold" disabled={loading}>
+                            <Button variant="accent" className="w-full font-semibold" type="submit" disabled={loading}>
                                 {loading ? (
                                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Starting demo…</>
                                 ) : (
                                     "Start Demo (30 Credits)"
                                 )}
-                            </button>
+                            </Button>
 
                             <button
                                 type="button"
                                 onClick={() => switchMode("signin")}
-                                className="w-full text-sm text-[#F7931A] font-medium hover:underline"
+                                className="w-full text-sm text-wine-500 font-medium hover:underline"
                             >
                                 Already have an account? Sign in
                             </button>
@@ -208,7 +208,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                             {/* Google Button */}
                             <Button
                                 variant="outline"
-                                className="w-full mb-4 gap-2 font-medium bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                className="w-full mb-4 gap-2 font-medium bg-cream-100/10 border-cream-100/20 text-cream-100 hover:bg-cream-100/20"
                                 onClick={handleGoogle}
                                 disabled={googleLoading || loading}
                             >
@@ -228,10 +228,10 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                             {/* Divider */}
                             <div className="relative mb-4">
                                 <div className="absolute inset-0 flex items-center">
-                                    <span className="w-full border-t border-white/10" />
+                                    <span className="w-full border-t border-cream-100/10" />
                                 </div>
                                 <div className="relative flex justify-center text-xs">
-                                    <span className="bg-[#0F1115] px-3 text-[#94A3B8]">or continue with email</span>
+                                    <span className="bg-petrol-800 px-3 text-cream-300">or continue with email</span>
                                 </div>
                             </div>
                         </>
@@ -241,16 +241,16 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                     {mode !== "demo" && (
                     <form onSubmit={handleEmail} className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-email" className="text-sm text-[#94A3B8] font-mono">Email</Label>
+                            <Label htmlFor="auth-email" className="text-sm text-cream-300 font-mono">Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cream-300" />
                                 <Input
                                     id="auth-email"
                                     type="email"
                                     placeholder="you@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-9 bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30"
+                                    className="pl-9 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30"
                                     required
                                     disabled={loading}
                                 />
@@ -258,14 +258,14 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-password" className="text-sm text-[#94A3B8] font-mono">Password</Label>
+                            <Label htmlFor="auth-password" className="text-sm text-cream-300 font-mono">Password</Label>
                             <Input
                                 id="auth-password"
                                 type="password"
                                 placeholder={mode === "signup" ? "Min. 8 characters" : "Your password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="bg-black/50 border-b-2 border-white/20 focus:border-[#F7931A] text-white placeholder:text-white/30"
+                                className="bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30"
                                 required
                                 disabled={loading}
                                 minLength={mode === "signup" ? 8 : undefined}
@@ -279,26 +279,26 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                             <p className="text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">{success}</p>
                         )}
 
-                        <button type="submit" className="btn-btc w-full font-semibold" disabled={loading || googleLoading}>
+                        <Button variant="accent" className="w-full font-semibold" type="submit" disabled={loading || googleLoading}>
                             {loading ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait…</>
                             ) : mode === "signin" ? "Sign In" : "Create Account"}
-                        </button>
+                        </Button>
                     </form>
                     )}
 
                     {/* Mode toggle */}
                     {mode !== "demo" && (
-                    <p className="mt-5 text-center text-sm text-[#94A3B8]">
+                    <p className="mt-5 text-center text-sm text-cream-300">
                         {mode === "signin" ? (
                             <>Don't have an account?{" "}
-                                <button onClick={() => switchMode("signup")} className="text-[#F7931A] font-medium hover:underline">
+                                <button onClick={() => switchMode("signup")} className="text-wine-500 font-medium hover:underline">
                                     Sign up free
                                 </button>
                             </>
                         ) : (
                             <>Already have an account?{" "}
-                                <button onClick={() => switchMode("signin")} className="text-[#F7931A] font-medium hover:underline">
+                                <button onClick={() => switchMode("signin")} className="text-wine-500 font-medium hover:underline">
                                     Sign in
                                 </button>
                             </>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
+import { Button } from "@/components/ui/button";
 
 interface NavBarProps {
   onGetStarted: () => void;
@@ -20,31 +21,30 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
   }, []);
 
   const links = [
-    { label: "Features",    href: "#features" },
-    { label: "How It Works",href: "#how-it-works" },
-    { label: "Pricing",     href: "#pricing" },
+    { label: "Features",     href: "#features" },
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Pricing",      href: "#pricing" },
   ];
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-[#080808]/95 backdrop-blur-md border-b border-white/[0.06]"
-          : "bg-transparent border-b border-transparent"
+          ? "bg-cream-50/95 backdrop-blur-sm border-b border-petrol-900/[0.08]"
+          : "bg-cream-50/80 backdrop-blur-sm border-b border-transparent"
       }`}
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="/" className="flex items-center">
-          <GlobaLeadsLogo size="md" theme="dark" />
+          <GlobaLeadsLogo size="md" theme="light" />
         </a>
 
-        {/* Status indicator */}
         <div className="hidden lg:flex items-center gap-2 ml-6">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-50" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-wine-700 opacity-50" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-wine-700" />
           </span>
-          <span className="label-mono">SYSTEM ONLINE</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/25">SYSTEM ONLINE</span>
         </div>
 
         <nav className="hidden md:flex items-center gap-0 ml-auto mr-6">
@@ -52,8 +52,7 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
             <a
               key={l.label}
               href={l.href}
-              className="px-4 py-2 text-[11px] font-bold tracking-[0.12em] uppercase text-white/40 hover:text-white/90 transition-colors"
-              style={{ fontFamily: "'Space Mono', monospace" }}
+              className="px-4 py-2 text-[11px] font-bold font-mono tracking-[0.12em] uppercase text-petrol-900/60 hover:text-petrol-900 transition-colors"
             >
               {l.label}
             </a>
@@ -63,10 +62,10 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
-              <span className="label-mono text-white/50">{user.email}</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/50">{user.email}</span>
               <button
                 onClick={signOut}
-                className="flex items-center gap-1.5 label-mono text-white/40 hover:text-white/80 transition-colors"
+                className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-petrol-900/40 hover:text-petrol-900/80 transition-colors"
               >
                 <LogOut className="h-3 w-3" /> SIGN OUT
               </button>
@@ -75,22 +74,19 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
             <>
               <button
                 onClick={onOpenAuth}
-                className="label-mono text-white/40 hover:text-white/80 transition-colors px-3 py-2"
+                className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/40 hover:text-petrol-900/80 transition-colors px-3 py-2"
               >
                 SIGN IN
               </button>
-              <button
-                onClick={onGetStarted}
-                className="btn-btc px-5 py-2.5 text-[11px]"
-              >
+              <Button variant="primary" size="sm" onClick={onGetStarted}>
                 GET STARTED
-              </button>
+              </Button>
             </>
           )}
         </div>
 
         <button
-          className="md:hidden p-2 text-white/50 hover:text-white transition-colors"
+          className="md:hidden p-2 text-petrol-900/50 hover:text-petrol-900 transition-colors"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -98,23 +94,25 @@ const NavBar = ({ onGetStarted, onOpenAuth }: NavBarProps) => {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-[#080808] border-t border-white/[0.06] px-4 pb-5 pt-3">
+        <div className="md:hidden bg-cream-50 border-t border-petrol-900/[0.08] px-4 pb-5 pt-3">
           {links.map((l) => (
             <a
               key={l.label}
               href={l.href}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center px-2 py-3 label-mono text-white/40 hover:text-white transition-colors border-b border-white/[0.04]"
+              className="flex items-center px-2 py-3 font-mono text-[10px] uppercase tracking-widest text-petrol-900/40 hover:text-petrol-900 transition-colors border-b border-petrol-900/[0.06]"
             >
               {l.label}
             </a>
           ))}
-          <button
+          <Button
+            variant="primary"
+            size="sm"
+            className="mt-4 w-full py-3"
             onClick={() => { onGetStarted(); setMenuOpen(false); }}
-            className="btn-btc mt-4 w-full py-3 text-[11px]"
           >
             GET STARTED FREE
-          </button>
+          </Button>
         </div>
       )}
     </header>

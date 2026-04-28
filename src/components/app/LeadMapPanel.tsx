@@ -174,8 +174,8 @@ const LeadMapPanel = ({
   }
 
   return (
-    <div className="h-[260px] sm:h-[340px] overflow-hidden border border-white/[0.06] relative"
-      style={{ borderRadius: "4px", background: "#000" }}>
+    <div className="h-[260px] sm:h-[340px] overflow-hidden border border-cream-100/[0.06] relative bg-petrol-900"
+      style={{ borderRadius: "4px" }}>
       {/* Map container */}
       <div ref={mapRef} className="w-full h-full" />
 
@@ -190,20 +190,20 @@ const LeadMapPanel = ({
 
       {/* Status overlay */}
       <div className="absolute top-3 left-3 px-3 py-1.5 border border-[#00ffaa]/[0.15]"
-        style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", borderRadius: "3px", zIndex: 2 }}>
+        style={{ background: "rgba(0,39,43,0.85)", backdropFilter: "blur(8px)", borderRadius: "3px", zIndex: 2 }}>
         {isSearching ? (
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#00ffaa" }} />
-            <span className="label-mono" style={{ color: "rgba(0,255,170,0.7)", fontSize: "10px" }}>
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#4D9099" }} />
+            <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "rgba(77,144,153,0.7)" }}>
               SCANNING...
             </span>
           </div>
         ) : markers.length > 0 ? (
-          <span className="label-mono" style={{ color: "rgba(0,255,170,0.5)", fontSize: "10px" }}>
+          <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "rgba(77,144,153,0.5)" }}>
             {markers.length} LEADS MAPPED
           </span>
         ) : (
-          <span className="label-mono" style={{ color: "rgba(0,255,170,0.3)", fontSize: "10px" }}>
+          <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "rgba(77,144,153,0.3)" }}>
             {center.lat.toFixed(4)}, {center.lng.toFixed(4)}
           </span>
         )}

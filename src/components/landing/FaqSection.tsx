@@ -38,19 +38,15 @@ const FaqSection = () => {
   }, []);
 
   return (
-    <section id="faq" className="py-24 sm:py-32 border-t border-white/[0.04]" style={{ background: "#050505" }}>
-      {/* Subtle scanline overlay */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px)",
-        }}
-      />
+    <section id="faq" className="py-24 sm:py-32 border-t border-petrol-900/[0.06] bg-cream-50 relative">
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
 
-        <div className={`mb-16 border-b border-white/[0.06] pb-8 ${visible ? "animate-section-in" : "opacity-0"}`}>
-          <div className="label-mono mb-3 text-white/25">// SYSTEM FAQ</div>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight"
-            style={{ fontFamily: "'Space Mono', monospace" }}>
+        <div className={`mb-16 border-b border-petrol-900/[0.08] pb-8 ${visible ? "animate-section-in" : "opacity-0"}`}>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-petrol-900/25 mb-3">// SYSTEM FAQ</div>
+          <h2
+            className="text-4xl sm:text-5xl font-black text-petrol-900 tracking-tight"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
             COMMON<br />QUESTIONS
           </h2>
         </div>
@@ -59,24 +55,26 @@ const FaqSection = () => {
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className={`border-b border-white/[0.06] last:border-b-0 ${visible ? "animate-fade-in-up" : "opacity-0"}`}
+              className={`border-b border-petrol-900/[0.08] last:border-b-0 ${visible ? "animate-fade-in-up" : "opacity-0"}`}
               style={{ animationDelay: `${idx * 60}ms` }}
             >
               <button
                 onClick={() => setOpen(open === idx ? null : idx)}
                 className="w-full flex items-start justify-between gap-4 py-5 text-left group"
               >
-                <div className="font-mono-data text-[11px] text-white/55 group-hover:text-white/80 transition-colors leading-relaxed">
-                  <span className="text-white/25 mr-2">&gt;</span>
-                  <span className="text-white/30 mr-1">Q:</span>
+                <div className="font-mono text-[11px] text-petrol-900/55 group-hover:text-petrol-900/80 transition-colors leading-relaxed">
+                  <span className="text-petrol-900/25 mr-2">&gt;</span>
+                  <span className="text-petrol-900/30 mr-1">Q:</span>
                   {faq.q}
                   {open !== idx && (
-                    <span className="animate-blink text-white/40 ml-0.5">|</span>
+                    <span className="animate-blink text-petrol-900/40 ml-0.5">|</span>
                   )}
                 </div>
-                <span className="flex-shrink-0 flex h-5 w-5 items-center justify-center border border-white/10 mt-0.5 group-hover:border-white/25 transition-colors"
-                  style={{ borderRadius: "2px" }}>
-                  <span className="font-mono-data text-[10px] text-white/35">
+                <span
+                  className={`flex-shrink-0 flex h-5 w-5 items-center justify-center border mt-0.5 transition-colors ${open === idx ? "border-wine-700 bg-wine-700/10" : "border-petrol-900/[0.14] group-hover:border-wine-700/50"}`}
+                  style={{ borderRadius: "2px" }}
+                >
+                  <span className={`font-mono text-[10px] ${open === idx ? "text-wine-700" : "text-petrol-900/35"}`}>
                     {open === idx ? "−" : "+"}
                   </span>
                 </span>
@@ -85,8 +83,8 @@ const FaqSection = () => {
               {open === idx && (
                 <div className="pb-5 pl-5 animate-fade-in-up">
                   <div className="flex gap-2">
-                    <span className="font-mono-data text-[11px] text-white/25 flex-shrink-0">A:</span>
-                    <p className="font-mono-data text-[11px] text-white/40 leading-relaxed">{faq.a}</p>
+                    <span className="font-mono text-[11px] text-wine-700/60 flex-shrink-0">A:</span>
+                    <p className="font-mono text-[11px] text-petrol-700/70 leading-relaxed">{faq.a}</p>
                   </div>
                 </div>
               )}
