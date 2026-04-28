@@ -25,7 +25,7 @@ const PLAN_CREDITS: Record<string, number> = {
 
 const AppPage = () => {
   const { user, signOut } = useAuth();
-  const { hasProfile, loading: profileLoading, refetch: refetchProfile } = useUserProfile(user?.id);
+  const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
@@ -37,11 +37,11 @@ const AppPage = () => {
 
   // Show onboarding for new users (first sign-up) - only once per session
   useEffect(() => {
-    if (user && !profileLoading && !hasProfile && !onboardingShown) {
+    if (user && profileChecked && !hasProfile && !onboardingShown) {
       setOnboardingOpen(true);
       setOnboardingShown(true);
     }
-  }, [user, profileLoading, hasProfile, onboardingShown]);
+  }, [user, profileChecked, hasProfile, onboardingShown]);
 
   // Handle demo signup, checkout success, and bundle query param
   useEffect(() => {
@@ -182,7 +182,7 @@ const AppPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative" style={{ background: "#080808" }}>
+    <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#080808" }}>
       {/* Dot-matrix ambient background */}
       <div className="fixed inset-0 pointer-events-none z-0"
         style={{

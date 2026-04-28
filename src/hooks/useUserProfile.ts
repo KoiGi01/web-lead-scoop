@@ -8,6 +8,7 @@ interface UseUserProfileReturn {
   profile: UserProfile | null;
   loading: boolean;
   hasProfile: boolean;
+  checked: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -15,6 +16,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   const fetchProfile = async () => {
     if (!userId) {
@@ -55,6 +57,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
       setHasProfile(false);
     } finally {
       setLoading(false);
+      setChecked(true);
     }
   };
 
@@ -66,6 +69,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
     profile,
     loading,
     hasProfile,
+    checked,
     refetch: fetchProfile,
   };
 }
