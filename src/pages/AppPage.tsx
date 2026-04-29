@@ -9,6 +9,7 @@ import { useSearchHistory } from "@/hooks/useSearchHistory";
 import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
+import CreditsModal from "@/components/app/CreditsModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
@@ -32,6 +33,7 @@ const AppPage = () => {
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"search" | "all-leads">("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -233,7 +235,7 @@ const AppPage = () => {
             onNewSearch={handleNewSearch}
             onClearHistory={handleClearHistory}
             onViewAllLeads={handleViewAllLeads}
-            onBuyCredits={() => window.location.href = 'https://globaleads22.com/#pricing'}
+            onBuyCredits={() => setCreditsOpen(true)}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
@@ -258,6 +260,12 @@ const AppPage = () => {
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <CreditsModal
+        open={creditsOpen}
+        onClose={() => setCreditsOpen(false)}
+        onSelectBundle={(bundleKey) => { setCreditsOpen(false); handleBuyCredits(bundleKey); }}
+        loading={checkoutLoading}
+      />
       {user && (
         <OnboardingModal
           open={onboardingOpen}
