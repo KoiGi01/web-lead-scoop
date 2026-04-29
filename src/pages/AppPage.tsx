@@ -24,8 +24,10 @@ const PLAN_CREDITS: Record<string, number> = {
   pro: 700,
 };
 
+const isAppSubdomain = window.location.hostname.startsWith("app.");
+
 const AppPage = () => {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
@@ -35,6 +37,13 @@ const AppPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // On the app subdomain, auto-open sign-in modal for unauthenticated users
+  useEffect(() => {
+    if (isAppSubdomain && !loading && !user) {
+      setAuthOpen(true);
+    }
+  }, [loading, user]);
 
   useEffect(() => {
     if (user && profileChecked && !hasProfile && !onboardingShown) {

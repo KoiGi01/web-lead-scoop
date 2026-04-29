@@ -61,6 +61,9 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                 if (error) throw error;
                 onClose();
                 reset();
+                if (!window.location.hostname.startsWith("app.")) {
+                    window.location.href = "https://app.globaleads22.com";
+                }
             }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Something went wrong.");
