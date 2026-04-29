@@ -9,7 +9,7 @@ import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import {
   Search, Download, Loader2, MapPin, Copy, CheckCheck,
   Mail, Phone, Globe, ExternalLink, ChevronRight, Lock, Zap,
-  Lightbulb, TrendingUp, Linkedin, Shield
+  Lightbulb, TrendingUp, Linkedin, Shield, Clock
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
 
@@ -178,6 +178,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   const [isPlanning, setIsPlanning] = useState(false);
   const [searchPlan, setSearchPlan] = useState<SearchPlan | null>(null);
   const [planError, setPlanError] = useState("");
+  const [searchMode, setSearchMode] = useState<"local" | "free" | "online" | "recent" | null>(null);
 
   // Listen for loadSearch event from sidebar
   useEffect(() => {
@@ -282,6 +283,30 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     setSelectedPlace(null);
     setSearchCenter(null);
   };
+
+  const handleSelectSearchMode = (mode: "local" | "free" | "online" | "recent") => {
+    setSearchMode(mode);
+    if (mode === "online") {
+      setSearchPlan(prev => ({
+        targetBusiness: prev?.targetBusiness || keyword,
+        location: prev?.location || location,
+        businessModel: "online",
+        companySize: prev?.companySize || "any",
+        intentSignals: prev?.intentSignals || [],
+        requiredChannels: ["website"],
+        queryVariants: prev?.queryVariants || [],
+        maxResults: prev?.maxResults || 40,
+        radius: prev?.radius,
+        summary: "Online-first businesses with a website presence.",
+      }));
+    } else if (mode === "local" && searchPlan) {
+      setSearchPlan(prev => prev ? { ...prev, businessModel: "local" } : prev);
+    } else if (mode === "free") {
+      setTimeout(() => document.getElementById("lead-brief")?.focus(), 100);
+    }
+  };
+
+  const handleChangeSearchMode = () => setSearchMode(null);
 
   const handleBuildSearchPlan = async () => {
     const rawBrief = brief.trim();
@@ -936,13 +961,112 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
               </div>
             </div>
 
-            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
-              <div className="grid gap-4 p-4 lg:grid-cols-[1.1fr_0.9fr]">
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <label htmlFor="lead-brief" className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Lead brief</label>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">AI planner</span>
+            {/* ── Search Mode Menu ── */}
+            {searchMode === null ? (
+              <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-6">
+                <div className="mb-6">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Start here</p>
+                  <h2 className="mt-1 font-display text-3xl font-bold tracking-[-0.03em] text-[#EFEDE6]">
+                    What are you looking for?
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[#A8A59C]">
+                    Choose a search path. You can refine everything before running.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {([
+                    { mode: "local" as const, icon: MapPin, title: "Local Leads", desc: "Find businesses in a city or region. Best for clinics, agencies, contractors, venues.", cta: "Search locally" },
+                    { mode: "free"  as const, icon: Zap,    title: "Free Search", desc: "Describe your ideal buyer in plain language and let the planner build the search.", cta: "Write a brief" },
+                    { mode: "online" as const, icon: Globe,  title: "Online Businesses", desc: "Find website-first companies, online services, SaaS, ecommerce, and remote businesses.", cta: "Search online" },
+                    { mode: "recent" as const, icon: Clock,  title: "Recent / Saved", desc: "Resume a previous search or open your saved lead archive.", cta: "Open history" },
+                  ] as const).map(({ mode, icon: Icon, title, desc, cta }) => (
+                    <button
+                      key={mode}
+                      onClick={() => handleSelectSearchMode(mode)}
+                      className="group flex flex-col gap-3 border border-[#EFEDE6]/10 bg-black p-5 text-left transition-all hover:border-[#F5FF3D]/50 hover:bg-[#F5FF3D]/[0.03]"
+                    >
+                      <div className="flex items-start gap-4">
+                        <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center border border-[#EFEDE6]/10 transition-colors group-hover:border-[#F5FF3D]/40">
+                          <Icon className="h-4 w-4 text-[#A8A59C] transition-colors group-hover:text-[#F5FF3D]" />
+                        </span>
+                        <div>
+                          <p className="font-display text-sm font-bold text-[#EFEDE6]">{title}</p>
+                          <p className="mt-1.5 text-xs leading-5 text-[#67645B] transition-colors group-hover:text-[#A8A59C]">{desc}</p>
+                        </div>
+                      </div>
+                      <span className="ml-12 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D] opacity-0 transition-opacity group-hover:opacity-100">
+                        {cta} →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Mode strip */}
+                <div className="flex items-center justify-between border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-4 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    {searchMode === "local"  && <MapPin className="h-3.5 w-3.5 text-[#F5FF3D]" />}
+                    {searchMode === "free"   && <Zap    className="h-3.5 w-3.5 text-[#F5FF3D]" />}
+                    {searchMode === "online" && <Globe  className="h-3.5 w-3.5 text-[#F5FF3D]" />}
+                    {searchMode === "recent" && <Clock  className="h-3.5 w-3.5 text-[#F5FF3D]" />}
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">
+                      {searchMode === "local" ? "Local Leads" : searchMode === "free" ? "Free Search" : searchMode === "online" ? "Online Businesses" : "Recent / Saved"}
+                    </span>
                   </div>
+                  <button
+                    onClick={handleChangeSearchMode}
+                    disabled={isProcessing}
+                    className="font-mono text-[10px] uppercase tracking-widest text-[#67645B] transition-colors hover:text-[#EFEDE6] disabled:opacity-30"
+                  >
+                    Change mode
+                  </button>
+                </div>
+
+                {/* Recent / Saved panel */}
+                {searchMode === "recent" && (
+                  <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+                    <div className="flex items-center justify-between border-b border-[#EFEDE6]/10 px-4 py-3">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Quick resume</p>
+                      <button
+                        onClick={() => setSearchMode("local")}
+                        className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D] hover:underline"
+                      >
+                        New search →
+                      </button>
+                    </div>
+                    <div className="space-y-4 p-4">
+                      <p className="font-mono text-xs text-[#A8A59C]">Pick a quick start below, or browse your full history in the sidebar.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {exampleSearches.map((ex) => (
+                          <button
+                            key={`${ex.keyword}-${ex.location}-recent`}
+                            onClick={() => {
+                              setKeyword(ex.keyword);
+                              setLocation(ex.location);
+                              setSelectedPlace(null);
+                              setSearchCenter(null);
+                              setSearchMode("local");
+                            }}
+                            className="border border-[#EFEDE6]/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-[#A8A59C] transition-colors hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
+                          >
+                            {ex.keyword} · {ex.location}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Brief builder */}
+                {searchMode !== "recent" && (
+                  <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+                    <div className="grid gap-4 p-4 lg:grid-cols-[1.1fr_0.9fr]">
+                      <div>
+                        <div className="mb-3 flex items-center justify-between">
+                          <label htmlFor="lead-brief" className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Lead brief</label>
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">AI planner</span>
+                        </div>
                   <textarea
                     id="lead-brief"
                     value={brief}
@@ -1061,11 +1185,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+                  </div>
+                </div>
+                )}
 
-            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
-              <div className="grid gap-3 p-4 lg:grid-cols-[1.3fr_1.3fr_0.55fr_0.65fr_auto] lg:items-end">
+                {/* Search form */}
+                {searchMode !== "recent" && (
+                <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+                  <div className="grid gap-3 p-4 lg:grid-cols-[1.3fr_1.3fr_0.55fr_0.65fr_auto] lg:items-end">
                 <div>
                   <label htmlFor="keyword" className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Search</label>
                   <div className="relative">
@@ -1167,8 +1294,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                     {ex.keyword} · {ex.location}
                   </button>
                 ))}
-              </div>
-            </div>
+                </div>
+                </div>
+                )}
+              </>
+            )}
 
             {(!results || isProcessing) && (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
