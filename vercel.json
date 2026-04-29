@@ -1,9 +1,13 @@
 {
-  "routes": [
-    { "src": "^/app$",     "dest": "/index.html" },
-    { "src": "^/privacy$", "dest": "/index.html" },
-    { "src": "^/terms$",   "dest": "/index.html" },
-    { "src": "^/$",        "dest": "/landing.html" },
-    { "handle": "filesystem" }
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "app.globaleads22.com" }],
+      "destination": "/index.html"
+    },
+    { "source": "/app",     "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/terms",   "destination": "/index.html" },
+    { "source": "/",        "destination": "/landing.html" }
   ]
 }
