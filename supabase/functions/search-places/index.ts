@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { keyword, location, radius, maxResults } = await req.json();
+    const { keyword, location, radius, maxResults, queryVariants } = await req.json();
 
     if (!keyword || !location) {
       return new Response(
@@ -26,52 +26,63 @@ Deno.serve(async (req) => {
       );
     }
 
-    const query = `${keyword} in ${location}`;
     const limit = Math.min(maxResults || 20, 60); // cap at 60 (3 pages)
     const allPlaces: any[] = [];
-    let pageToken: string | undefined;
+    const seenPlaceIds = new Set<string>();
+    const queries = Array.isArray(queryVariants) && queryVariants.length > 0
+      ? queryVariants.map((q: string) => String(q).trim()).filter(Boolean).slice(0, 5)
+      : [`${keyword} in ${location}`];
 
-    // Fetch pages until we have enough results or no more pages
-    while (allPlaces.length < limit) {
-      const remaining = limit - allPlaces.length;
-      const searchUrl = `https://places.googleapis.com/v1/places:searchText`;
+    for (const query of queries) {
+      let pageToken: string | undefined;
+      // Fetch pages until we have enough results or no more pages
+      while (allPlaces.length < limit) {
+        const remaining = limit - allPlaces.length;
+        const searchUrl = `https://places.googleapis.com/v1/places:searchText`;
 
-      const body: any = {
-        textQuery: query,
-        maxResultCount: Math.min(remaining, 20),
-      };
+        const body: any = {
+          textQuery: query,
+          maxResultCount: Math.min(remaining, 20),
+        };
 
-      if (pageToken) {
-        body.pageToken = pageToken;
+        if (pageToken) {
+          body.pageToken = pageToken;
+        }
+
+        const response = await fetch(searchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken',
+          },
+          body: JSON.stringify(body),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error('Google Places API error:', JSON.stringify(data));
+          // If we already have some results, return them instead of failing
+          if (allPlaces.length > 0) break;
+          return new Response(
+            JSON.stringify({ success: false, error: data.error?.message || 'Google Places API error' }),
+            { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const places = data.places || [];
+        for (const place of places) {
+          if (!place.id || seenPlaceIds.has(place.id)) continue;
+          seenPlaceIds.add(place.id);
+          allPlaces.push(place);
+          if (allPlaces.length >= limit) break;
+        }
+
+        pageToken = data.nextPageToken;
+        if (!pageToken || places.length === 0) break;
       }
-
-      const response = await fetch(searchUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken',
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Google Places API error:', JSON.stringify(data));
-        // If we already have some results, return them instead of failing
-        if (allPlaces.length > 0) break;
-        return new Response(
-          JSON.stringify({ success: false, error: data.error?.message || 'Google Places API error' }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const places = data.places || [];
-      allPlaces.push(...places);
-
-      pageToken = data.nextPageToken;
-      if (!pageToken || places.length === 0) break;
+      if (allPlaces.length >= limit) break;
     }
 
     const businesses = allPlaces.map((place: any) => ({
@@ -85,7 +96,7 @@ Deno.serve(async (req) => {
       lng: place.location?.longitude,
     }));
 
-    console.log(`Found ${businesses.length} businesses for "${query}"`);
+    console.log(`Found ${businesses.length} businesses for "${queries.join(' | ')}"`);
 
     return new Response(
       JSON.stringify({ success: true, businesses }),

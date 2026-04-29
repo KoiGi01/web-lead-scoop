@@ -5,10 +5,9 @@ interface GlobaLeadsMarkProps {
 }
 
 const GlobaLeadsMark = ({ size = 28, theme = "dark", className }: GlobaLeadsMarkProps) => {
-  const bg = theme === "dark" ? "#4D243D" : "#00272B";
-  const fg = theme === "dark" ? "#ECDCC9" : "#FAF5EC";
-  const r = Math.round(size * 0.214);
-  const fontSize = Math.round(size * 0.6);
+  const stroke = theme === "dark" ? "#EFEDE6" : "#000000";
+  const dot = "#F5FF3D";
+  const strokeWidth = Math.max(1.4, size * 0.055);
 
   return (
     <svg
@@ -19,19 +18,21 @@ const GlobaLeadsMark = ({ size = 28, theme = "dark", className }: GlobaLeadsMark
       className={className}
       aria-label="GlobaLeads22 mark"
     >
-      <rect width={size} height={size} rx={r} fill={bg} />
-      <text
-        x={size / 2}
-        y={size / 2 + 1}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill={fg}
-        fontFamily="'Space Grotesk', system-ui, sans-serif"
-        fontWeight="700"
-        fontSize={fontSize}
-      >
-        G
-      </text>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={(size - strokeWidth) / 2}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={Math.max(2.5, size * 0.18)}
+        fill={dot}
+        style={{ filter: "drop-shadow(0 0 7px rgba(245,255,61,0.8))" }}
+      />
     </svg>
   );
 };

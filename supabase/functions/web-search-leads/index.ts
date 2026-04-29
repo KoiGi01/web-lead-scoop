@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { keyword, location, maxResults } = await req.json();
+        const { keyword, location, maxResults, queryVariants } = await req.json();
 
         if (!keyword || !location) {
             return new Response(
@@ -94,10 +94,15 @@ Deno.serve(async (req) => {
         const limit = Math.min(maxResults || 20, 60);
         // Search for businesses via Firecrawl web search
         // We use multiple queries to find directory-style pages and individual businesses
-        const queries = [
-            `${keyword} ${location} contact email phone`,
-            `best ${keyword} in ${location} email`,
-        ];
+        const queries = Array.isArray(queryVariants) && queryVariants.length > 0
+            ? [
+                ...queryVariants.map((q: string) => `${String(q).trim()} contact email phone`),
+                ...queryVariants.map((q: string) => `${String(q).trim()} LinkedIn WhatsApp`),
+            ].filter(Boolean).slice(0, 8)
+            : [
+                `${keyword} ${location} contact email phone`,
+                `best ${keyword} in ${location} email`,
+            ];
 
         const seenDomains = new Set<string>();
         const urlsToScrape: string[] = [];

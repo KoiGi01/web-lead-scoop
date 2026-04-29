@@ -80,7 +80,7 @@ const AppPage = () => {
     window.dispatchEvent(event);
 
     setTimeout(() => {
-      const searchForm = document.querySelector('input[placeholder*="plumber"]');
+      const searchForm = document.querySelector('input[placeholder*="Dental clinics"]');
       if (searchForm) {
         searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -93,7 +93,7 @@ const AppPage = () => {
   };
 
   const handleNewSearch = () => {
-    const searchForm = document.querySelector('input[placeholder*="plumber"]');
+    const searchForm = document.querySelector('input[placeholder*="Dental clinics"]');
     if (searchForm) {
       searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -169,31 +169,37 @@ const AppPage = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden bg-petrol-900">
+    <div className="h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]">
       {/* ── App Header ── */}
-      <header className="sticky top-0 z-50 border-b border-cream-100/[0.06] bg-petrol-800/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-[#EFEDE6]/[0.14] bg-black/80 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
 
           <div className="flex items-center gap-4">
             <GlobaLeadsLogo size="md" theme="dark" />
             <div className="hidden sm:flex items-center gap-2">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-wine-500/50" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-wine-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F5FF3D]/50" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
               </span>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-cream-100/30">SYSTEM ONLINE</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Live prospecting workspace</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-cream-400 max-w-[200px] truncate">
+                <div className="hidden md:flex items-center gap-2 border border-[#EFEDE6]/10 px-3 py-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">
+                    {creditsBalance} credits
+                  </span>
+                </div>
+                <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] max-w-[200px] truncate">
                   {user.email}
                 </span>
                 <button
                   onClick={signOut}
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-cream-400/60 hover:text-cream-100 transition-colors"
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
                 >
                   <LogOut className="h-3 w-3" /> SIGN OUT
                 </button>

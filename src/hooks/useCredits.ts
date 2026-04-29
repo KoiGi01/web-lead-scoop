@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { DEMO_USER_ID } from "@/hooks/useAuth";
 
 export type UserCredits = Tables<"user_credits">;
 
@@ -17,6 +18,18 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
   const [loading, setLoading] = useState(true);
 
   const fetchCredits = async () => {
+    if (userId === DEMO_USER_ID) {
+      setCredits({
+        user_id: DEMO_USER_ID,
+        balance: 300,
+        plan: "growth",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as UserCredits);
+      setLoading(false);
+      return;
+    }
+
     if (!userId) {
       setLoading(false);
       return;
@@ -70,6 +83,17 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
   };
 
   const deduct = async (amount: number) => {
+    if (userId === DEMO_USER_ID) {
+      setCredits((prev) => ({
+        user_id: DEMO_USER_ID,
+        balance: Math.max(0, (prev?.balance ?? 300) - amount),
+        plan: "growth",
+        created_at: prev?.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as UserCredits));
+      return;
+    }
+
     if (!userId) {
       throw new Error("User ID is required to deduct credits");
     }

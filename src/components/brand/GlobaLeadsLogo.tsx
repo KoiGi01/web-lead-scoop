@@ -20,7 +20,7 @@ const GlobaLeadsLogo = ({
   className,
 }: GlobaLeadsLogoProps) => {
   const { mark, text } = sizeMap[size];
-  const wordColor = theme === "dark" ? "#ECDCC9" : "#00272B";
+  const wordColor = theme === "dark" ? "#EFEDE6" : "#000000";
 
   return (
     <span
@@ -29,15 +29,26 @@ const GlobaLeadsLogo = ({
       {showMark && <GlobaLeadsMark size={mark} theme={theme} />}
       <span
         style={{
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontFamily: "'Archivo', system-ui, sans-serif",
           fontWeight: 700,
           fontSize: text,
-          letterSpacing: "-0.025em",
+          letterSpacing: "-0.01em",
           lineHeight: 1,
         }}
       >
         <span style={{ color: wordColor }}>GlobaLeads</span>
-        <span style={{ color: "#4D243D" }}>22</span>
+        <sup
+          style={{
+            color: "#F5FF3D",
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontSize: Math.max(9, Math.round(text * 0.66)),
+            fontWeight: 500,
+            marginLeft: 1,
+            verticalAlign: "super",
+          }}
+        >
+          22
+        </sup>
       </span>
     </span>
   );

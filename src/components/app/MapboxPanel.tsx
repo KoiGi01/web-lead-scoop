@@ -31,7 +31,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
       center: [0, 20],
-      zoom: 1.5,
+      zoom: 1.25,
       projection: "globe", // Forces globe setup
       interactive: false,
     });
@@ -39,11 +39,45 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
     map.on("style.load", () => {
       // Atmosphere (starry space background)
       map.setFog({
-        color: "rgb(14, 14, 14)", // Lower atmosphere
-        "high-color": "rgb(8, 8, 8)", // Upper atmosphere
-        "horizon-blend": 0.05, // Atmosphere thickness
-        "space-color": "rgb(8, 8, 8)", // Background color
-        "star-intensity": 0.15 // Background star brightness
+        color: "rgb(0, 0, 0)",
+        "high-color": "rgb(10, 10, 10)",
+        "horizon-blend": 0.03,
+        "space-color": "rgb(0, 0, 0)",
+        "star-intensity": 0.04,
+      });
+
+      const styledLayers = map.getStyle().layers || [];
+      styledLayers.forEach((layer) => {
+        try {
+          if (layer.type === "background") {
+            map.setPaintProperty(layer.id, "background-color", "#000000");
+          }
+          if (layer.type === "water") {
+            map.setPaintProperty(layer.id, "fill-color", "#050505");
+          }
+          if (layer.type === "land" || layer.id.includes("land")) {
+            map.setPaintProperty(layer.id, "background-color", "#0A0A0A");
+            map.setPaintProperty(layer.id, "fill-color", "#0A0A0A");
+          }
+          if (layer.id.includes("road") && "line-color" in ((layer as any).paint || {})) {
+            map.setPaintProperty(layer.id, "line-color", "rgba(239,237,230,0.18)");
+            map.setPaintProperty(layer.id, "line-opacity", 0.28);
+          }
+          if (layer.id.includes("admin") && "line-color" in ((layer as any).paint || {})) {
+            map.setPaintProperty(layer.id, "line-color", "rgba(245,255,61,0.28)");
+            map.setPaintProperty(layer.id, "line-opacity", 0.45);
+          }
+          if (layer.type === "symbol" && layer.id.includes("label")) {
+            if ("text-color" in ((layer as any).paint || {})) {
+              map.setPaintProperty(layer.id, "text-color", "#A8A59C");
+            }
+            if ("text-halo-color" in ((layer as any).paint || {})) {
+              map.setPaintProperty(layer.id, "text-halo-color", "#000000");
+            }
+          }
+        } catch {
+          // Some Mapbox layers do not expose every paint property across style updates.
+        }
       });
 
       mapRef.current = map;
@@ -106,7 +140,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
       // It's searching, fly to the target
       map.flyTo({
         center: [center.lng, center.lat],
-        zoom: 12,
+        zoom: 11,
         speed: 1.5,
         curve: 1.5,
         easing: (t) => t,
@@ -133,11 +167,11 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
             "circle-radius": {
               stops: [[0, 0], [20, radiusKm * 1000]] // rough estimation for pixel radius
             },
-            "circle-color": "#7A3D63",
-            "circle-opacity": 0.05,
-            "circle-stroke-color": "#7A3D63",
-            "circle-stroke-opacity": 0.3,
-            "circle-stroke-width": 1
+            "circle-color": "#F5FF3D",
+            "circle-opacity": 0.08,
+            "circle-stroke-color": "#F5FF3D",
+            "circle-stroke-opacity": 0.42,
+            "circle-stroke-width": 1.5
           }
         });
       } else {
@@ -178,11 +212,11 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
       const key = `${lat},${lng}`;
       if (!markerInstancesRef.current.has(key)) {
         const el = document.createElement('div');
-        el.style.width = '8px';
-        el.style.height = '8px';
-        el.style.backgroundColor = hasEmail ? '#7A3D63' : '#3A1B2E';
-        el.style.boxShadow = hasEmail ? '0 0 10px rgba(122,61,99,0.6)' : 'none';
-        el.style.borderRadius = '0'; // Pure blocky aesthetic
+        el.style.width = '9px';
+        el.style.height = '9px';
+        el.style.backgroundColor = hasEmail ? '#F5FF3D' : '#A8A59C';
+        el.style.boxShadow = hasEmail ? '0 0 12px rgba(245,255,61,0.7)' : 'none';
+        el.style.borderRadius = '999px';
         
         // Add a pulse ring behind it
         const pulse = document.createElement('div');
@@ -191,7 +225,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
         pulse.style.left = '50%';
         pulse.style.width = '100%';
         pulse.style.height = '100%';
-        pulse.style.backgroundColor = '#7A3D63';
+        pulse.style.backgroundColor = '#F5FF3D';
         pulse.style.transform = 'translate(-50%, -50%)';
         pulse.style.borderRadius = '50%';
         pulse.style.animation = 'dot-pulse 1.5s infinite';
@@ -210,18 +244,26 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
   }, [markers, mapLoaded]);
 
   return (
-    <div className="w-full h-full relative bg-petrol-900" style={{ borderRadius: "0px" }}>
+    <div className="w-full h-full relative bg-black" style={{ borderRadius: "0px" }}>
       <div ref={mapContainer} className="w-full h-full" />
       
       {/* Map Overlay Grid lines */}
-      <div className="absolute inset-0 pointer-events-none opacity-20 outline outline-1 outline-white/5" 
-           style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+      <div
+        className="absolute inset-0 pointer-events-none outline outline-1 outline-white/5"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 45%, rgba(245,255,61,0.10), transparent 30%), linear-gradient(rgba(239,237,230,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(239,237,230,0.045) 1px, transparent 1px)",
+          backgroundSize: "100% 100%, 36px 36px, 36px 36px",
+          mixBlendMode: "screen",
+          opacity: 0.42,
+        }}
+      >
       </div>
 
-      <div className="absolute bottom-4 right-4 z-10 p-4 border border-white/10" style={{ background: "rgba(15, 15, 15, 0.6)", backdropFilter: "blur(20px)" }}>
-        <div className="flex gap-2 items-center text-[10px] font-mono text-cream-100/50">
-          <div className="w-2 h-2 bg-wine-500 shadow-wine-500/50"></div> <span className="text-cream-100">ACTIVE_TARGET</span>
-          <div className="w-2 h-2 bg-wine-700 ml-4"></div> GHOST_NODE
+      <div className="absolute bottom-3 right-3 z-10 border border-[#EFEDE6]/10 px-3 py-2" style={{ background: "rgba(0, 0, 0, 0.72)", backdropFilter: "blur(18px)" }}>
+        <div className="flex gap-2 items-center text-[10px] font-mono text-[#A8A59C]">
+          <div className="w-2 h-2 rounded-full bg-[#F5FF3D]"></div> <span className="text-[#EFEDE6]">Lead with contact</span>
+          <div className="w-2 h-2 rounded-full bg-[#A8A59C] ml-4"></div> Lead found
         </div>
       </div>
     </div>

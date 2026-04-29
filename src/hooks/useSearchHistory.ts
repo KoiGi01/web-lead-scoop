@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { DEMO_USER_ID } from "@/hooks/useAuth";
 
 export type SearchSession = Tables<"search_sessions">;
 
@@ -25,6 +26,17 @@ export function useSearchHistory(userId: string | undefined): UseSearchHistoryRe
   const [loading, setLoading] = useState(true);
 
   const fetchHistory = async () => {
+    if (userId === DEMO_USER_ID) {
+      const now = Date.now();
+      setHistory([
+        { id: "demo-1", keyword: "Dental clinics", location: "Lisbon, Portugal", leadCount: 42, emailCount: 31, whatsappCount: 18, timestamp: now - 1000 * 60 * 18 },
+        { id: "demo-2", keyword: "Law firms", location: "Berlin, Germany", leadCount: 28, emailCount: 19, whatsappCount: 7, timestamp: now - 1000 * 60 * 60 * 3 },
+        { id: "demo-3", keyword: "Solar installers", location: "Austin, Texas", leadCount: 55, emailCount: 41, whatsappCount: 12, timestamp: now - 1000 * 60 * 60 * 23 },
+      ]);
+      setLoading(false);
+      return;
+    }
+
     if (!userId) {
       setLoading(false);
       return;

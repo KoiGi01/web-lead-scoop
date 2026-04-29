@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft, Lock, Zap } from "lucide-react";
+import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft, Lock, Zap, Search, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { DEMO_USER_ID } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import XLSX from "xlsx-js-style";
@@ -54,6 +55,70 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   const fetchAllLeads = async () => {
     if (!userId) return;
     setLoading(true);
+    if (userId === DEMO_USER_ID) {
+      setLeads([
+        {
+          id: "demo-lead-1",
+          name: "Clínica Almeida & Silva",
+          address: "Av. da Liberdade, Lisbon, Portugal",
+          phone: "+351 21 000 1001",
+          website: "https://almeidasilva.example",
+          category: "dental_clinic",
+          emails: ["growth@almeidasilva.example", "hello@almeidasilva.example"],
+          whatsapp: ["+351 91 000 1001"],
+          linkedinUrl: "https://linkedin.com/company/almeida-silva",
+          contact_page_found: true,
+          intelligence: {
+            opportunityScore: 94,
+            businessMaturity: "Premium multi-location practice",
+            positioning: "High-value clinic with multilingual site and visible booking flow",
+            detectedIssues: ["No automated follow-up", "Weak local landing pages"],
+            opportunitySummary: "Strong fit for outbound growth because the site already signals premium intent.",
+            suggestedPitchAngle: "Increase booked consults from international patients",
+            outreachHook: "Your English/Portuguese positioning is strong, but the booking flow leaks follow-up opportunities.",
+          },
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: "demo-lead-2",
+          name: "Sorriso Premium Dental",
+          address: "Rua Garrett, Lisbon, Portugal",
+          phone: "+351 21 000 1002",
+          website: "https://sorrisopremium.example",
+          category: "cosmetic_dentistry",
+          emails: ["contact@sorrisopremium.example"],
+          whatsapp: [],
+          linkedinUrl: "",
+          contact_page_found: true,
+          intelligence: {
+            opportunityScore: 88,
+            businessMaturity: "Established practice",
+            positioning: "Cosmetic-first positioning with visible team and services",
+            detectedIssues: ["Generic contact page"],
+            opportunitySummary: "Good candidate for conversion-focused landing pages and retargeting.",
+            suggestedPitchAngle: "Turn cosmetic traffic into qualified consults",
+            outreachHook: "Your cosmetic pages have strong intent, but the contact path asks visitors to do too much work.",
+          },
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: "demo-lead-3",
+          name: "DentaLab Estoril",
+          address: "Estoril, Cascais, Portugal",
+          phone: "",
+          website: "https://dentalab.example",
+          category: "dental_lab",
+          emails: ["info@dentalab.example"],
+          whatsapp: ["+351 91 000 1003"],
+          linkedinUrl: "https://linkedin.com/company/dentalab-estoril",
+          contact_page_found: true,
+          intelligence: null,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from("saved_leads")
@@ -156,6 +221,245 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   const whatsappCount = sortedResults.reduce((acc, r) => acc + r.whatsapp.length, 0);
   const activeFilterCount = [filterByEmail, filterByPhone, filterByWebsite, filterByLinkedIn, filterByIntelligence, filterScoreMin > 0, filterText.trim() !== ""].filter(Boolean).length;
   const totalResultCount = leads.length;
+  const websiteCount = sortedResults.filter(r => r.website).length;
+  const scoredLeads = sortedResults.filter(r => r.intelligence);
+  const averageScore = scoredLeads.length
+    ? Math.round(scoredLeads.reduce((acc, r) => acc + (r.intelligence?.opportunityScore ?? 0), 0) / scoredLeads.length)
+    : "-";
+
+  return (
+    <section id="tool" className="flex flex-1 flex-col bg-black py-8 text-[#EFEDE6]">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-6">
+        <div className="mb-6 flex flex-col gap-5 border-b border-[#EFEDE6]/[0.14] pb-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <button
+              onClick={onBackToSearch}
+              className="mb-5 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#A8A59C] transition-colors hover:text-[#F5FF3D]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to search
+            </button>
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Saved intelligence</p>
+            <h2 className="font-display text-5xl font-black leading-[0.95] tracking-[-0.04em] text-[#EFEDE6]">
+              Lead Archive
+            </h2>
+            <p className="mt-4 max-w-2xl text-base text-[#A8A59C]">
+              Every saved search result, ready to filter, copy, score, and export.
+            </p>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex flex-1 items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-[#F5FF3D]" />
+          </div>
+        )}
+
+        {!loading && leads.length === 0 && (
+          <div className="flex flex-1 flex-col items-center justify-center border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] py-20 text-center">
+            <Archive className="mb-4 h-10 w-10 text-[#67645B]" />
+            <p className="font-display text-2xl font-bold text-[#EFEDE6]">No leads saved yet.</p>
+            <p className="mt-2 text-sm text-[#A8A59C]">Run a search and your archive will start filling up.</p>
+          </div>
+        )}
+
+        {!loading && leads.length > 0 && (
+          <div className="flex flex-1 flex-col gap-4">
+            <div className="grid border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] sm:grid-cols-5">
+              {[
+                ["Visible", sortedResults.length],
+                ["Total", totalResultCount],
+                ["Emails", emailCount],
+                ["Websites", websiteCount],
+                ["Avg score", averageScore],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="border-b border-r border-[#EFEDE6]/10 p-4 last:border-r-0 sm:border-b-0">
+                  <p className="font-mono text-2xl font-black tabular-nums text-[#EFEDE6]">{value}</p>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Sort</span>
+                  {["name", "emails", "score"].map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => setSortBy(opt as typeof sortBy)}
+                      className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                        sortBy === opt
+                          ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
+                          : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67645B]" />
+                    <input
+                      type="text"
+                      placeholder="Search archive..."
+                      value={filterText}
+                      onChange={e => setFilterText(e.target.value)}
+                      className="h-10 w-full border border-[#EFEDE6]/10 bg-black pl-9 pr-3 font-mono text-xs text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 sm:w-64"
+                    />
+                  </div>
+                  <button
+                    onClick={handleCopyEmails}
+                    disabled={emailCount === 0}
+                    className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30"
+                  >
+                    {emailsCopied ? "Copied emails" : "Copy emails"}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]"
+                  >
+                    Export XLSX
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {([
+                  { key: "email", label: "Has email", icon: Mail, active: filterByEmail, toggle: () => setFilterByEmail(v => !v) },
+                  { key: "phone", label: "Has phone", icon: Phone, active: filterByPhone, toggle: () => setFilterByPhone(v => !v) },
+                  { key: "website", label: "Has site", icon: Globe, active: filterByWebsite, toggle: () => setFilterByWebsite(v => !v) },
+                  { key: "linkedin", label: "LinkedIn", icon: Linkedin, active: filterByLinkedIn, toggle: () => setFilterByLinkedIn(v => !v) },
+                  ...(userProfile ? [{ key: "intel", label: "Has intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
+                ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
+                  <button
+                    key={f.key}
+                    onClick={f.toggle}
+                    className={`flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${
+                      f.active
+                        ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
+                        : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
+                    }`}
+                  >
+                    <f.icon className="h-3 w-3" /> {f.label}
+                  </button>
+                ))}
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => {
+                      setFilterByEmail(false);
+                      setFilterByPhone(false);
+                      setFilterByWebsite(false);
+                      setFilterByLinkedIn(false);
+                      setFilterByIntelligence(false);
+                      setFilterScoreMin(0);
+                      setFilterText("");
+                    }}
+                    className="border border-red-400/30 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-red-300 hover:bg-red-400/10"
+                  >
+                    Clear {activeFilterCount}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-x-auto border border-[#EFEDE6]/[0.14] bg-black">
+              <table className="w-full min-w-[1040px] border-collapse text-left">
+                <thead className="sticky top-0 bg-[#0A0A0A]">
+                  <tr className="border-b border-[#EFEDE6]/10">
+                    {["Business", "Channels", "Actions", "Website", "LinkedIn", userProfile ? "Intel" : ""].filter(Boolean).map(h => (
+                      <th key={h} className="px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[#67645B]">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EFEDE6]/10">
+                  {sortedResults.map((r, i) => (
+                    <tr key={r.id} className="animate-row-in align-top transition-colors hover:bg-[#EFEDE6]/[0.03]" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}>
+                      <td className="px-4 py-4">
+                        <p className="max-w-[220px] truncate font-display text-sm font-semibold text-[#EFEDE6]">{r.name}</p>
+                        {r.category && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{r.category.replace(/_/g, " ")}</p>}
+                        <p className="mt-2 max-w-[240px] truncate text-xs text-[#A8A59C]">{r.address || "No address listed"}</p>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="mb-2 flex gap-1.5">
+                          {[
+                            { ok: r.emails.length > 0, icon: Mail, label: "Email" },
+                            { ok: !!r.phone, icon: Phone, label: "Phone" },
+                            { ok: !!r.website, icon: Globe, label: "Web" },
+                            { ok: !!r.linkedinUrl, icon: Linkedin, label: "LinkedIn" },
+                          ].map(({ ok, icon: Icon, label }) => (
+                            <span key={label} title={label} className={`flex h-7 w-7 items-center justify-center rounded-full border ${ok ? "border-[#F5FF3D]/60 text-[#F5FF3D]" : "border-[#EFEDE6]/10 text-[#67645B]"}`}>
+                              <Icon className="h-3.5 w-3.5" />
+                            </span>
+                          ))}
+                        </div>
+                        <p className="font-mono text-[11px] text-[#A8A59C]">{r.phone || "-"}</p>
+                        {r.emails[0] && <p className="mt-1 max-w-[220px] truncate font-mono text-[11px] text-[#F5FF3D]">{r.emails[0]}</p>}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1.5">
+                          {r.emails.length > 0 && (
+                            <button onClick={() => handleCopyField(`${r.id}-email`, r.emails[0])} title="Copy email" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
+                              {copiedKeys.has(`${r.id}-email`) ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            </button>
+                          )}
+                          {r.phone && (
+                            <button onClick={() => handleCopyField(`${r.id}-phone`, r.phone)} title="Copy phone" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
+                              {copiedKeys.has(`${r.id}-phone`) ? <CheckCheck className="h-3 w-3" /> : <Phone className="h-3 w-3" />}
+                            </button>
+                          )}
+                          {r.emails.length > 0 && (
+                            <a href={`mailto:${r.emails[0]}`} title="Open in email client" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
+                              <Mail className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        {r.website ? (
+                          <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-[220px] items-center gap-1.5 truncate font-mono text-[11px] text-[#A8A59C] hover:text-[#EFEDE6]">
+                            <Globe className="h-3.5 w-3.5" />
+                            <span className="truncate">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
+                      </td>
+                      <td className="px-4 py-4">
+                        {r.linkedinUrl ? (
+                          <a href={r.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0A66C2] hover:text-[#4A9BE8]">
+                            <Linkedin className="h-3.5 w-3.5" /> Profile <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
+                      </td>
+                      {userProfile && (
+                        <td className="px-4 py-4">
+                          {r.intelligence ? (
+                            <div className="max-w-[220px]">
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono text-xl font-black text-[#F5FF3D]">{r.intelligence.opportunityScore ?? 0}</span>
+                                <div className="h-1.5 w-28 bg-[#EFEDE6]/10">
+                                  <div className="h-full bg-[#F5FF3D]" style={{ width: `${r.intelligence.opportunityScore ?? 0}%` }} />
+                                </div>
+                              </div>
+                              <p className="mt-2 text-xs leading-5 text-[#A8A59C]">{r.intelligence.positioning}</p>
+                            </div>
+                          ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 
   return (
     <section id="tool" className="bg-petrol-950 py-16 sm:py-24 flex-1 flex flex-col">
