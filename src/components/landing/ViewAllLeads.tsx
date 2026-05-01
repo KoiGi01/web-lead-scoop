@@ -17,10 +17,26 @@ interface SavedLead {
   category: string;
   emails: string[];
   whatsapp: string[];
+  contacts?: DecisionMakerContact[];
   linkedinUrl?: string;
   contact_page_found: boolean;
   intelligence?: any;
   created_at: string;
+}
+
+interface DecisionMakerContact {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  title?: string;
+  department?: string;
+  seniority?: string;
+  linkedinUrl?: string;
+  confidence?: number;
+  source: "hunter" | "linkedin" | "website";
+  decisionMakerScore: number;
+  decisionMakerReason: string;
 }
 
 interface ViewAllLeadsProps {
@@ -45,6 +61,9 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   const [filterScoreMin, setFilterScoreMin] = useState(0);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
+  const getTopContact = (lead: SavedLead) =>
+    [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
+
   // Fetch all leads on mount
   useEffect(() => {
     if (userId) {
@@ -66,6 +85,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
           category: "dental_clinic",
           emails: ["growth@almeidasilva.example", "hello@almeidasilva.example"],
           whatsapp: ["+351 91 000 1001"],
+          contacts: [{ fullName: "Maria Almeida", title: "Head of Growth", email: "growth@almeidasilva.example", source: "hunter", decisionMakerScore: 88, decisionMakerReason: "healthcare title fit" }],
           linkedinUrl: "https://linkedin.com/company/almeida-silva",
           contact_page_found: true,
           intelligence: {
@@ -88,6 +108,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
           category: "cosmetic_dentistry",
           emails: ["contact@sorrisopremium.example"],
           whatsapp: [],
+          contacts: [{ fullName: "Ana Sorriso", title: "Practice Manager", email: "contact@sorrisopremium.example", source: "hunter", decisionMakerScore: 74, decisionMakerReason: "healthcare title fit" }],
           linkedinUrl: "",
           contact_page_found: true,
           intelligence: {
@@ -110,6 +131,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
           category: "dental_lab",
           emails: ["info@dentalab.example"],
           whatsapp: ["+351 91 000 1003"],
+          contacts: [],
           linkedinUrl: "https://linkedin.com/company/dentalab-estoril",
           contact_page_found: true,
           intelligence: null,
@@ -127,7 +149,12 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      setLeads((data || []).map((lead: any) => ({
+        ...lead,
+        emails: Array.isArray(lead.emails) ? lead.emails : [],
+        whatsapp: Array.isArray(lead.whatsapp) ? lead.whatsapp : [],
+        contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
+      })));
     } catch (err) {
       console.error("Error fetching leads:", err);
       toast({ title: "Error", description: "Failed to load leads", variant: "destructive" });
@@ -155,7 +182,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   };
 
   const handleDownload = () => {
-    const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "LinkedIn", "Contact Page"];
+    const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "LinkedIn", "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker LinkedIn", "Decision Maker Source", "Contact Page"];
     const headerStyle = {
       font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
       fill: { fgColor: { rgb: "F7931A" }, patternType: "solid" as const },
@@ -171,10 +198,15 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
       ...cellStyle,
       fill: { fgColor: { rgb: "F8F0F0" }, patternType: "solid" as const },
     };
-    const rows = sortedResults.map((r) => [
-      r.name, r.category, r.address, r.phone, r.website,
-      r.emails.join(", "), r.whatsapp.join(", "), r.linkedinUrl || "", r.contact_page_found ? "Yes" : "No",
-    ]);
+    const rows = sortedResults.map((r) => {
+      const contact = getTopContact(r);
+      return [
+        r.name, r.category, r.address, r.phone, r.website,
+        r.emails.join(", "), r.whatsapp.join(", "), r.linkedinUrl || "",
+        contact?.fullName || "", contact?.title || "", contact?.email || "", contact?.linkedinUrl || "", contact?.source || "",
+        r.contact_page_found ? "Yes" : "No",
+      ];
+    });
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     headers.forEach((_, colIdx) => {
@@ -206,11 +238,15 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
     if (filterScoreMin > 0 && (r.intelligence?.opportunityScore ?? 0) < filterScoreMin) return false;
     if (filterText.trim()) {
       const q = filterText.toLowerCase();
-      if (!r.name.toLowerCase().includes(q) && !r.address.toLowerCase().includes(q) && !r.emails.join(" ").toLowerCase().includes(q)) return false;
+      const contact = getTopContact(r);
+      const contactText = [contact?.fullName, contact?.title, contact?.email].filter(Boolean).join(" ");
+      if (!r.name.toLowerCase().includes(q) && !r.address.toLowerCase().includes(q) && !r.emails.join(" ").toLowerCase().includes(q) && !contactText.toLowerCase().includes(q)) return false;
     }
     return true;
   });
   const sortedResults = [...filteredResults].sort((a, b) => {
+    const contactDelta = (getTopContact(b)?.decisionMakerScore || 0) - (getTopContact(a)?.decisionMakerScore || 0);
+    if (contactDelta !== 0) return contactDelta;
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "emails") return (b.emails.length) - (a.emails.length);
     if (sortBy === "score") return ((b.intelligence?.opportunityScore ?? -1) - (a.intelligence?.opportunityScore ?? -1));
@@ -383,6 +419,13 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
                         <p className="max-w-[220px] truncate font-display text-sm font-semibold text-[#EFEDE6]">{r.name}</p>
                         {r.category && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{r.category.replace(/_/g, " ")}</p>}
                         <p className="mt-2 max-w-[240px] truncate text-xs text-[#A8A59C]">{r.address || "No address listed"}</p>
+                        {getTopContact(r) && (
+                          <div className="mt-3 border border-[#EFEDE6]/10 bg-black p-2">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Likely decision maker</p>
+                            <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-[#EFEDE6]">{getTopContact(r)?.fullName || getTopContact(r)?.email}</p>
+                            {getTopContact(r)?.title && <p className="mt-0.5 max-w-[220px] truncate text-[11px] text-[#A8A59C]">{getTopContact(r)?.title}</p>}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <div className="mb-2 flex gap-1.5">

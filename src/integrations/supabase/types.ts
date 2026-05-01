@@ -148,6 +148,7 @@ export type Database = {
           category: string | null
           emails: Json | null
           whatsapp: Json | null
+          contacts: Json
           contact_page_found: boolean
           intelligence: Json | null
           created_at: string
@@ -163,6 +164,7 @@ export type Database = {
           category?: string | null
           emails?: Json | null
           whatsapp?: Json | null
+          contacts?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
           created_at?: string
@@ -178,6 +180,7 @@ export type Database = {
           category?: string | null
           emails?: Json | null
           whatsapp?: Json | null
+          contacts?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
           created_at?: string

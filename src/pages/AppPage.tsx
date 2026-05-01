@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { LogOut } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { DEMO_USER_ID, useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
@@ -26,9 +26,13 @@ const PLAN_CREDITS: Record<string, number> = {
 };
 
 const isAppSubdomain = window.location.hostname.startsWith("app.");
+const devMode = import.meta.env.DEV;
+
+const demoUser = devMode ? { id: DEMO_USER_ID, email: 'demo@account.com' } as any : null;
 
 const AppPage = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user: realUser, loading, signOut } = useAuth();
+  const user = realUser || demoUser;
   const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
@@ -42,13 +46,13 @@ const AppPage = () => {
 
   // On the app subdomain, auto-open sign-in modal for unauthenticated users
   useEffect(() => {
-    if (isAppSubdomain && !loading && !user) {
+    if (isAppSubdomain && !loading && !user && !devMode) {
       setAuthOpen(true);
     }
   }, [loading, user]);
 
   useEffect(() => {
-    if (user && profileChecked && !hasProfile && !onboardingShown) {
+    if (user && profileChecked && !hasProfile && !onboardingShown && !devMode) {
       setOnboardingOpen(true);
       setOnboardingShown(true);
     }
@@ -208,12 +212,14 @@ const AppPage = () => {
                 <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] max-w-[200px] truncate">
                   {user.email}
                 </span>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
-                >
-                  <LogOut className="h-3 w-3" /> SIGN OUT
-                </button>
+                {realUser && (
+                  <button
+                    onClick={signOut}
+                    className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
+                  >
+                    <LogOut className="h-3 w-3" /> SIGN OUT
+                  </button>
+                )}
               </>
             ) : (
               <Button variant="accent" size="sm" onClick={() => setAuthOpen(true)}>

@@ -18,6 +18,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="GlobaLeads22 — B2B Lead Generation from Google Maps &amp; Web" />
 <meta name="twitter:description" content="Search for businesses by type and location, extract emails and LinkedIn profiles, score leads with AI, and export to Excel." />
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -53,7 +54,9 @@
   /* NAV */
   nav.top{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.78);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
   .nav-inner{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px;padding:16px 32px}
-  .logo{display:flex;align-items:center;gap:11px;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .logo{display:flex;align-items:center;width:260px;height:100px}
+  .logo-img{display:block;width:100%;height:100%;object-fit:contain}
+  .foot-grid .logo{width:210px;height:81px;margin-bottom:4px}
   .logo-mark{width:28px;height:28px;border:1.5px solid var(--paper);border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center}
   .logo-mark::after{content:"";width:5px;height:5px;background:var(--yellow);border-radius:50%;box-shadow:0 0 8px var(--yellow)}
   .logo b{font-weight:700;letter-spacing:-.01em}
@@ -492,8 +495,7 @@
 <nav class="top">
   <div class="nav-inner">
     <a href="/" class="logo">
-      <span class="logo-mark"></span>
-      <span><b>GlobaLeads</b><sup>22</sup></span>
+      <img src="/logo.png" alt="GlobaLeads22" class="logo-img">
     </a>
     <div class="nav-links">
       <a href="#how">How it works</a>
@@ -909,7 +911,7 @@
   <div class="container">
     <div class="foot-grid">
       <div>
-        <a href="/" class="logo"><span class="logo-mark"></span><span><b>GlobaLeads</b><sup>22</sup></span></a>
+        <a href="/" class="logo"><img src="/logo.png" alt="GlobaLeads22" class="logo-img"></a>
         <p class="blurb">B2B prospecting for operators who'd rather close deals than babysit scrapers.</p>
       </div>
       <div><h5>Product</h5><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul></div>

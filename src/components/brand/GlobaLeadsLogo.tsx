@@ -1,5 +1,3 @@
-import GlobaLeadsMark from "@/components/brand/GlobaLeadsMark";
-
 interface GlobaLeadsLogoProps {
   size?: "sm" | "md" | "lg";
   theme?: "dark" | "light";
@@ -8,9 +6,9 @@ interface GlobaLeadsLogoProps {
 }
 
 const sizeMap = {
-  sm: { mark: 20, text: 13 },
-  md: { mark: 28, text: 15 },
-  lg: { mark: 36, text: 19 },
+  sm: { text: 13, width: 140, height: 54 },
+  md: { text: 15, width: 190, height: 73 },
+  lg: { text: 19, width: 250, height: 96 },
 };
 
 const GlobaLeadsLogo = ({
@@ -19,14 +17,31 @@ const GlobaLeadsLogo = ({
   showMark = true,
   className,
 }: GlobaLeadsLogoProps) => {
-  const { mark, text } = sizeMap[size];
+  const { text, width, height } = sizeMap[size];
   const wordColor = theme === "dark" ? "#EFEDE6" : "#000000";
+
+  if (showMark) {
+    return (
+      <img
+        src="/logo.png"
+        alt="GlobaLeads22"
+        width={width}
+        height={height}
+        className={className}
+        style={{
+          width,
+          height,
+          objectFit: "contain",
+          display: "block",
+        }}
+      />
+    );
+  }
 
   return (
     <span
       className={`inline-flex items-center gap-2.5 ${className ?? ""}`}
     >
-      {showMark && <GlobaLeadsMark size={mark} theme={theme} />}
       <span
         style={{
           fontFamily: "'Archivo', system-ui, sans-serif",

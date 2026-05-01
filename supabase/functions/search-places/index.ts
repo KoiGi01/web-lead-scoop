@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     const allPlaces: any[] = [];
     const seenPlaceIds = new Set<string>();
     const queries = Array.isArray(queryVariants) && queryVariants.length > 0
-      ? queryVariants.map((q: string) => String(q).trim()).filter(Boolean).slice(0, 5)
+      ? queryVariants.map((q: string) => String(q).trim()).filter(Boolean).slice(0, 16)
       : [`${keyword} in ${location}`];
 
     for (const query of queries) {
