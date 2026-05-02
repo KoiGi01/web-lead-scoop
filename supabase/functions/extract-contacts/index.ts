@@ -17,6 +17,7 @@ const WHATSAPP_REGEX = /(?:https?:\/\/)?(?:wa\.me|api\.whatsapp\.com|whatsapp\.c
 const MAILTO_REGEX = /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
 const LINKEDIN_PROFILE_REGEX = /https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+\/?/gi;
 const LINKEDIN_COMPANY_REGEX = /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+\/?/gi;
+const SOCIAL_REGEX = /https?:\/\/(?:www\.|m\.)?(?:facebook\.com|instagram\.com)\/[a-zA-Z0-9._%\-]+\/?/gi;
 
 type ContactSource = "hunter" | "linkedin" | "website";
 
@@ -85,6 +86,52 @@ function extractLinkedInCompany(text: string, links: string[]): string | undefin
   const htmlMatch = text.match(LINKEDIN_COMPANY_REGEX)?.[0];
   if (htmlMatch) return htmlMatch;
   return links.find(link => /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+\/?/i.test(link));
+}
+
+function extractSocialLinks(text: string, links: string[], sourceUrl?: string): string[] {
+  const urls = new Set<string>();
+  if (sourceUrl && /(?:facebook|instagram)\.com/i.test(sourceUrl)) urls.add(sourceUrl);
+  for (const match of text.matchAll(SOCIAL_REGEX)) urls.add(match[0]);
+  links
+    .filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\/[a-zA-Z0-9._%\-]+\/?/i.test(link))
+    .forEach(link => urls.add(link));
+  return [...urls].slice(0, 6);
+}
+
+function looksLikeLinkedIn(url: string) {
+  return /https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[a-zA-Z0-9\-_%]+\/?/i.test(url);
+}
+
+async function discoverPublicProfiles(apiKey: string, businessName: string, location: string) {
+  const query = [`"${businessName}"`, location ? `"${location}"` : "", "(linkedin OR instagram OR facebook)"].filter(Boolean).join(" ");
+  const profileLinks: string[] = [];
+  try {
+    const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        limit: 5,
+        scrapeOptions: { formats: [] },
+      }),
+    });
+    if (!searchResp.ok) return { linkedinUrl: undefined, socialLinks: [] as string[] };
+    const searchData = await searchResp.json();
+    const results: Array<{ url?: string }> = searchData.data || [];
+    for (const result of results) {
+      if (result.url) profileLinks.push(result.url);
+    }
+  } catch (error) {
+    console.error("Public profile discovery error:", error);
+  }
+
+  return {
+    linkedinUrl: profileLinks.find(looksLikeLinkedIn),
+    socialLinks: profileLinks.filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\//i.test(link)).slice(0, 4),
+  };
 }
 
 function getDomain(url: string): string {
@@ -208,6 +255,8 @@ Deno.serve(async (req) => {
   try {
     const {
       url,
+      businessName = "",
+      location = "",
       enrichMode = false,
       industry = "",
       depth,
@@ -290,6 +339,7 @@ Deno.serve(async (req) => {
     let allWhatsApp = extractWhatsApp(html);
     let linkedInProfiles = extractLinkedInProfiles(html, links);
     let linkedinUrl = extractLinkedInCompany(html, links);
+    let socialLinks = extractSocialLinks(html, links, formattedUrl);
 
     const contactPaths = ["/contact", "/about", "/team", "/people", "/leadership", "/kontakt", "/contacto", "/sobre"];
     const contactLinks = links
@@ -339,6 +389,7 @@ Deno.serve(async (req) => {
         allWhatsApp = [...new Set([...allWhatsApp, ...extractWhatsApp(contactHtml)])];
         linkedInProfiles = [...new Set([...linkedInProfiles, ...extractLinkedInProfiles(contactHtml, contactPageLinks)])].slice(0, 5);
         linkedinUrl = linkedinUrl || extractLinkedInCompany(contactHtml, contactPageLinks);
+        socialLinks = [...new Set([...socialLinks, ...extractSocialLinks(contactHtml, contactPageLinks)])].slice(0, 6);
       } catch (error) {
         console.error(`Error scraping contact page ${contactUrl}:`, error);
       }
@@ -348,6 +399,12 @@ Deno.serve(async (req) => {
     let emailSource: "firecrawl" | "hunter" | "both" | "none" = allEmails.length > 0 ? "firecrawl" : "none";
 
     if (enrichMode) {
+      if (businessName) {
+        const discovered = await discoverPublicProfiles(firecrawlApiKey, String(businessName), String(location));
+        linkedinUrl = linkedinUrl || discovered.linkedinUrl;
+        socialLinks = [...new Set([...socialLinks, ...discovered.socialLinks])].slice(0, 6);
+      }
+
       const hunterApiKey = Deno.env.get("HUNTER_API_KEY");
       const domain = getDomain(formattedUrl);
       if (hunterApiKey && domain) {
@@ -428,6 +485,7 @@ Deno.serve(async (req) => {
         whatsapp: allWhatsApp,
         contactPageFound: contactLinks.length > 0,
         linkedinUrl,
+        socialLinks,
         contacts: mergeContacts(contacts),
         emailSource,
       }),

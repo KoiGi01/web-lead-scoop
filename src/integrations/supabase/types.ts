@@ -340,6 +340,8 @@ export type Database = {
           emails: Json | null
           whatsapp: Json | null
           contacts: Json
+          linkedin_url: string | null
+          social_links: Json
           contact_page_found: boolean
           intelligence: Json | null
           created_at: string
@@ -356,6 +358,8 @@ export type Database = {
           emails?: Json | null
           whatsapp?: Json | null
           contacts?: Json
+          linkedin_url?: string | null
+          social_links?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
           created_at?: string
@@ -372,6 +376,8 @@ export type Database = {
           emails?: Json | null
           whatsapp?: Json | null
           contacts?: Json
+          linkedin_url?: string | null
+          social_links?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
           created_at?: string

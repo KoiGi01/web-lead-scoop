@@ -19,6 +19,9 @@ interface SavedLead {
   whatsapp: string[];
   contacts?: DecisionMakerContact[];
   linkedinUrl?: string;
+  linkedin_url?: string | null;
+  socialLinks?: string[];
+  social_links?: unknown;
   contact_page_found: boolean;
   intelligence?: any;
   created_at: string;
@@ -154,6 +157,8 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
         emails: Array.isArray(lead.emails) ? lead.emails : [],
         whatsapp: Array.isArray(lead.whatsapp) ? lead.whatsapp : [],
         contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
+        linkedinUrl: lead.linkedin_url || lead.linkedinUrl || "",
+        socialLinks: Array.isArray(lead.social_links) ? lead.social_links : [],
       })));
     } catch (err) {
       console.error("Error fetching leads:", err);
@@ -182,7 +187,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
   };
 
   const handleDownload = () => {
-    const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "LinkedIn", "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker LinkedIn", "Decision Maker Source", "Contact Page"];
+    const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "Social Profiles", "LinkedIn", "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker LinkedIn", "Decision Maker Source", "Contact Page"];
     const headerStyle = {
       font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
       fill: { fgColor: { rgb: "F7931A" }, patternType: "solid" as const },
@@ -202,7 +207,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
       const contact = getTopContact(r);
       return [
         r.name, r.category, r.address, r.phone, r.website,
-        r.emails.join(", "), r.whatsapp.join(", "), r.linkedinUrl || "",
+        r.emails.join(", "), r.whatsapp.join(", "), (r.socialLinks || []).join(", "), r.linkedinUrl || "",
         contact?.fullName || "", contact?.title || "", contact?.email || "", contact?.linkedinUrl || "", contact?.source || "",
         r.contact_page_found ? "Yes" : "No",
       ];

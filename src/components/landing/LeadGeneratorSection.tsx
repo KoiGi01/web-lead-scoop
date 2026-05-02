@@ -51,6 +51,7 @@ interface LeadResult extends Business {
   emails: string[];
   whatsapp: string[];
   linkedinUrl?: string;
+  socialLinks?: string[];
   contactPageFound: boolean;
   emailSource?: "firecrawl" | "hunter" | "both" | "none";
   contacts: DecisionMakerContact[];
@@ -236,6 +237,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       "Website",
       "Emails",
       "WhatsApp",
+      "Social Profiles",
+      "LinkedIn",
       "Likely Decision Maker",
       "Decision Maker Title",
       "Decision Maker Email",
@@ -252,6 +255,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         lead.website,
         lead.emails.join(", "),
         lead.whatsapp.join(", "),
+        (lead.socialLinks || []).join(", "),
+        lead.linkedinUrl || "",
         contact?.fullName || "",
         contact?.title || "",
         contact?.email || "",
@@ -368,9 +373,18 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
         whatsapp: lead.whatsapp,
         contact_page_found: lead.contactPageFound,
         contacts: lead.contacts,
+        linkedin_url: lead.linkedinUrl || null,
+        social_links: lead.socialLinks || [],
       }));
 
-      const { data: saved } = await supabase.from("saved_leads").insert(payload).select();
+      let { data: saved, error: saveError } = await supabase.from("saved_leads").insert(payload).select();
+      if (saveError && /linkedin_url|social_links|schema cache/i.test(saveError.message)) {
+        const fallbackPayload = payload.map(({ linkedin_url: _linkedinUrl, social_links: _socialLinks, ...lead }) => lead);
+        const fallback = await supabase.from("saved_leads").insert(fallbackPayload).select();
+        saved = fallback.data;
+        saveError = fallback.error;
+      }
+      if (saveError) throw saveError;
       if (saved) {
         setResults(prev => prev?.map((lead, index) => ({ ...lead, dbId: saved[index]?.id })) ?? null);
       }
@@ -471,6 +485,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
             contactPageFound: false,
             emailSource: "none",
             contacts: [],
+            socialLinks: [],
           });
         });
 
@@ -485,6 +500,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
           const { data: contactData } = await supabase.functions.invoke("extract-contacts", {
             body: {
               url: business.website,
+              businessName: business.name,
+              location: business.address || country.trim(),
               enrichMode,
               industry: industry.trim(),
               depth,
@@ -499,6 +516,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
             emails: contactData?.emails || [],
             whatsapp: contactData?.whatsapp || [],
             linkedinUrl: contactData?.linkedinUrl,
+            socialLinks: contactData?.socialLinks || [],
             contactPageFound: contactData?.contactPageFound || false,
             emailSource: contactData?.emailSource || "none",
             contacts: contactData?.contacts || [],
@@ -511,6 +529,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
             contactPageFound: false,
             emailSource: "none",
             contacts: [],
+            socialLinks: [],
           });
         }
       }
@@ -747,6 +766,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                       lead.emails.length ? "Email" : "No email",
                       lead.emailSource === "hunter" || lead.emailSource === "both" ? "Hunter" : "",
                       lead.linkedinUrl || contact?.linkedinUrl ? "LinkedIn" : "",
+                      lead.socialLinks?.length ? "Social" : "",
                     ].filter(Boolean);
 
                     return (
@@ -783,6 +803,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                               <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#A8A59C] hover:text-[#EFEDE6]">
                                 <Globe className="h-3.5 w-3.5" />
                                 <span className="truncate">{compactUrl(lead.website)}</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            {lead.socialLinks?.[0] && (
+                              <a href={lead.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#A8A59C] hover:text-[#EFEDE6]">
+                                <Globe className="h-3.5 w-3.5" />
+                                <span className="truncate">{compactUrl(lead.socialLinks[0])}</span>
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
