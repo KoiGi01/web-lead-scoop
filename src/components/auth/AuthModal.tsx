@@ -14,6 +14,14 @@ interface AuthModalProps {
 
 type Mode = "signin" | "signup" | "demo";
 
+const getAuthRedirectUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return `${window.location.origin}/app`;
+    }
+
+    return "https://app.globaleads22.com";
+};
+
 const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
     const [mode, setMode] = useState<Mode>(isDemo ? "demo" : "signin");
     const [email, setEmail] = useState("");
@@ -49,7 +57,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                     email,
                     password,
                     options: {
-                        emailRedirectTo: window.location.hostname.startsWith("app.") ? window.location.origin : `${window.location.origin}/app`,
+                        emailRedirectTo: getAuthRedirectUrl(),
                     },
                 });
                 if (error) throw error;
@@ -78,7 +86,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: window.location.hostname.startsWith("app.") ? window.location.origin : `${window.location.origin}/app`,
+                redirectTo: getAuthRedirectUrl(),
             },
         });
         if (error) {
@@ -104,7 +112,7 @@ const AuthModal = ({ open, onClose, isDemo = false }: AuthModalProps) => {
                 email: demoEmail,
                 password: Math.random().toString(36).slice(-12), // Random password
                 options: {
-                    emailRedirectTo: `${window.location.origin}/app`,
+                    emailRedirectTo: getAuthRedirectUrl(),
                 },
             });
 
