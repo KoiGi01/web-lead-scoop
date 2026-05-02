@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
+# GlobaLeads22
 
-## Project info
+GlobaLeads22 is a lead research SaaS for finding businesses by niche and country, extracting public contact details, and optionally enriching likely decision makers.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Current Product
 
-## How can I edit this code?
+- Normal Search: finds businesses and extracts public website contact details.
+- Search + Enrich: adds likely decision-maker contacts when available.
+- Depth controls: Simple, Normal, Deep.
+- Saved leads, lead archive, XLSX export.
+- Credit-based billing through Stripe.
+- Admin usage dashboard for internal cost accounting.
 
-There are several ways of editing your application.
+## URLs
 
-**Use Lovable**
+- Marketing site: `https://www.globaleads22.com`
+- App workspace: `https://app.globaleads22.com`
+- Privacy: `https://www.globaleads22.com/privacy`
+- Terms: `https://www.globaleads22.com/terms`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
+## Tech Stack
 
 - Vite
-- TypeScript
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- shadcn/ui
+- Supabase Auth, Postgres, and Edge Functions
+- Stripe Checkout
 
-## How can I deploy this project?
+## Local Development
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```sh
+npm install
+npm.cmd run dev
+```
 
-## Can I connect a custom domain to my Lovable project?
+Production build:
 
-Yes, you can!
+```sh
+npm.cmd run build
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Supabase Functions
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Deploy updated functions from the repo root:
+
+```sh
+npx.cmd supabase functions deploy search-places
+npx.cmd supabase functions deploy extract-contacts
+npx.cmd supabase functions deploy create-checkout-session
+npx.cmd supabase functions deploy stripe-webhook
+```
+
+Required function secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GOOGLE_PLACES_API_KEY`
+- `FIRECRAWL_API_KEY`
+- `HUNTER_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- Stripe price IDs for Starter, Growth, and Pro bundles.
+
+## Database
+
+Important tables:
+
+- `user_credits`
+- `search_sessions`
+- `saved_leads`
+- `admin_users`
+- `api_usage_events`
+- `credit_transactions`
+- `stripe_payments`
+
+Current accounting migration:
+
+```text
+supabase/migrations/20260502001000_add_admin_usage_accounting.sql
+```
+
+## Admin Setup
+
+To make a user an admin, add their Supabase Auth user ID:
+
+```sql
+insert into public.admin_users (user_id, role)
+values ('USER_ID_HERE', 'admin')
+on conflict (user_id) do update set role = 'admin';
+```
+
+Admin users can run searches without spending credits, but provider usage is still logged.
+
+## Roadmap
+
+See `ROADMAP.md`.
+
+HubSpot export is intentionally saved for later. The recommended version is OAuth-based, exports selected leads only, upserts contacts/companies, and reports exported/skipped/failed counts.

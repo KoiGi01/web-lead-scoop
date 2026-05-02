@@ -1,149 +1,257 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file gives coding agents the current operating context for GlobaLeads22.
 
 ## Project Overview
 
-GlobaLeads22 is a B2B lead-generation SaaS at `globaleads22.com`. Users search Google Maps + the web for businesses, extract emails / WhatsApp / LinkedIn from their websites, and unlock AI "Intelligence" scores. The marketing site and the authenticated tool are in the same repo but served from different domains.
+GlobaLeads22 is a lead research SaaS with:
+
+- Public marketing site at `https://www.globaleads22.com`.
+- Authenticated app at `https://app.globaleads22.com`.
+- Maps-first lead discovery.
+- Public website contact extraction.
+- Optional decision-maker enrichment.
+- Credit-based billing.
+- Admin usage and cost accounting.
+
+The app should stay user-friendly. Product copy should avoid exposing provider/tooling names unless the context is technical documentation, legal policy, or internal admin/cost work.
 
 ---
 
 ## Common Commands
 
-Run from `web-lead-scoop-main/` (the directory containing `package.json`):
+Run from `web-lead-scoop-main/`:
 
 ```sh
-npm run dev          # Vite dev server on http://localhost:8080
-npm run build        # Production build → dist/
-npm run build:dev    # Dev-mode build (keeps lovable-tagger, friendlier source maps)
-npm run lint         # ESLint flat config
-npm run test         # vitest run (jsdom + @testing-library/react)
-npm run test:watch   # vitest watch
-npx vitest -t "test name substring"   # run a single test by name
+npm.cmd run dev
+npm.cmd run build
+npm.cmd run build:dev
+npm.cmd run lint
+npm.cmd run test
+npm.cmd run test:watch
 ```
 
-Supabase Edge Functions (Deno) — run from the repo root:
+Supabase functions:
 
 ```sh
-npx supabase functions deploy <function-name>
-npx supabase functions serve   # local invocation for testing
+npx.cmd supabase functions deploy search-places
+npx.cmd supabase functions deploy extract-contacts
+npx.cmd supabase functions deploy stripe-webhook
+npx.cmd supabase functions deploy create-checkout-session
 ```
 
-`start.bat` exists for Windows one-click dev. Vercel auto-deploys from `master`.
+Vercel deploys from `master`.
 
 ---
 
-## Two-Domain Architecture
+## Routing And Domains
 
-This is the most important thing to understand before touching routing, auth, or Vercel config.
+`vercel.json` routes:
 
-| Domain | What serves it | What the user sees |
-|---|---|---|
-| `globaleads22.com` | `public/landing.html` (static) | Marketing landing page |
-| `globaleads22.com/app` | React SPA (`index.html`) | App page (React) |
-| `app.globaleads22.com` | React SPA (`index.html`) | App page (React) — post-login home |
+- `app.globaleads22.com/*` to the React app (`index.html`).
+- `/app`, `/privacy`, `/terms` to the React app.
+- `/` to `public/landing.html`.
 
-**`vercel.json`** uses `rewrites` with a `has: host` condition to route `app.globaleads22.com/*` to `index.html` before the filesystem is checked (which would otherwise serve `landing.html` for `/`). Do not revert this to the old `routes` format — that caused `app.globaleads22.com/` to serve the static landing page.
+If the React app handles `/`, `src/pages/Index.tsx` embeds `/landing.html` in an iframe so the user keeps the root URL instead of being redirected to `/landing.html`.
 
-**`src/App.tsx`** inspects `window.location.hostname` at module load time (`isAppSubdomain`). On the app subdomain, only `AppPage` is ever rendered. On the apex domain, the full React Router tree is active (`/` → `Index` which redirects to `/landing.html`, `/app` → `AppPage`, etc.).
-
-**`src/pages/Index.tsx`** does `window.location.replace('/landing.html')` — it is a redirect shim, not a React page.
-
-**Local dev note:** `localhost:8080` is treated as the apex domain (no `app.` prefix), so the React Router tree with all routes is active.
+Do not break `app.globaleads22.com`; it must always render `AppPage`.
 
 ---
 
-## Auth Flow
+## Current Search Workflow
 
-`src/hooks/useAuth.ts` wraps Supabase Auth. Key facts:
+Main UI: `src/components/landing/LeadGeneratorSection.tsx`.
 
-- `isDemoAccountPreview()` is **permanently disabled** — it always returns `false`. The demo URL mode (`?demo=account`) no longer works and must not be re-enabled without a product decision.
-- `useAuth` sets `loading: true` on mount, calls `supabase.auth.getSession()` to hydrate, then subscribes to `onAuthStateChange`. Components should wait for `loading === false` before rendering auth-dependent UI.
-- After email/password sign-in on a non-app subdomain, `AuthModal` redirects to `https://app.globaleads22.com`. On the app subdomain it stays in place.
-- On `app.globaleads22.com`, `AppPage` auto-opens the `AuthModal` when `!loading && !user`.
-- Google OAuth `redirectTo` is `window.location.origin` (app subdomain) or `${origin}/app` (apex).
+User fields:
 
----
+- Industry / niche, required.
+- Country, required.
+- Language, optional.
+- Depth: Simple, Normal, Deep.
+- Mode: Normal or Enrich.
+- Filters: Has website, Public email preferred.
 
-## Search Pipeline
+Depth config:
 
-A search goes through these steps in order:
+- Simple: 5 credits normal, 10 enrich.
+- Normal: 10 credits normal, 20 enrich.
+- Deep: 20 credits normal, 40 enrich.
 
-1. **`plan-lead-search`** (Supabase Edge Function) — takes a natural-language `brief` and returns a `SearchPlan` JSON: `targetBusiness`, `location`, `queryVariants[]`, `maxResults`, `businessModel`, `companySize`, `intentSignals[]`, `requiredChannels[]`. Uses Claude Haiku 4.5 if `ANTHROPIC_API_KEY` is set; falls back to a pure-heuristic parser that runs entirely in Deno.
+Normal Search:
 
-2. **`search-places`** — takes `queryVariants[]` and runs up to 5 Google Places Text Search queries (paginated up to 60 total results), deduplicating by `placeId`.
+1. `search-places` discovers businesses.
+2. `extract-contacts` scrapes accepted business websites.
+3. Results are ranked and saved.
 
-3. **`extract-contacts`** — Firecrawl scrape for emails / WhatsApp / LinkedIn. **Capped to top 10 websites per search** — do not raise this without checking cost impact.
+Search + Enrich:
 
-4. **`analyze-lead`** — Claude Haiku 4.5 scores one lead for opportunity and writes a row to `domain_intelligence`. Uses the **service role key** (bypasses RLS) — keep this edge function server-only.
+1. Same as Normal Search.
+2. `extract-contacts` also enriches contacts when a valid business domain exists.
+3. Contacts are ranked as likely decision makers.
 
-5. **`web-search-leads`** — fallback path for businesses with no Maps presence (direct web search).
+Important behavior:
 
-All edge functions have `verify_jwt = false` in `supabase/config.toml`. Auth is validated manually inside the functions where needed — this is intentional for the freemium flow.
-
----
-
-## Credits & Core Domain Logic
-
-Touch carefully — credits are the billing unit.
-
-- `useCredits(userId)` reads `user_credits`. On `PGRST116` (row missing) it provisions a free row (`balance: 30, plan: "free"`), handling `23505` race conditions.
-- **Credit costs:** 10 per search, 1 per single Intelligence unlock.
-- `PLAN_CREDITS` in `src/pages/AppPage.tsx` maps plan name → credit ceiling. Keep in sync if plans change.
-- DB writes (search history, saved leads) are **fire-and-forget** — failures log to console only, UI is not blocked.
-- Sidebar ↔ search form communication uses a `CustomEvent('loadSearch', { detail: { keyword, location } })` dispatched from `AppPage`, listened to inside `LeadGeneratorSection`. If refactoring either side, maintain this event contract.
-
----
-
-## Supabase Schema
-
-Tables (all RLS-enforced, scoped to `auth.uid()`):
-- `user_profiles` — onboarding data (service_type, pricing_tier, location)
-- `user_credits` — `balance`, `plan`, `stripe_customer_id`
-- `search_sessions` — search history
-- `saved_leads` — persisted lead rows
-- `domain_intelligence` — AI scores, written by `analyze-lead` via service role
-
-`src/integrations/supabase/types.ts` is **generated** — regenerate via `npx supabase gen types typescript --project-id uoaxxxoqasczxcxygscy`, never hand-edit.
+- Do not use `web-search-leads` in the current broad search flow.
+- `Public email preferred` ranks leads higher; it does not hide no-email leads.
+- Use "likely decision maker", never guaranteed decision maker.
+- Keep existing `emails` field for backward compatibility.
+- Store enriched contacts in `saved_leads.contacts`.
 
 ---
 
-## Frontend Stack & Design System
+## Decision-Maker Contacts
 
-- **Vite + React 18 + TypeScript**, SWC plugin. Path alias `@/` → `src/`.
-- **shadcn/ui** components in `src/components/ui/` are vendored — extend with wrappers, don't edit in place.
-- Manual chunks in `vite.config.ts`: `vendor-react`, `vendor-supabase`, `vendor-xlsx`, `vendor-radix`.
-- HMR overlay disabled (`hmr.overlay: false`) — errors surface in the console or `ErrorBoundary`.
+Contact shape:
 
-**Design tokens** — industrial skeuomorphism + Bitcoin-DeFi palette. Defined as CSS HSL variables (shadcn theme) AND raw hex in `tailwind.config.ts`:
-- `void: #030304`, `btc: #F7931A`, named `petrol-*`, `cream-*`, `wine-*` scales.
-- The dot-matrix / scanline overlays in `AppPage.tsx` are part of the identity — preserve them.
-- Fonts: `Space Grotesk` (headings), `Inter` (body), `JetBrains Mono` / `Space Mono` (mono labels).
+- `email`
+- `firstName`
+- `lastName`
+- `fullName`
+- `title`
+- `department`
+- `seniority`
+- `linkedinUrl`
+- `confidence`
+- `source`
+- `decisionMakerScore`
+- `decisionMakerReason`
+
+Ranking rules are deterministic and industry-aware. Default highest priority is CEO/owner/founder, then industry-specific roles.
+
+---
+
+## Credits, Admin, And Cost Accounting
+
+Customer-facing billing uses one currency: credits.
+
+Admin support:
+
+- Admin users are listed in `admin_users`.
+- `useAdmin` checks whether the current user is admin.
+- Admin searches display `Find leads - admin`.
+- Admin searches do not deduct customer credits.
+- Admin searches still create usage/cost rows.
+
+Accounting tables:
+
+- `api_usage_events`
+- `credit_transactions`
+- `stripe_payments`
+- extra columns on `search_sessions`
+
+Admin dashboard:
+
+- `src/components/app/AdminDashboard.tsx`
+- Shows searches, credits sold/spent/refunded, estimated vendor COGS, provider usage, and search economics.
+
+Migration:
+
+- `supabase/migrations/20260502001000_add_admin_usage_accounting.sql`
+
+Keep provider-cost estimates configurable by env var where possible.
+
+---
+
+## Supabase Schema Notes
+
+Important tables:
+
+- `user_profiles`
+- `user_credits`
+- `admin_users`
+- `search_sessions`
+- `saved_leads`
+- `api_usage_events`
+- `credit_transactions`
+- `stripe_payments`
+- `domain_intelligence`
+
+`src/integrations/supabase/types.ts` is generated in principle, but this repo has manual updates. If regenerating types, verify custom accounting/contact types remain present.
+
+---
+
+## Edge Functions
+
+Current active functions:
+
+- `search-places`: business discovery and Google usage logging.
+- `extract-contacts`: website contact extraction, enrichment, and provider usage logging.
+- `create-checkout-session`: Stripe Checkout session creation.
+- `stripe-webhook`: credit fulfillment, Stripe payment logging, purchase transaction logging.
+
+Legacy or currently inactive in main flow:
+
+- `web-search-leads`: keep in repo, but do not call from Normal/Search + Enrich.
+- `plan-lead-search`: keep in repo, but keep advanced planning out of default UI.
+- `analyze-lead`: legacy intelligence flow; do not assume it is part of the current simplified search UX.
 
 ---
 
 ## Environment Variables
 
-**Frontend** (`VITE_*` — browser-safe):
-- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — public anon keys only
+Frontend:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_STRIPE_PUBLISHABLE_KEY`
 
-**Edge functions only** (Supabase dashboard secrets, never `VITE_` prefix):
-- `ANTHROPIC_API_KEY`, `GOOGLE_PLACES_API_KEY`, `FIRECRAWL_API_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+Supabase function secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `GOOGLE_PLACES_API_KEY`
+- `FIRECRAWL_API_KEY`
+- `HUNTER_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_STARTER`
+- `STRIPE_PRICE_GROWTH`
+- `STRIPE_PRICE_PRO`
+
+Optional cost estimate env vars:
+
+- `GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD`
+- `FIRECRAWL_CREDIT_COST_USD`
+- `HUNTER_CREDIT_COST_USD`
 
 ---
 
-## Billing (Stripe — Phase 5, mostly done)
+## Public Assets And SEO
 
-- One-time credit packs: Starter $9/100cr, Growth $19/300cr, Pro $39/700cr.
-- `create-checkout-session` edge function → Stripe Checkout → `?checkout=success` redirect → `stripe-webhook` adds credits.
-- Bundle purchase can be pre-selected via `?bundle=starter|growth|pro` on `app.globaleads22.com`.
+- `public/landing.html`: static landing page.
+- `public/llms.txt`: LLM-facing product context.
+- `public/robots.txt`
+- `public/sitemap.xml`
+- `public/og-image.jpg`: current optimized social preview image.
+- `public/og-image.png`: older PNG preview kept for compatibility.
+
+Root and landing metadata should use friendly product wording, not provider/tool names.
 
 ---
 
-## Conventions
+## Future HubSpot Export
 
-- **TypeScript only** in `src/` — no `.js`/`.jsx`.
-- Always import via `@/...`, not relative paths.
-- `lovable-tagger` Vite plugin is dev-only; `build:dev` exists to keep it in non-prod builds.
+Native HubSpot export is planned but not implemented.
+
+Recommended v1:
+
+- Add "Connect HubSpot" OAuth flow.
+- Store tokens securely in Supabase.
+- Export selected leads only.
+- Upsert contacts by email.
+- Upsert companies by domain.
+- Associate contacts with companies.
+- Show exported/skipped/failed counts.
+
+Do not implement raw user-entered API keys for production.
+
+---
+
+## Coding Conventions
+
+- TypeScript in `src/`.
+- Prefer existing component and styling patterns.
+- Keep UI copy compact and non-technical.
+- Do not expose provider internals in normal user UI.
+- Preserve app/landing domain split.
+- Verify with `npm.cmd run build` before committing.
