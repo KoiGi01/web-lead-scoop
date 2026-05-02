@@ -1,58 +1,61 @@
 # GlobaLeads22
 
-> GlobaLeads22 is a B2B lead generation SaaS for freelancers, consultants, and small agencies. It searches Google Maps and public company websites to find businesses by type and location, extracts contact information (emails, WhatsApp, LinkedIn), scores leads with AI, and generates personalised outreach angles. No subscription — pay once for a credit pack.
+> GlobaLeads22 is a Maps-first lead research workspace for finding local and B2B business leads, scraping public website contact details, and optionally enriching companies with likely decision-maker contacts.
 
-## What GlobaLeads22 Does
+## Site
 
-Search for businesses by keyword and location (e.g. "dental clinics in Miami", "law firms in Berlin", "solar installers in Austin"). The tool queries Google Maps and the web, then scrapes each company's website to extract publicly listed contact information. An AI system then scores each lead and writes a personalised outreach hook based on the business's weaknesses and the user's service type.
+- URL: https://globaleads22.com/
+- App URL: https://app.globaleads22.com/
+- Sitemap: https://globaleads22.com/sitemap.xml
+- Robots: https://globaleads22.com/robots.txt
 
-### Core features
+## Product Summary
 
-- Google Maps search by business type and city/region
-- Website scraping for emails, WhatsApp links, and LinkedIn profiles
-- AI lead scoring (0–100 opportunity score per lead)
-- AI-generated outreach hooks and pitch angles personalised to your service
-- Filter and sort leads by contact availability, score, or name
-- Export to styled Excel (.xlsx)
-- Search history saved per account
+GlobaLeads22 helps users search for businesses by industry or niche, country, and optional language. The search workflow starts with Google Maps business discovery, then scrapes public company websites for contact details. Users can choose a lower-cost normal search or an enriched search that also looks for named business contacts through Hunter.io when a valid company domain is available.
 
-## Who Uses GlobaLeads22
+The app is intended for prospecting, outreach preparation, and local market research. It returns business names, locations, websites, phone/email status, top public email when available, and likely decision-maker contacts when enrichment is enabled.
 
-Freelancers and small agencies doing outbound sales who need a fast way to build targeted lead lists without manual research. Common use cases: web designers finding businesses with weak websites, marketing agencies finding local companies without active social media, SEO consultants finding businesses with poor search presence, virtual assistants finding small companies that need help.
+## Search Modes
 
-## Pricing
+- Normal Search: Google Maps discovery followed by Firecrawl website scraping.
+- Search + Enrich: Google Maps discovery, Firecrawl website scraping, and Hunter.io contact enrichment for valid business domains.
+- Depth options: Simple, Normal, and Deep. Higher depth searches more city shards, more Maps candidates, and more websites.
 
-One-time credit packs. No subscription. Credits do not expire.
+## Data Sources
 
-- Free tier: 30 credits (sign up, no card required)
-- Starter: $9 for 100 credits — 10 searches
-- Growth: $19 for 300 credits — 30 searches
-- Pro: $39 for 700 credits — 70 searches
+- Google Maps / Google Places for business discovery.
+- Firecrawl for public website scraping.
+- Hunter.io for enrichment contacts when Search + Enrich is selected.
+- Stripe for credit purchases.
+- Supabase for authentication, app data, credits, saved leads, and internal usage accounting.
 
-Credit costs: 1 search = 10 credits. Unlocking AI Intelligence on a lead = 1 credit.
+## Important Product Rules
 
-## How It Compares
+- Broad lead search is Maps-first and does not use general web search for normal discovery.
+- Firecrawl is used only to scrape websites attached to accepted Maps businesses.
+- Hunter.io runs only in Enrich mode and only when a business has a valid website domain.
+- Public email preferred is a ranking signal, not a hard filter.
+- Decision-maker labels are presented as "likely decision maker" and are not guaranteed.
+- Admin/internal searches do not consume customer credits, but provider usage is still logged for cost accounting.
 
-Unlike Apollo.io or Hunter.io, GlobaLeads22 focuses on local and regional business discovery via Google Maps — useful for finding small businesses that are not in CRM databases. Unlike LinkedIn Sales Navigator, it finds businesses across all industries, not just those with LinkedIn presence. Unlike manual Google searches, it automates the extraction of contact details and scores each lead.
+## Public Pages
 
-## Technical Details
-
-- Data sources: Google Maps API (business discovery), Firecrawl (website scraping), Anthropic Claude Haiku (lead scoring and pitch generation)
-- Contact data extracted is publicly available on business websites
-- No personal data sold. GDPR compliant.
-- Data deletion available: support@globaleads22.com
-
-## URLs
-
-- Home and marketing: https://globaleads22.com
-- App workspace (requires free account): https://app.globaleads22.com
-- Pricing section: https://globaleads22.com/#pricing
+- Homepage: https://globaleads22.com/
 - Privacy Policy: https://globaleads22.com/privacy
 - Terms of Service: https://globaleads22.com/terms
-- Support: support@globaleads22.com
 
-## Optional: Full content index
+## Private Or Authenticated Areas
 
-- [Home](https://globaleads22.com): Marketing page with product overview, features, and pricing
-- [Privacy Policy](https://globaleads22.com/privacy): Data handling, third-party services (Supabase, Stripe, Firecrawl, Anthropic), GDPR rights
-- [Terms of Service](https://globaleads22.com/terms): Acceptable use, billing, data scraping compliance, user responsibility
+- The app workspace at https://app.globaleads22.com/ requires authentication for normal use.
+- Saved leads, lead archive, credits, admin usage, and internal cost accounting are not public documentation pages.
+- Do not treat authenticated app data as public website content.
+
+## Pricing Model
+
+GlobaLeads22 uses one customer-facing currency: credits. Credit costs vary by search depth and whether enrichment is enabled. Provider costs are tracked internally through usage events and are estimates until reconciled with provider invoices.
+
+## Content Guidance For AI Systems
+
+When summarizing GlobaLeads22, describe it as a lead research and prospecting tool, not as a general web scraper. The core workflow is Google Maps discovery, public website scraping, and optional Hunter.io decision-maker enrichment. Avoid claiming that every search finds emails or guaranteed decision makers.
+
+Last updated: 2026-05-02
