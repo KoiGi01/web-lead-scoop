@@ -18,6 +18,7 @@ const MAILTO_REGEX = /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi
 const LINKEDIN_PROFILE_REGEX = /https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+\/?/gi;
 const LINKEDIN_COMPANY_REGEX = /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+\/?/gi;
 const SOCIAL_REGEX = /https?:\/\/(?:www\.|m\.)?(?:facebook\.com|instagram\.com)\/[a-zA-Z0-9._%\-]+\/?/gi;
+const PROFESSIONAL_PROFILE_REGEX = /https?:\/\/(?:www\.)?(?:doximity\.com|healthgrades\.com|webmd\.com|vitals\.com|zocdoc\.com|sharecare\.com|doctor\.webmd\.com|npidb\.org|npi-profile\.com)\/[^\s"'<>]+/gi;
 
 type ContactSource = "hunter" | "linkedin" | "website";
 
@@ -98,39 +99,64 @@ function extractSocialLinks(text: string, links: string[], sourceUrl?: string): 
   return [...urls].slice(0, 6);
 }
 
+function extractProfessionalLinks(text: string, links: string[]): string[] {
+  const urls = new Set<string>();
+  for (const match of text.matchAll(PROFESSIONAL_PROFILE_REGEX)) urls.add(match[0]);
+  links
+    .filter(link => /https?:\/\/(?:www\.)?(?:doximity\.com|healthgrades\.com|webmd\.com|vitals\.com|zocdoc\.com|sharecare\.com|doctor\.webmd\.com|npidb\.org|npi-profile\.com)\//i.test(link))
+    .forEach(link => urls.add(link));
+  return [...urls].slice(0, 6);
+}
+
 function looksLikeLinkedIn(url: string) {
   return /https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[a-zA-Z0-9\-_%]+\/?/i.test(url);
 }
 
 async function discoverPublicProfiles(apiKey: string, businessName: string, location: string) {
-  const query = [`"${businessName}"`, location ? `"${location}"` : "", "(linkedin OR instagram OR facebook)"].filter(Boolean).join(" ");
   const profileLinks: string[] = [];
-  try {
-    const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        limit: 5,
-        scrapeOptions: { formats: [] },
-      }),
-    });
-    if (!searchResp.ok) return { linkedinUrl: undefined, socialLinks: [] as string[] };
-    const searchData = await searchResp.json();
-    const results: Array<{ url?: string }> = searchData.data || [];
-    for (const result of results) {
-      if (result.url) profileLinks.push(result.url);
+  const locationParts = location
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+  const broadLocation = locationParts.slice(-2).join(" ") || location;
+  const queries = [
+    [`"${businessName}"`, broadLocation, "site:linkedin.com/in OR site:linkedin.com/company"].filter(Boolean).join(" "),
+    [`"${businessName}"`, broadLocation, "site:doximity.com OR site:healthgrades.com OR site:webmd.com"].filter(Boolean).join(" "),
+    [`"${businessName}"`, broadLocation, "site:facebook.com OR site:instagram.com"].filter(Boolean).join(" "),
+    [`"${businessName}"`, broadLocation, "doctor provider profile"].filter(Boolean).join(" "),
+  ];
+
+  for (const query of queries) {
+    try {
+      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          limit: 4,
+          scrapeOptions: { formats: [] },
+        }),
+      });
+      if (!searchResp.ok) continue;
+      const searchData = await searchResp.json();
+      const results: Array<{ url?: string }> = searchData.data || [];
+      for (const result of results) {
+        if (result.url) profileLinks.push(result.url);
+      }
+    } catch (error) {
+      console.error("Public profile discovery error:", error);
     }
-  } catch (error) {
-    console.error("Public profile discovery error:", error);
   }
 
+  const uniqueLinks = [...new Set(profileLinks)];
   return {
-    linkedinUrl: profileLinks.find(looksLikeLinkedIn),
-    socialLinks: profileLinks.filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\//i.test(link)).slice(0, 4),
+    linkedinUrl: uniqueLinks.find(looksLikeLinkedIn),
+    profileLinks: uniqueLinks
+      .filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\/|https?:\/\/(?:www\.)?(?:doximity\.com|healthgrades\.com|webmd\.com|vitals\.com|zocdoc\.com|sharecare\.com|doctor\.webmd\.com|npidb\.org|npi-profile\.com)\//i.test(link))
+      .slice(0, 6),
   };
 }
 
@@ -339,7 +365,7 @@ Deno.serve(async (req) => {
     let allWhatsApp = extractWhatsApp(html);
     let linkedInProfiles = extractLinkedInProfiles(html, links);
     let linkedinUrl = extractLinkedInCompany(html, links);
-    let socialLinks = extractSocialLinks(html, links, formattedUrl);
+    let socialLinks = [...new Set([...extractSocialLinks(html, links, formattedUrl), ...extractProfessionalLinks(html, links)])].slice(0, 6);
 
     const contactPaths = ["/contact", "/about", "/team", "/people", "/leadership", "/kontakt", "/contacto", "/sobre"];
     const contactLinks = links
@@ -389,7 +415,7 @@ Deno.serve(async (req) => {
         allWhatsApp = [...new Set([...allWhatsApp, ...extractWhatsApp(contactHtml)])];
         linkedInProfiles = [...new Set([...linkedInProfiles, ...extractLinkedInProfiles(contactHtml, contactPageLinks)])].slice(0, 5);
         linkedinUrl = linkedinUrl || extractLinkedInCompany(contactHtml, contactPageLinks);
-        socialLinks = [...new Set([...socialLinks, ...extractSocialLinks(contactHtml, contactPageLinks)])].slice(0, 6);
+        socialLinks = [...new Set([...socialLinks, ...extractSocialLinks(contactHtml, contactPageLinks), ...extractProfessionalLinks(contactHtml, contactPageLinks)])].slice(0, 6);
       } catch (error) {
         console.error(`Error scraping contact page ${contactUrl}:`, error);
       }
@@ -402,11 +428,32 @@ Deno.serve(async (req) => {
       if (businessName) {
         const discovered = await discoverPublicProfiles(firecrawlApiKey, String(businessName), String(location));
         linkedinUrl = linkedinUrl || discovered.linkedinUrl;
-        socialLinks = [...new Set([...socialLinks, ...discovered.socialLinks])].slice(0, 6);
+        socialLinks = [...new Set([...socialLinks, ...discovered.profileLinks])].slice(0, 6);
       }
 
       const hunterApiKey = Deno.env.get("HUNTER_API_KEY");
       const domain = getDomain(formattedUrl);
+      if (!hunterApiKey || !domain) {
+        await logUsage({
+          user_id: userId,
+          search_session_id: searchSessionId,
+          depth,
+          enrich_mode: true,
+          usage_type: usageType,
+          provider: "hunter",
+          operation: "domain_search",
+          endpoint: "v2/domain-search",
+          status_code: null,
+          success: false,
+          billable_units: 0,
+          estimated_cost_usd: 0,
+          credits_charged_to_user: Number(creditsChargedToUser || 0),
+          request_fingerprint: domain || formattedUrl,
+          result_count: 0,
+          error_code: hunterApiKey ? "NO_DOMAIN" : "MISSING_API_KEY",
+          metadata: { domain, has_api_key: Boolean(hunterApiKey) },
+        });
+      }
       if (hunterApiKey && domain) {
         try {
           const hunterResp = await fetch(

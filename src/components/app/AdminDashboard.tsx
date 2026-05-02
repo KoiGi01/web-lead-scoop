@@ -72,6 +72,9 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
 
   const providerRows = useMemo(() => {
     const rows = new Map<string, { provider: string; events: number; units: number; cost: number; successes: number }>();
+    ["google", "firecrawl", "hunter"].forEach(provider => {
+      rows.set(provider, { provider, events: 0, units: 0, cost: 0, successes: 0 });
+    });
     usageEvents.forEach(event => {
       const provider = event.provider || "unknown";
       const row = rows.get(provider) || { provider, events: 0, units: 0, cost: 0, successes: 0 };
@@ -81,7 +84,7 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
       row.successes += event.success ? 1 : 0;
       rows.set(provider, row);
     });
-    return [...rows.values()].sort((a, b) => b.cost - a.cost);
+    return [...rows.values()].sort((a, b) => b.cost - a.cost || b.events - a.events);
   }, [usageEvents]);
 
   const searchRows = useMemo(() => {
