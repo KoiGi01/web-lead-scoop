@@ -1,7 +1,27 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
+const GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD = Number(Deno.env.get("GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD") || "0.035");
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function logUsage(event: Record<string, unknown>) {
+  if (!supabase) return;
+  const userId = typeof event.user_id === "string" && UUID_REGEX.test(event.user_id) ? event.user_id : null;
+  const searchSessionId = typeof event.search_session_id === "string" && UUID_REGEX.test(event.search_session_id) ? event.search_session_id : null;
+  const { error } = await supabase.from("api_usage_events").insert({
+    ...event,
+    user_id: userId,
+    search_session_id: searchSessionId,
+  });
+  if (error) console.error("Usage logging error:", error);
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -9,7 +29,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { keyword, location, radius, maxResults, queryVariants } = await req.json();
+    const {
+      keyword,
+      location,
+      maxResults,
+      queryVariants,
+      userId,
+      searchSessionId,
+      depth,
+      enrichMode = false,
+      usageType = "customer",
+      creditsChargedToUser = 0,
+    } = await req.json();
 
     if (!keyword || !location) {
       return new Response(
@@ -60,6 +91,32 @@ Deno.serve(async (req) => {
         });
 
         const data = await response.json();
+        await logUsage({
+          user_id: userId,
+          search_session_id: searchSessionId,
+          depth,
+          enrich_mode: Boolean(enrichMode),
+          usage_type: usageType,
+          provider: "google",
+          operation: "text_search",
+          endpoint: "places:searchText",
+          status_code: response.status,
+          success: response.ok,
+          latency_ms: 0,
+          billable_units: 1,
+          estimated_cost_usd: GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD,
+          credits_charged_to_user: Number(creditsChargedToUser || 0),
+          request_fingerprint: query,
+          result_count: Array.isArray(data.places) ? data.places.length : 0,
+          error_code: response.ok ? null : data.error?.status || "GOOGLE_ERROR",
+          metadata: {
+            sku_inferred: "Places API Text Search Enterprise",
+            field_mask: "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken",
+            query,
+            max_result_count: body.maxResultCount,
+            page_token_used: Boolean(pageToken),
+          },
+        });
 
         if (!response.ok) {
           console.error('Google Places API error:', JSON.stringify(data));

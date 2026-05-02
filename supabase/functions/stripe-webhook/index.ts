@@ -83,6 +83,16 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ error: "Invalid credits" }), { status: 400 });
       }
 
+      const { data: existingPayment } = await supabase
+        .from("stripe_payments")
+        .select("id")
+        .eq("checkout_session_id", session.id)
+        .maybeSingle();
+
+      if (existingPayment) {
+        return new Response(JSON.stringify({ success: true, duplicate: true }), { status: 200 });
+      }
+
       // Fetch current balance and update
       const { data: currentCredits, error: fetchError } = await supabase
         .from("user_credits")
@@ -96,6 +106,9 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const newBalance = (currentCredits?.balance ?? 0) + credits;
+      const grossUsd = Number(session.amount_total || 0) / 100;
+      const stripeFeeEstimatedUsd = grossUsd > 0 ? (grossUsd * 0.029) + 0.30 : 0;
+      const netUsd = Math.max(0, grossUsd - stripeFeeEstimatedUsd);
 
       const { error: updateError } = await supabase
         .from("user_credits")
@@ -110,6 +123,38 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error updating credits:", updateError);
         return new Response(JSON.stringify({ error: "Failed to update credits" }), { status: 500 });
       }
+
+      await supabase.from("stripe_payments").upsert({
+        user_id: userId,
+        checkout_session_id: session.id,
+        payment_intent_id: session.payment_intent || null,
+        stripe_customer_id: stripeCustomerId,
+        bundle_key: bundleKey,
+        gross_usd: grossUsd,
+        stripe_fee_estimated_usd: stripeFeeEstimatedUsd,
+        net_usd: netUsd,
+        credits_granted: credits,
+        currency: session.currency || "usd",
+        metadata: {
+          payment_status: session.payment_status,
+          mode: session.mode,
+        },
+      }, { onConflict: "checkout_session_id" });
+
+      await supabase.from("credit_transactions").insert({
+        user_id: userId,
+        type: "purchase",
+        amount: credits,
+        balance_after: newBalance,
+        usage_type: "customer",
+        description: `Purchased ${bundleKey} credit bundle`,
+        metadata: {
+          checkout_session_id: session.id,
+          gross_usd: grossUsd,
+          stripe_fee_estimated_usd: stripeFeeEstimatedUsd,
+          net_usd: netUsd,
+        },
+      });
 
       console.log(`Credits added for user ${userId}: +${credits}`);
       return new Response(JSON.stringify({ success: true }), { status: 200 });

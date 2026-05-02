@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID, useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
 import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
@@ -13,6 +14,7 @@ import CreditsModal from "@/components/app/CreditsModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
+import AdminDashboard from "@/components/app/AdminDashboard";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
@@ -35,11 +37,12 @@ const AppPage = () => {
   const user = realUser || demoUser;
   const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
+  const { isAdmin } = useAdmin(user?.id);
   const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"search" | "all-leads">("search");
+  const [viewMode, setViewMode] = useState<"search" | "all-leads" | "admin">("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -144,6 +147,10 @@ const AppPage = () => {
     setViewMode("all-leads");
   };
 
+  const handleViewAdmin = () => {
+    if (isAdmin) setViewMode("admin");
+  };
+
   const handleOnboardingClose = async () => {
     setOnboardingOpen(false);
     await refetchProfile();
@@ -206,7 +213,7 @@ const AppPage = () => {
                 <div className="hidden md:flex items-center gap-2 border border-[#EFEDE6]/10 px-3 py-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
                   <span className="font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">
-                    {creditsBalance} credits
+                    {isAdmin ? "Admin" : `${creditsBalance} credits`}
                   </span>
                 </div>
                 <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] max-w-[200px] truncate">
@@ -241,6 +248,8 @@ const AppPage = () => {
             onNewSearch={handleNewSearch}
             onClearHistory={handleClearHistory}
             onViewAllLeads={handleViewAllLeads}
+            onViewAdmin={handleViewAdmin}
+            isAdmin={isAdmin}
             onBuyCredits={() => setCreditsOpen(true)}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -254,12 +263,15 @@ const AppPage = () => {
                 onOpenAuth={() => setAuthOpen(true)}
                 onSearchComplete={handleSearchComplete}
                 viewMode="search"
+                isAdmin={isAdmin}
               />
-            ) : (
+            ) : viewMode === "all-leads" ? (
               <ViewAllLeads
                 userId={user?.id}
                 onBackToSearch={() => setViewMode("search")}
               />
+            ) : (
+              <AdminDashboard onBackToSearch={() => setViewMode("search")} />
             )}
           </ErrorBoundary>
         </main>

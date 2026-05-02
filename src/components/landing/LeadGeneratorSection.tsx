@@ -65,6 +65,7 @@ interface LeadGeneratorSectionProps {
   onSearchComplete?: () => void;
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
+  isAdmin?: boolean;
 }
 
 const depthConfig: Record<Depth, { label: string; credits: number; maxResults: 20 | 40 | 60; shards: number; websiteLimit: number }> = {
@@ -120,7 +121,7 @@ const buildQueryVariants = (industry: string, country: string, language: string,
   ].filter(Boolean);
 };
 
-const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search" }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search", isAdmin = false }: LeadGeneratorSectionProps) => {
   const { user: realUser, loading: authLoading } = useAuth();
   const devMode = import.meta.env.DEV;
   const demoUser = devMode ? { id: DEMO_USER_ID, email: "demo@account.com" } as any : null;
@@ -156,6 +157,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
   }, []);
 
   const searchCost = getSearchCost(depth, enrichMode);
+  const usageType = isAdmin ? "internal" : "customer";
+  const chargedCredits = isAdmin ? 0 : searchCost;
 
   const progressSteps = [
     { key: "maps", label: "Searching Maps" },
@@ -280,28 +283,82 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     return false;
   };
 
-  const saveSearch = async (leads: LeadResult[]) => {
+  const createSearchSession = async () => {
+    if (!user?.id) return null;
+    const { data, error } = await supabase
+      .from("search_sessions")
+      .insert({
+        user_id: user.id,
+        keyword: industry.trim(),
+        location: country.trim(),
+        depth,
+        enrich_mode: enrichMode,
+        usage_type: usageType,
+        status: "running",
+        credits_used: chargedCredits,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating search session:", error);
+      return null;
+    }
+
+    return data;
+  };
+
+  const recordCreditTransaction = async (
+    type: "spend" | "refund" | "admin_spend",
+    amount: number,
+    searchSessionId?: string | null,
+    description?: string,
+  ) => {
+    if (!user?.id || user.id === DEMO_USER_ID) return;
+    await supabase.from("credit_transactions").insert({
+      user_id: user.id,
+      search_session_id: searchSessionId || null,
+      type,
+      amount,
+      balance_after: type === "refund" ? creditsBalance : Math.max(0, creditsBalance - Math.abs(amount)),
+      usage_type: usageType,
+      description,
+      metadata: { depth, enrichMode, quotedCredits: searchCost },
+    });
+  };
+
+  const saveSearch = async (leads: LeadResult[], searchSessionId: string | null) => {
     if (!user?.id) return;
     try {
-      const { data: sessionData, error: sessionError } = await supabase
+      let sessionId = searchSessionId;
+      if (!sessionId) {
+        const sessionData = await createSearchSession();
+        sessionId = sessionData?.id || null;
+      }
+
+      if (!sessionId) return;
+
+      const { data: usageRows } = await supabase
+        .from("api_usage_events")
+        .select("estimated_cost_usd")
+        .eq("search_session_id", sessionId);
+      const estimatedCost = (usageRows || []).reduce((acc, row) => acc + Number(row.estimated_cost_usd || 0), 0);
+
+      await supabase
         .from("search_sessions")
-        .insert({
-          user_id: user.id,
-          keyword: industry.trim(),
-          location: country.trim(),
+        .update({
           lead_count: leads.length,
           email_count: leads.reduce((acc, lead) => acc + lead.emails.length, 0),
           whatsapp_count: leads.reduce((acc, lead) => acc + lead.whatsapp.length, 0),
-          credits_used: searchCost,
+          credits_used: chargedCredits,
+          estimated_cost_usd: estimatedCost,
+          status: "completed",
         })
-        .select()
-        .single();
-
-      if (sessionError || !sessionData) return;
+        .eq("id", sessionId);
 
       const payload = leads.map(lead => ({
         user_id: user.id,
-        session_id: sessionData.id,
+        session_id: sessionId,
         name: lead.name,
         address: lead.address,
         phone: lead.phone,
@@ -322,7 +379,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     }
   };
 
-  const refundCredits = async () => {
+  const refundCredits = async (searchSessionId?: string | null) => {
     if (!user?.id || user.id === DEMO_USER_ID) return;
     try {
       const { data: current } = await supabase
@@ -335,6 +392,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
           .from("user_credits")
           .update({ balance: current.balance + searchCost, updated_at: new Date().toISOString() })
           .eq("user_id", user.id);
+        await recordCreditTransaction("refund", searchCost, searchSessionId, "Search failed refund");
       }
     } catch {
       console.error("Failed to refund credits");
@@ -343,7 +401,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
 
   const handleGenerate = async () => {
     if (!validateSearch()) return;
-    if (creditsBalance < searchCost) {
+    if (!isAdmin && creditsBalance < searchCost) {
       toast({ title: "Insufficient credits", description: `This search costs ${searchCost} credits.`, variant: "destructive" });
       return;
     }
@@ -355,9 +413,18 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
     setStatus("Searching trusted Maps businesses...");
 
     let creditsDeducted = false;
+    let searchSessionId: string | null = null;
     try {
-      await deductCredits(searchCost);
-      creditsDeducted = true;
+      const sessionData = await createSearchSession();
+      searchSessionId = sessionData?.id || null;
+
+      if (isAdmin) {
+        await recordCreditTransaction("admin_spend", 0, searchSessionId, "Internal admin search");
+      } else {
+        await deductCredits(searchCost);
+        creditsDeducted = true;
+        await recordCreditTransaction("spend", -searchCost, searchSessionId, "Lead search");
+      }
 
       const config = depthConfig[depth];
       const queryVariants = buildQueryVariants(industry.trim(), country.trim(), language.trim(), depth);
@@ -367,6 +434,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
           location: country.trim(),
           maxResults: config.maxResults,
           queryVariants,
+          userId: user.id,
+          searchSessionId,
+          depth,
+          enrichMode,
+          usageType,
+          creditsChargedToUser: chargedCredits,
         },
       });
 
@@ -415,6 +488,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
               enrichMode,
               industry: industry.trim(),
               depth,
+              userId: user.id,
+              searchSessionId,
+              usageType,
+              creditsChargedToUser: chargedCredits,
             },
           });
           leads.push({
@@ -463,7 +540,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       setStatus(`${ranked.length} leads ready`);
       setProgress(100);
       toast({ title: "Search complete", description: `${ranked.length} trusted leads found.` });
-      void saveSearch(ranked);
+      await saveSearch(ranked, searchSessionId);
       onSearchComplete?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Search failed";
@@ -471,7 +548,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       setStage("idle");
       setProgress(0);
       toast({ title: "Search failed", description: message, variant: "destructive" });
-      if (creditsDeducted) await refundCredits();
+      if (searchSessionId) {
+        await supabase.from("search_sessions").update({ status: "failed" }).eq("id", searchSessionId);
+      }
+      if (creditsDeducted) await refundCredits(searchSessionId);
     } finally {
       setIsProcessing(false);
     }
@@ -589,7 +669,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
                   disabled={isProcessing}
                   className="h-12 border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isProcessing ? "Finding leads..." : `Find leads - ${searchCost} credits`}
+                  {isProcessing ? "Finding leads..." : isAdmin ? `Find leads - admin` : `Find leads - ${searchCost} credits`}
                 </button>
               </div>
             </div>

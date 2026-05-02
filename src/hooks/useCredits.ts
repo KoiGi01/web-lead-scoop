@@ -23,6 +23,7 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
         user_id: DEMO_USER_ID,
         balance: 300,
         plan: "growth",
+        stripe_customer_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as UserCredits);
@@ -88,6 +89,7 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
         user_id: DEMO_USER_ID,
         balance: Math.max(0, (prev?.balance ?? 300) - amount),
         plan: "growth",
+        stripe_customer_id: null,
         created_at: prev?.created_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as UserCredits));

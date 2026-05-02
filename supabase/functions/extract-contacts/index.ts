@@ -1,7 +1,16 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const supabase = supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
+const FIRECRAWL_CREDIT_COST_USD = Number(Deno.env.get("FIRECRAWL_CREDIT_COST_USD") || "0.00083");
+const HUNTER_CREDIT_COST_USD = Number(Deno.env.get("HUNTER_CREDIT_COST_USD") || "0.034");
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const EMAIL_REGEX = /(?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
 const WHATSAPP_REGEX = /(?:https?:\/\/)?(?:wa\.me|api\.whatsapp\.com|whatsapp\.com\/send)\/?[^\s"'<>]*/gi;
@@ -24,6 +33,18 @@ interface DecisionMakerContact {
   source: ContactSource;
   decisionMakerScore: number;
   decisionMakerReason: string;
+}
+
+async function logUsage(event: Record<string, unknown>) {
+  if (!supabase) return;
+  const userId = typeof event.user_id === "string" && UUID_REGEX.test(event.user_id) ? event.user_id : null;
+  const searchSessionId = typeof event.search_session_id === "string" && UUID_REGEX.test(event.search_session_id) ? event.search_session_id : null;
+  const { error } = await supabase.from("api_usage_events").insert({
+    ...event,
+    user_id: userId,
+    search_session_id: searchSessionId,
+  });
+  if (error) console.error("Usage logging error:", error);
 }
 
 function extractEmails(text: string): string[] {
@@ -185,7 +206,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { url, enrichMode = false, industry = "" } = await req.json();
+    const {
+      url,
+      enrichMode = false,
+      industry = "",
+      depth,
+      userId,
+      searchSessionId,
+      usageType = "customer",
+      creditsChargedToUser = 0,
+    } = await req.json();
 
     if (!url) {
       return new Response(
@@ -218,6 +248,30 @@ Deno.serve(async (req) => {
         formats: ["html", "links"],
         onlyMainContent: false,
       }),
+    });
+    await logUsage({
+      user_id: userId,
+      search_session_id: searchSessionId,
+      depth,
+      enrich_mode: Boolean(enrichMode),
+      usage_type: usageType,
+      provider: "firecrawl",
+      operation: "scrape",
+      endpoint: "v1/scrape",
+      status_code: scrapeResp.status,
+      success: scrapeResp.ok,
+      billable_units: 1,
+      estimated_cost_usd: FIRECRAWL_CREDIT_COST_USD,
+      credits_charged_to_user: Number(creditsChargedToUser || 0),
+      request_fingerprint: formattedUrl,
+      result_count: 0,
+      error_code: scrapeResp.ok ? null : "FIRECRAWL_ERROR",
+      metadata: {
+        url_domain: getDomain(formattedUrl),
+        url_type: "homepage",
+        formats: ["html", "links"],
+        only_main_content: false,
+      },
     });
 
     if (!scrapeResp.ok) {
@@ -252,6 +306,31 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ url: contactUrl, formats: ["html", "links"], onlyMainContent: false }),
         });
+        await logUsage({
+          user_id: userId,
+          search_session_id: searchSessionId,
+          depth,
+          enrich_mode: Boolean(enrichMode),
+          usage_type: usageType,
+          provider: "firecrawl",
+          operation: "scrape",
+          endpoint: "v1/scrape",
+          status_code: contactResp.status,
+          success: contactResp.ok,
+          billable_units: 1,
+          estimated_cost_usd: FIRECRAWL_CREDIT_COST_USD,
+          credits_charged_to_user: Number(creditsChargedToUser || 0),
+          request_fingerprint: contactUrl,
+          result_count: 0,
+          error_code: contactResp.ok ? null : "FIRECRAWL_ERROR",
+          metadata: {
+            url_domain: getDomain(formattedUrl),
+            url_type: "contact",
+            url: contactUrl,
+            formats: ["html", "links"],
+            only_main_content: false,
+          },
+        });
         if (!contactResp.ok) continue;
         const contactData = await contactResp.json();
         const contactHtml = contactData.data?.html || contactData.html || "";
@@ -276,18 +355,64 @@ Deno.serve(async (req) => {
           const hunterResp = await fetch(
             `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${hunterApiKey}`,
           );
+          let hunterCredits = 0;
+          let hunterResultCount = 0;
           if (hunterResp.ok) {
             const hunterData = await hunterResp.json();
             const hunterContacts = (hunterData?.data?.emails || [])
               .map((entry: any) => normalizeHunterContact(entry, industry))
               .filter((entry: DecisionMakerContact | null): entry is DecisionMakerContact => !!entry);
             const hunterEmails = hunterContacts.map(contact => contact.email).filter((email): email is string => !!email);
+            hunterResultCount = hunterContacts.length;
+            hunterCredits = hunterEmails.length > 0 ? Math.ceil(hunterEmails.length / 10) : 0;
             if (hunterEmails.length > 0) {
               allEmails = [...new Set([...allEmails, ...hunterEmails])];
               emailSource = emailSource === "firecrawl" ? "both" : "hunter";
             }
             contacts.push(...hunterContacts);
+            await logUsage({
+              user_id: userId,
+              search_session_id: searchSessionId,
+              depth,
+              enrich_mode: true,
+              usage_type: usageType,
+              provider: "hunter",
+              operation: "domain_search",
+              endpoint: "v2/domain-search",
+              status_code: hunterResp.status,
+              success: true,
+              billable_units: hunterCredits,
+              estimated_cost_usd: hunterCredits * HUNTER_CREDIT_COST_USD,
+              credits_charged_to_user: Number(creditsChargedToUser || 0),
+              request_fingerprint: domain,
+              result_count: hunterResultCount,
+              error_code: null,
+              metadata: {
+                domain,
+                emails_returned: hunterEmails.length,
+                hunter_credits_estimated: hunterCredits,
+              },
+            });
           } else {
+            await logUsage({
+              user_id: userId,
+              search_session_id: searchSessionId,
+              depth,
+              enrich_mode: true,
+              usage_type: usageType,
+              provider: "hunter",
+              operation: "domain_search",
+              endpoint: "v2/domain-search",
+              status_code: hunterResp.status,
+              success: false,
+              billable_units: 0,
+              estimated_cost_usd: 0,
+              credits_charged_to_user: Number(creditsChargedToUser || 0),
+              request_fingerprint: domain,
+              result_count: 0,
+              error_code: "HUNTER_ERROR",
+              metadata: { domain },
+            });
             console.error(`Hunter.io error (${hunterResp.status}):`, await hunterResp.text());
           }
         } catch (error) {

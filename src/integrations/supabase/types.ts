@@ -81,6 +81,7 @@ export type Database = {
           user_id: string
           balance: number
           plan: string
+          stripe_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -89,6 +90,7 @@ export type Database = {
           user_id: string
           balance?: number
           plan?: string
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -97,8 +99,182 @@ export type Database = {
           user_id?: string
           balance?: number
           plan?: string
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      admin_users: {
+        Row: {
+          user_id: string
+          role: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          role?: string
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          role?: string
+          created_at?: string
+        }
+      }
+      api_usage_events: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          search_session_id: string | null
+          lead_id: string | null
+          depth: string | null
+          enrich_mode: boolean
+          usage_type: string
+          provider: string
+          operation: string
+          endpoint: string | null
+          status_code: number | null
+          success: boolean
+          latency_ms: number | null
+          billable_units: number
+          estimated_cost_usd: number
+          credits_charged_to_user: number
+          request_fingerprint: string | null
+          result_count: number
+          error_code: string | null
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          search_session_id?: string | null
+          lead_id?: string | null
+          depth?: string | null
+          enrich_mode?: boolean
+          usage_type?: string
+          provider: string
+          operation: string
+          endpoint?: string | null
+          status_code?: number | null
+          success?: boolean
+          latency_ms?: number | null
+          billable_units?: number
+          estimated_cost_usd?: number
+          credits_charged_to_user?: number
+          request_fingerprint?: string | null
+          result_count?: number
+          error_code?: string | null
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          search_session_id?: string | null
+          lead_id?: string | null
+          depth?: string | null
+          enrich_mode?: boolean
+          usage_type?: string
+          provider?: string
+          operation?: string
+          endpoint?: string | null
+          status_code?: number | null
+          success?: boolean
+          latency_ms?: number | null
+          billable_units?: number
+          estimated_cost_usd?: number
+          credits_charged_to_user?: number
+          request_fingerprint?: string | null
+          result_count?: number
+          error_code?: string | null
+          metadata?: Json
+        }
+      }
+      credit_transactions: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          search_session_id: string | null
+          type: string
+          amount: number
+          balance_after: number | null
+          usage_type: string
+          description: string | null
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          search_session_id?: string | null
+          type: string
+          amount: number
+          balance_after?: number | null
+          usage_type?: string
+          description?: string | null
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          search_session_id?: string | null
+          type?: string
+          amount?: number
+          balance_after?: number | null
+          usage_type?: string
+          description?: string | null
+          metadata?: Json
+        }
+      }
+      stripe_payments: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          checkout_session_id: string | null
+          payment_intent_id: string | null
+          stripe_customer_id: string | null
+          bundle_key: string | null
+          gross_usd: number
+          stripe_fee_estimated_usd: number
+          net_usd: number
+          credits_granted: number
+          currency: string
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          checkout_session_id?: string | null
+          payment_intent_id?: string | null
+          stripe_customer_id?: string | null
+          bundle_key?: string | null
+          gross_usd?: number
+          stripe_fee_estimated_usd?: number
+          net_usd?: number
+          credits_granted?: number
+          currency?: string
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          checkout_session_id?: string | null
+          payment_intent_id?: string | null
+          stripe_customer_id?: string | null
+          bundle_key?: string | null
+          gross_usd?: number
+          stripe_fee_estimated_usd?: number
+          net_usd?: number
+          credits_granted?: number
+          currency?: string
+          metadata?: Json
         }
       }
       search_sessions: {
@@ -107,10 +283,15 @@ export type Database = {
           user_id: string
           keyword: string
           location: string
+          depth: string | null
+          enrich_mode: boolean
+          usage_type: string
+          status: string
           lead_count: number
           email_count: number
           whatsapp_count: number
           credits_used: number
+          estimated_cost_usd: number
           created_at: string
         }
         Insert: {
@@ -118,10 +299,15 @@ export type Database = {
           user_id: string
           keyword: string
           location: string
+          depth?: string | null
+          enrich_mode?: boolean
+          usage_type?: string
+          status?: string
           lead_count?: number
           email_count?: number
           whatsapp_count?: number
           credits_used?: number
+          estimated_cost_usd?: number
           created_at?: string
         }
         Update: {
@@ -129,10 +315,15 @@ export type Database = {
           user_id?: string
           keyword?: string
           location?: string
+          depth?: string | null
+          enrich_mode?: boolean
+          usage_type?: string
+          status?: string
           lead_count?: number
           email_count?: number
           whatsapp_count?: number
           credits_used?: number
+          estimated_cost_usd?: number
           created_at?: string
         }
       }

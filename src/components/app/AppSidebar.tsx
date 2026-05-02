@@ -1,6 +1,6 @@
 import {
   Search, Clock, Plus, Zap, ArrowUpRight, Archive,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, ShieldCheck,
 } from "lucide-react";
 import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
 
@@ -10,6 +10,8 @@ interface AppSidebarProps {
   onNewSearch: () => void;
   onClearHistory: () => void;
   onViewAllLeads: () => void;
+  onViewAdmin?: () => void;
+  isAdmin?: boolean;
   creditsUsed: number;
   creditsTotal: number;
   onBuyCredits?: () => void;
@@ -20,6 +22,8 @@ interface AppSidebarProps {
 const AppSidebar = ({
   onNewSearch,
   onViewAllLeads,
+  onViewAdmin,
+  isAdmin = false,
   creditsUsed,
   creditsTotal,
   onBuyCredits,
@@ -34,6 +38,7 @@ const AppSidebar = ({
     { label: "New Search",       icon: Plus,    action: onNewSearch,     accent: true },
     { label: "Recent Searches",  icon: Clock,   action: onNewSearch },
     { label: "Lead Archive",     icon: Archive, action: onViewAllLeads },
+    ...(isAdmin && onViewAdmin ? [{ label: "Admin Usage", icon: ShieldCheck, action: onViewAdmin }] : []),
   ];
 
   return (
@@ -118,4 +123,3 @@ const AppSidebar = ({
 };
 
 export default AppSidebar;
-
