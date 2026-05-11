@@ -344,6 +344,12 @@ export type Database = {
           social_links: Json
           contact_page_found: boolean
           intelligence: Json | null
+          crm_status: string
+          crm_priority: string
+          crm_notes: string
+          next_follow_up_at: string | null
+          last_contacted_at: string | null
+          crm_updated_at: string
           created_at: string
         }
         Insert: {
@@ -362,6 +368,12 @@ export type Database = {
           social_links?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
+          crm_status?: string
+          crm_priority?: string
+          crm_notes?: string
+          next_follow_up_at?: string | null
+          last_contacted_at?: string | null
+          crm_updated_at?: string
           created_at?: string
         }
         Update: {
@@ -380,6 +392,12 @@ export type Database = {
           social_links?: Json
           contact_page_found?: boolean
           intelligence?: Json | null
+          crm_status?: string
+          crm_priority?: string
+          crm_notes?: string
+          next_follow_up_at?: string | null
+          last_contacted_at?: string | null
+          crm_updated_at?: string
           created_at?: string
         }
       }

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID, useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
+import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
 import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
@@ -14,14 +15,16 @@ import CreditsModal from "@/components/app/CreditsModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
+import type { AppSidebarView } from "@/components/app/AppSidebar";
 import AdminDashboard from "@/components/app/AdminDashboard";
+import SavedSearches from "@/components/app/SavedSearches";
+import SettingsCredits from "@/components/app/SettingsCredits";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
 
 const PLAN_CREDITS: Record<string, number> = {
   free: 30,
-  demo: 30,
   starter: 100,
   growth: 300,
   pro: 700,
@@ -30,22 +33,32 @@ const PLAN_CREDITS: Record<string, number> = {
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
 
-const demoUser = devMode ? { id: DEMO_USER_ID, email: 'demo@account.com' } as any : null;
+type AppTheme = "light" | "dark";
+type AppViewMode = AppSidebarView;
 
 const AppPage = () => {
-  const { user: realUser, loading, signOut } = useAuth();
-  const user = realUser || demoUser;
+  const { user, loading, signOut } = useAuth();
   const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { isAdmin } = useAdmin(user?.id);
-  const { history: searchHistory, refetch: refetchHistory } = useSearchHistory(user?.id);
+  const { history: searchHistory, loading: searchHistoryLoading, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"search" | "all-leads" | "admin">("search");
+  const [viewMode, setViewMode] = useState<AppViewMode>("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [theme, setTheme] = useState<AppTheme>(() => {
+    if (typeof window === "undefined") return "light";
+    return window.localStorage.getItem("globaleads-app-theme") === "dark" ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", theme === "light");
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    window.localStorage.setItem("globaleads-app-theme", theme);
+  }, [theme]);
 
   // On the app subdomain, auto-open sign-in modal for unauthenticated users
   useEffect(() => {
@@ -73,13 +86,6 @@ const AppPage = () => {
       window.history.replaceState({}, '', window.location.pathname);
     }
 
-    if (params.get('demo') === 'true' && !user) {
-      setAuthOpen(true);
-      const newUrl = new URL(window.location);
-      newUrl.searchParams.delete('demo');
-      window.history.replaceState({}, '', newUrl.pathname);
-    }
-
     const bundleParam = params.get('bundle');
     if (bundleParam && user && !checkoutLoading) {
       handleBuyCredits(bundleParam);
@@ -93,11 +99,11 @@ const AppPage = () => {
     await Promise.all([refetchCredits(), refetchHistory()]);
   };
 
-  const handleSelectEntry = (entry: any) => {
-    const event = new CustomEvent('loadSearch', { detail: { keyword: entry.keyword, location: entry.location } });
-    window.dispatchEvent(event);
-
+  const handleSelectEntry = (entry: SearchHistoryEntry) => {
+    setViewMode("search");
     setTimeout(() => {
+      const event = new CustomEvent('loadSearch', { detail: { keyword: entry.keyword, location: entry.location } });
+      window.dispatchEvent(event);
       const searchForm = document.querySelector('input[placeholder*="Dental clinics"]');
       if (searchForm) {
         searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -111,44 +117,30 @@ const AppPage = () => {
   };
 
   const handleNewSearch = () => {
-    const searchForm = document.querySelector('input[placeholder*="Dental clinics"]');
-    if (searchForm) {
-      searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  const handleClearHistory = async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('search_sessions')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      await refetchHistory();
-      toast({
-        title: "History cleared",
-        description: "All search history has been deleted",
-      });
-    } catch (err) {
-      console.error('Failed to clear history:', err);
-      toast({
-        title: "Error",
-        description: "Failed to clear history. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleViewAllLeads = () => {
-    setViewMode("all-leads");
+    setViewMode("search");
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('newSearch'));
+      const searchForm = document.querySelector('input[placeholder*="Dental clinics"]');
+      if (searchForm) {
+        searchForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 0);
   };
 
   const handleViewAdmin = () => {
     if (isAdmin) setViewMode("admin");
+  };
+
+  const handleNavigate = (view: AppSidebarView) => {
+    if (view === "search") {
+      handleNewSearch();
+      return;
+    }
+    if (view === "admin") {
+      handleViewAdmin();
+      return;
+    }
+    setViewMode(view);
   };
 
   const handleOnboardingClose = async () => {
@@ -190,24 +182,33 @@ const AppPage = () => {
     }
   };
 
+  const planCredits = PLAN_CREDITS[creditsPlan] ?? 50;
+
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]">
+    <div className={`app-theme ${theme === "light" ? "app-light light" : "app-dark dark"} h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]`}>
       {/* ── App Header ── */}
       <header className="sticky top-0 z-50 border-b border-[#EFEDE6]/[0.14] bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <div className="flex h-14 w-full items-center">
 
-          <div className="flex items-center gap-4">
-            <GlobaLeadsLogo size="md" theme="dark" />
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F5FF3D]/50" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Live prospecting workspace</span>
-            </div>
+          <div
+            className="flex h-full flex-shrink-0 items-center border-r border-[#EFEDE6]/[0.10] px-3 transition-all duration-300 md:w-56"
+          >
+            <GlobaLeadsLogo
+              size="md"
+              theme={theme === "light" ? "light" : "dark"}
+            />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-4 px-4 sm:px-6">
+            <button
+              type="button"
+              onClick={() => setTheme(current => current === "light" ? "dark" : "light")}
+              className="inline-flex h-9 items-center gap-2 border border-[#EFEDE6]/10 px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D] hover:text-[#EFEDE6]"
+              aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            >
+              {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{theme === "light" ? "Dark" : "Light"}</span>
+            </button>
             {user ? (
               <>
                 <div className="hidden md:flex items-center gap-2 border border-[#EFEDE6]/10 px-3 py-1.5">
@@ -219,14 +220,12 @@ const AppPage = () => {
                 <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] max-w-[200px] truncate">
                   {user.email}
                 </span>
-                {realUser && (
-                  <button
-                    onClick={signOut}
-                    className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
-                  >
-                    <LogOut className="h-3 w-3" /> SIGN OUT
-                  </button>
-                )}
+                <button
+                  onClick={signOut}
+                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
+                >
+                  <LogOut className="h-3 w-3" /> SIGN OUT
+                </button>
               </>
             ) : (
               <Button variant="accent" size="sm" onClick={() => setAuthOpen(true)}>
@@ -241,13 +240,10 @@ const AppPage = () => {
       <div className="flex flex-1 overflow-hidden">
         {user && (
           <AppSidebar
-            creditsUsed={Math.max(0, (PLAN_CREDITS[creditsPlan] ?? 50) - creditsBalance)}
-            creditsTotal={PLAN_CREDITS[creditsPlan] ?? 50}
-            history={searchHistory}
-            onSelectEntry={handleSelectEntry}
-            onNewSearch={handleNewSearch}
-            onClearHistory={handleClearHistory}
-            onViewAllLeads={handleViewAllLeads}
+            activeView={viewMode}
+            onNavigate={handleNavigate}
+            creditsUsed={Math.max(0, planCredits - creditsBalance)}
+            creditsTotal={planCredits}
             onViewAdmin={handleViewAdmin}
             isAdmin={isAdmin}
             onBuyCredits={() => setCreditsOpen(true)}
@@ -265,10 +261,36 @@ const AppPage = () => {
                 viewMode="search"
                 isAdmin={isAdmin}
               />
-            ) : viewMode === "all-leads" ? (
+            ) : viewMode === "lead-inbox" ? (
               <ViewAllLeads
                 userId={user?.id}
-                onBackToSearch={() => setViewMode("search")}
+                mode="inbox"
+              />
+            ) : viewMode === "pipeline" ? (
+              <ViewAllLeads
+                userId={user?.id}
+                mode="pipeline"
+              />
+            ) : viewMode === "follow-ups" ? (
+              <ViewAllLeads
+                userId={user?.id}
+                mode="follow-ups"
+              />
+            ) : viewMode === "saved-searches" ? (
+              <SavedSearches
+                history={searchHistory}
+                loading={searchHistoryLoading}
+                onRerun={handleSelectEntry}
+                onOpenLeadInbox={() => setViewMode("lead-inbox")}
+              />
+            ) : viewMode === "settings" ? (
+              <SettingsCredits
+                user={user}
+                creditsBalance={creditsBalance}
+                creditsTotal={planCredits}
+                isAdmin={isAdmin}
+                onBuyCredits={() => setCreditsOpen(true)}
+                onSignOut={signOut}
               />
             ) : (
               <AdminDashboard onBackToSearch={() => setViewMode("search")} />

@@ -62,9 +62,13 @@
   /* NAV */
   nav.top{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.78);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
   .nav-inner{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px;padding:16px 32px}
-  .logo{display:flex;align-items:center;width:260px;height:100px}
-  .logo-img{display:block;width:100%;height:100%;object-fit:contain}
-  .foot-grid .logo{width:210px;height:81px;margin-bottom:4px}
+  .logo{display:flex;align-items:center;width:auto;height:72px;gap:12px}
+  .logo-img{display:block;width:56px;height:56px;object-fit:contain;flex:0 0 auto;border-radius:10px}
+  .logo-text{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.01em;line-height:1;color:var(--paper);white-space:nowrap}
+  .logo-text sup{font-family:var(--mono);font-size:16px;color:var(--yellow);margin-left:1px;font-weight:600;vertical-align:super}
+  .foot-grid .logo{height:56px;margin-bottom:4px;gap:10px}
+  .foot-grid .logo-img{width:44px;height:44px}
+  .foot-grid .logo-text{font-size:22px}
   .logo-mark{width:28px;height:28px;border:1.5px solid var(--paper);border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center}
   .logo-mark::after{content:"";width:5px;height:5px;background:var(--yellow);border-radius:50%;box-shadow:0 0 8px var(--yellow)}
   .logo b{font-weight:700;letter-spacing:-.01em}
@@ -504,6 +508,7 @@
   <div class="nav-inner">
     <a href="/" class="logo">
       <img src="/logo.png" alt="GlobaLeads22" class="logo-img">
+      <span class="logo-text">GlobaLeads<sup>22</sup></span>
     </a>
     <div class="nav-links">
       <a href="#how">How it works</a>
@@ -919,7 +924,7 @@
   <div class="container">
     <div class="foot-grid">
       <div>
-        <a href="/" class="logo"><img src="/logo.png" alt="GlobaLeads22" class="logo-img"></a>
+        <a href="/" class="logo"><img src="/logo.png" alt="GlobaLeads22" class="logo-img"><span class="logo-text">GlobaLeads<sup>22</sup></span></a>
         <p class="blurb">B2B prospecting for operators who'd rather close deals than babysit scrapers.</p>
       </div>
       <div><h5>Product</h5><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul></div>

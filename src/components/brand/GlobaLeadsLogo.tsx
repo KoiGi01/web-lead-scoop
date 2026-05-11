@@ -2,19 +2,21 @@ interface GlobaLeadsLogoProps {
   size?: "sm" | "md" | "lg";
   theme?: "dark" | "light";
   showMark?: boolean;
+  showText?: boolean;
   className?: string;
 }
 
 const sizeMap = {
-  sm: { text: 13, width: 140, height: 54 },
-  md: { text: 15, width: 190, height: 73 },
-  lg: { text: 19, width: 250, height: 96 },
+  sm: { text: 16, width: 34, height: 34 },
+  md: { text: 20, width: 46, height: 46 },
+  lg: { text: 28, width: 64, height: 64 },
 };
 
 const GlobaLeadsLogo = ({
   size = "md",
   theme = "dark",
   showMark = true,
+  showText = true,
   className,
 }: GlobaLeadsLogoProps) => {
   const { text, width, height } = sizeMap[size];
@@ -22,19 +24,53 @@ const GlobaLeadsLogo = ({
 
   if (showMark) {
     return (
-      <img
-        src="/logo.png"
-        alt="GlobaLeads22"
-        width={width}
-        height={height}
-        className={className}
-        style={{
-          width,
-          height,
-          objectFit: "contain",
-          display: "block",
-        }}
-      />
+      <span
+        className={`inline-flex items-center gap-2.5 ${className ?? ""}`}
+        aria-label="GlobaLeads22"
+      >
+        <img
+          src="/logo.png"
+          alt=""
+          width={width}
+          height={height}
+          aria-hidden="true"
+          style={{
+            width,
+            height,
+            objectFit: "contain",
+            display: "block",
+            flex: "0 0 auto",
+            borderRadius: Math.round(width * 0.18),
+          }}
+        />
+        {showText && (
+          <span
+            style={{
+              fontFamily: "'Archivo', system-ui, sans-serif",
+              fontWeight: 800,
+              fontSize: text,
+              letterSpacing: "-0.01em",
+              lineHeight: 1,
+              color: wordColor,
+              whiteSpace: "nowrap",
+            }}
+          >
+            GlobaLeads
+            <sup
+              style={{
+                color: "#F5FF3D",
+                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                fontSize: Math.max(9, Math.round(text * 0.66)),
+                fontWeight: 600,
+                marginLeft: 1,
+                verticalAlign: "super",
+              }}
+            >
+              22
+            </sup>
+          </span>
+        )}
+      </span>
     );
   }
 

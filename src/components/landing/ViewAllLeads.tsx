@@ -1,30 +1,49 @@
-import { useState, useEffect } from "react";
-import { Loader2, Mail, Phone, Globe, ExternalLink, Copy, CheckCheck, Download, Linkedin, ArrowLeft, Lock, Zap, Search, Archive } from "lucide-react";
+import { ComponentType, useEffect, useMemo, useState } from "react";
+import {
+  Archive,
+  ArrowLeft,
+  CalendarClock,
+  CheckCheck,
+  Copy,
+  Download,
+  ExternalLink,
+  Flag,
+  Globe,
+  LayoutGrid,
+  List,
+  Linkedin,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Phone,
+  Search,
+  Send,
+  SlidersHorizontal,
+  UserRound,
+  X,
+  Zap,
+} from "lucide-react";
+import XLSX from "xlsx-js-style";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { DEMO_USER_ID } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
-import XLSX from "xlsx-js-style";
-import { Button } from "@/components/ui/button";
 
-interface SavedLead {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  website: string;
-  category: string;
-  emails: string[];
-  whatsapp: string[];
-  contacts?: DecisionMakerContact[];
-  linkedinUrl?: string;
-  linkedin_url?: string | null;
-  socialLinks?: string[];
-  social_links?: unknown;
-  contact_page_found: boolean;
-  intelligence?: any;
-  created_at: string;
+type CrmStatus = "new" | "contacted" | "qualified" | "proposal" | "won" | "lost";
+type CrmPriority = "low" | "normal" | "high";
+type SortKey = "name" | "emails" | "score" | "follow_up";
+type ArchiveViewMode = "list" | "board";
+type DateFilter = "all" | "today" | "7d" | "30d" | "custom";
+type ContactStateFilter = "all" | "contacted" | "not_contacted";
+
+interface LeadIntelligence {
+  opportunityScore?: number;
+  positioning?: string;
+  businessMaturity?: string;
+  detectedIssues?: string[];
+  opportunitySummary?: string;
+  suggestedPitchAngle?: string;
+  outreachHook?: string;
 }
 
 interface DecisionMakerContact {
@@ -42,108 +61,135 @@ interface DecisionMakerContact {
   decisionMakerReason: string;
 }
 
-interface ViewAllLeadsProps {
-  userId: string | undefined;
-  onBackToSearch: () => void;
+interface SavedLead {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  website: string;
+  category: string;
+  emails: string[];
+  whatsapp: string[];
+  contacts?: DecisionMakerContact[];
+  linkedinUrl?: string;
+  linkedin_url?: string | null;
+  socialLinks?: string[];
+  social_links?: unknown;
+  contact_page_found: boolean;
+  intelligence?: LeadIntelligence | null;
+  crm_status: CrmStatus;
+  crm_priority: CrmPriority;
+  crm_notes: string;
+  next_follow_up_at: string | null;
+  last_contacted_at: string | null;
+  crm_updated_at: string | null;
+  created_at: string;
 }
 
-const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
+type RawLead = Record<string, unknown> & Partial<SavedLead>;
+
+type LeadWorkspaceMode = "inbox" | "pipeline" | "follow-ups";
+
+interface ViewAllLeadsProps {
+  userId: string | undefined;
+  onBackToSearch?: () => void;
+  mode?: LeadWorkspaceMode;
+}
+
+const statusOptions: { value: CrmStatus; label: string }[] = [
+  { value: "new", label: "New" },
+  { value: "contacted", label: "Contacted" },
+  { value: "qualified", label: "Qualified" },
+  { value: "proposal", label: "Proposal" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+];
+
+const priorityOptions: { value: CrmPriority; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+];
+
+const statusTone: Record<CrmStatus, string> = {
+  new: "border-slate-300 bg-slate-100 text-slate-700",
+  contacted: "border-sky-300 bg-sky-100 text-sky-800",
+  qualified: "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]",
+  proposal: "border-violet-300 bg-violet-100 text-violet-800",
+  won: "border-emerald-300 bg-emerald-100 text-emerald-800",
+  lost: "border-red-300 bg-red-100 text-red-800",
+};
+
+const priorityTone: Record<CrmPriority, string> = {
+  low: "border-slate-300 bg-slate-100 text-slate-700",
+  normal: "border-cyan-200 bg-cyan-50 text-cyan-800",
+  high: "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]",
+};
+
+const contactedStatuses: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
+const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
+const toDateInputValue = (value: string | null) => (value ? value.slice(0, 10) : "");
+const normalizeCrmStatus = (value: unknown): CrmStatus =>
+  statusOptions.some(option => option.value === value) ? value as CrmStatus : "new";
+const normalizeCrmPriority = (value: unknown): CrmPriority =>
+  priorityOptions.some(option => option.value === value) ? value as CrmPriority : "normal";
+
+const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsProps) => {
   const { user } = useAuth();
   const { profile: userProfile } = useUserProfile(user?.id);
   const [leads, setLeads] = useState<SavedLead[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState<"name" | "emails" | "score">("name");
-  const [filterByEmail, setFilterByEmail] = useState(false);
-  const [emailsCopied, setEmailsCopied] = useState(false);
-  // Smart filtering state
+  const [savingLeadIds, setSavingLeadIds] = useState<Set<string>>(new Set());
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [archiveViewMode, setArchiveViewMode] = useState<ArchiveViewMode>("list");
+  const [sortBy, setSortBy] = useState<SortKey>("follow_up");
   const [filterText, setFilterText] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterDate, setFilterDate] = useState<DateFilter>("all");
+  const [customDateStart, setCustomDateStart] = useState("");
+  const [customDateEnd, setCustomDateEnd] = useState("");
+  const [filterContactState, setFilterContactState] = useState<ContactStateFilter>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | CrmStatus>("all");
+  const [filterPriority, setFilterPriority] = useState<"all" | CrmPriority>("all");
+  const [filterByEmail, setFilterByEmail] = useState(false);
   const [filterByPhone, setFilterByPhone] = useState(false);
   const [filterByWebsite, setFilterByWebsite] = useState(false);
   const [filterByLinkedIn, setFilterByLinkedIn] = useState(false);
+  const [filterByPersonName, setFilterByPersonName] = useState(false);
   const [filterByIntelligence, setFilterByIntelligence] = useState(false);
+  const [filterDueOnly, setFilterDueOnly] = useState(false);
   const [filterScoreMin, setFilterScoreMin] = useState(0);
+  const [emailsCopied, setEmailsCopied] = useState(false);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
 
   const getTopContact = (lead: SavedLead) =>
     [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
 
-  // Fetch all leads on mount
-  useEffect(() => {
-    if (userId) {
-      fetchAllLeads();
-    }
-  }, [userId]);
+  const mapLead = (lead: RawLead): SavedLead => ({
+    ...lead,
+    name: lead.name || "",
+    address: lead.address || "",
+    phone: lead.phone || "",
+    website: lead.website || "",
+    category: lead.category || "",
+    emails: asArray<string>(lead.emails),
+    whatsapp: asArray<string>(lead.whatsapp),
+    contacts: asArray<DecisionMakerContact>(lead.contacts),
+    linkedinUrl: lead.linkedin_url || lead.linkedinUrl || "",
+    socialLinks: asArray<string>(lead.social_links),
+    crm_status: normalizeCrmStatus(lead.crm_status),
+    crm_priority: normalizeCrmPriority(lead.crm_priority),
+    crm_notes: lead.crm_notes || "",
+    next_follow_up_at: lead.next_follow_up_at || null,
+    last_contacted_at: lead.last_contacted_at || null,
+    crm_updated_at: lead.crm_updated_at || null,
+  });
 
   const fetchAllLeads = async () => {
     if (!userId) return;
     setLoading(true);
-    if (userId === DEMO_USER_ID) {
-      setLeads([
-        {
-          id: "demo-lead-1",
-          name: "Clínica Almeida & Silva",
-          address: "Av. da Liberdade, Lisbon, Portugal",
-          phone: "+351 21 000 1001",
-          website: "https://almeidasilva.example",
-          category: "dental_clinic",
-          emails: ["growth@almeidasilva.example", "hello@almeidasilva.example"],
-          whatsapp: ["+351 91 000 1001"],
-          contacts: [{ fullName: "Maria Almeida", title: "Head of Growth", email: "growth@almeidasilva.example", source: "hunter", decisionMakerScore: 88, decisionMakerReason: "healthcare title fit" }],
-          linkedinUrl: "https://linkedin.com/company/almeida-silva",
-          contact_page_found: true,
-          intelligence: {
-            opportunityScore: 94,
-            businessMaturity: "Premium multi-location practice",
-            positioning: "High-value clinic with multilingual site and visible booking flow",
-            detectedIssues: ["No automated follow-up", "Weak local landing pages"],
-            opportunitySummary: "Strong fit for outbound growth because the site already signals premium intent.",
-            suggestedPitchAngle: "Increase booked consults from international patients",
-            outreachHook: "Your English/Portuguese positioning is strong, but the booking flow leaks follow-up opportunities.",
-          },
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "demo-lead-2",
-          name: "Sorriso Premium Dental",
-          address: "Rua Garrett, Lisbon, Portugal",
-          phone: "+351 21 000 1002",
-          website: "https://sorrisopremium.example",
-          category: "cosmetic_dentistry",
-          emails: ["contact@sorrisopremium.example"],
-          whatsapp: [],
-          contacts: [{ fullName: "Ana Sorriso", title: "Practice Manager", email: "contact@sorrisopremium.example", source: "hunter", decisionMakerScore: 74, decisionMakerReason: "healthcare title fit" }],
-          linkedinUrl: "",
-          contact_page_found: true,
-          intelligence: {
-            opportunityScore: 88,
-            businessMaturity: "Established practice",
-            positioning: "Cosmetic-first positioning with visible team and services",
-            detectedIssues: ["Generic contact page"],
-            opportunitySummary: "Good candidate for conversion-focused landing pages and retargeting.",
-            suggestedPitchAngle: "Turn cosmetic traffic into qualified consults",
-            outreachHook: "Your cosmetic pages have strong intent, but the contact path asks visitors to do too much work.",
-          },
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "demo-lead-3",
-          name: "DentaLab Estoril",
-          address: "Estoril, Cascais, Portugal",
-          phone: "",
-          website: "https://dentalab.example",
-          category: "dental_lab",
-          emails: ["info@dentalab.example"],
-          whatsapp: ["+351 91 000 1003"],
-          contacts: [],
-          linkedinUrl: "https://linkedin.com/company/dentalab-estoril",
-          contact_page_found: true,
-          intelligence: null,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      setLoading(false);
-      return;
-    }
+
     try {
       const { data, error } = await supabase
         .from("saved_leads")
@@ -152,14 +198,7 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLeads((data || []).map((lead: any) => ({
-        ...lead,
-        emails: Array.isArray(lead.emails) ? lead.emails : [],
-        whatsapp: Array.isArray(lead.whatsapp) ? lead.whatsapp : [],
-        contacts: Array.isArray(lead.contacts) ? lead.contacts : [],
-        linkedinUrl: lead.linkedin_url || lead.linkedinUrl || "",
-        socialLinks: Array.isArray(lead.social_links) ? lead.social_links : [],
-      })));
+      setLeads((data || []).map(mapLead));
     } catch (err) {
       console.error("Error fetching leads:", err);
       toast({ title: "Error", description: "Failed to load leads", variant: "destructive" });
@@ -168,125 +207,344 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
     }
   };
 
-  const handleCopyEmails = () => {
-    const emails = sortedResults.flatMap((r) => r.emails).filter(Boolean);
-    navigator.clipboard.writeText(emails.join("\n")).then(() => {
-      setEmailsCopied(true);
-      setTimeout(() => setEmailsCopied(false), 2000);
-      toast({ title: "Copied!", description: `${emails.length} email(s) copied to clipboard.` });
+  useEffect(() => {
+    if (userId) fetchAllLeads();
+    // Archive refreshes when the authenticated archive owner changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    setArchiveViewMode(mode === "pipeline" ? "board" : "list");
+    setFilterDueOnly(mode === "follow-ups");
+    setSortBy("follow_up");
+    setShowAdvancedFilters(false);
+  }, [mode]);
+
+  const patchLead = async (leadId: string, patch: Partial<Pick<SavedLead, "crm_status" | "crm_priority" | "crm_notes" | "next_follow_up_at" | "last_contacted_at">>) => {
+    const previous = leads;
+    const crm_updated_at = new Date().toISOString();
+    setLeads(current => current.map(lead => lead.id === leadId ? { ...lead, ...patch, crm_updated_at } : lead));
+
+    setSavingLeadIds(prev => new Set(prev).add(leadId));
+    const payload = {
+      ...patch,
+      crm_updated_at,
+      next_follow_up_at: patch.next_follow_up_at === "" ? null : patch.next_follow_up_at,
+    };
+
+    const { error } = await supabase
+      .from("saved_leads")
+      .update(payload)
+      .eq("id", leadId)
+      .eq("user_id", userId);
+
+    setSavingLeadIds(prev => {
+      const next = new Set(prev);
+      next.delete(leadId);
+      return next;
+    });
+
+    if (error) {
+      console.error("Error updating lead CRM:", error);
+      setLeads(previous);
+      toast({ title: "CRM update failed", description: "Could not save that lead update.", variant: "destructive" });
+    }
+  };
+
+  const markContacted = (lead: SavedLead) => {
+    patchLead(lead.id, {
+      crm_status: lead.crm_status === "new" ? "contacted" : lead.crm_status,
+      last_contacted_at: new Date().toISOString(),
     });
   };
 
-  const handleCopyField = (key: string, text: string) => {
+  const handleCopyField = (key: string, text: string, label = "Copied") => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedKeys(prev => new Set(prev).add(key));
       setTimeout(() => setCopiedKeys(prev => {
-        const next = new Set(prev); next.delete(key); return next;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
       }), 2000);
+      toast({ title: label, description: text });
+    });
+  };
+
+  const isDue = (lead: SavedLead) => {
+    if (!lead.next_follow_up_at) return false;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return new Date(lead.next_follow_up_at) <= today;
+  };
+
+  const hasPersonName = (lead: SavedLead) =>
+    (lead.contacts || []).some(contact => Boolean(
+      contact.fullName?.trim() ||
+      contact.firstName?.trim() ||
+      contact.lastName?.trim()
+    ));
+
+  const isContactedLead = (lead: SavedLead) =>
+    Boolean(lead.last_contacted_at) || contactedStatuses.includes(lead.crm_status);
+
+  const isWithinCreatedDateFilter = (lead: SavedLead) => {
+    if (filterDate === "all") return true;
+    const createdAt = new Date(lead.created_at);
+    if (Number.isNaN(createdAt.getTime())) return false;
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    if (filterDate === "today") return createdAt >= todayStart;
+    if (filterDate === "7d") return createdAt >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    if (filterDate === "30d") return createdAt >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const start = customDateStart ? new Date(`${customDateStart}T00:00:00`) : null;
+    const end = customDateEnd ? new Date(`${customDateEnd}T23:59:59`) : null;
+    if (start && createdAt < start) return false;
+    if (end && createdAt > end) return false;
+    return true;
+  };
+
+  const categoryOptions = useMemo(
+    () => [...new Set(leads.map(lead => lead.category).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [leads],
+  );
+
+  const filteredResults = leads.filter(lead => {
+    if (filterCategory !== "all" && lead.category !== filterCategory) return false;
+    if (!isWithinCreatedDateFilter(lead)) return false;
+    if (filterContactState === "contacted" && !isContactedLead(lead)) return false;
+    if (filterContactState === "not_contacted" && isContactedLead(lead)) return false;
+    if (filterStatus !== "all" && lead.crm_status !== filterStatus) return false;
+    if (filterPriority !== "all" && lead.crm_priority !== filterPriority) return false;
+    if (filterByEmail && lead.emails.length === 0) return false;
+    if (filterByPhone && !lead.phone) return false;
+    if (filterByWebsite && !lead.website) return false;
+    if (filterByLinkedIn && !lead.linkedinUrl) return false;
+    if (filterByPersonName && !hasPersonName(lead)) return false;
+    if (filterByIntelligence && !lead.intelligence) return false;
+    if (filterDueOnly && !isDue(lead)) return false;
+    if (filterScoreMin > 0 && (lead.intelligence?.opportunityScore ?? 0) < filterScoreMin) return false;
+
+    const q = filterText.trim().toLowerCase();
+    if (!q) return true;
+    const contactNames = (lead.contacts || [])
+      .flatMap(contact => [contact.fullName, contact.firstName, contact.lastName, contact.title, contact.email])
+      .filter(Boolean)
+      .join(" ");
+    const haystack = [
+      lead.name,
+      lead.address,
+      lead.category,
+      lead.phone,
+      lead.website,
+      lead.emails.join(" "),
+      contactNames,
+      lead.crm_status,
+      lead.crm_priority,
+      lead.crm_notes,
+    ].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(q);
+  });
+
+  const sortedResults = [...filteredResults].sort((a, b) => {
+    if (sortBy === "follow_up") {
+      const aTime = a.next_follow_up_at ? new Date(a.next_follow_up_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bTime = b.next_follow_up_at ? new Date(b.next_follow_up_at).getTime() : Number.MAX_SAFE_INTEGER;
+      if (aTime !== bTime) return aTime - bTime;
+    }
+    const contactDelta = (getTopContact(b)?.decisionMakerScore || 0) - (getTopContact(a)?.decisionMakerScore || 0);
+    if (contactDelta !== 0) return contactDelta;
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "emails") return b.emails.length - a.emails.length;
+    if (sortBy === "score") return (b.intelligence?.opportunityScore ?? -1) - (a.intelligence?.opportunityScore ?? -1);
+    return 0;
+  });
+
+  useEffect(() => {
+    if (sortedResults.length === 0) {
+      setSelectedLeadId(null);
+      return;
+    }
+    if (!selectedLeadId || !sortedResults.some(lead => lead.id === selectedLeadId)) {
+      setSelectedLeadId(sortedResults[0].id);
+    }
+  }, [selectedLeadId, sortedResults]);
+
+  const selectedLead = sortedResults.find(lead => lead.id === selectedLeadId) || sortedResults[0] || null;
+  const selectedContact = selectedLead ? getTopContact(selectedLead) : null;
+  const emailCount = sortedResults.reduce((acc, lead) => acc + lead.emails.length, 0);
+  const linkedInCount = sortedResults.filter(lead => lead.linkedinUrl).length;
+  const personNameCount = sortedResults.filter(hasPersonName).length;
+  const contactedCount = sortedResults.filter(isContactedLead).length;
+  const notContactedCount = sortedResults.length - contactedCount;
+  const leadsByStatus = statusOptions.map(option => ({
+    ...option,
+    leads: sortedResults.filter(lead => lead.crm_status === option.value),
+  }));
+  const activeFilterCount = [
+    filterText.trim() !== "",
+    filterCategory !== "all",
+    filterDate !== "all",
+    filterContactState !== "all",
+    filterStatus !== "all",
+    filterPriority !== "all",
+    filterByEmail,
+    filterByPhone,
+    filterByWebsite,
+    filterByLinkedIn,
+    filterByPersonName,
+    filterByIntelligence,
+    filterDueOnly,
+    filterScoreMin > 0,
+  ].filter(Boolean).length;
+
+  const handleCopyEmails = () => {
+    const emails = sortedResults.flatMap(lead => lead.emails).filter(Boolean);
+    navigator.clipboard.writeText(emails.join("\n")).then(() => {
+      setEmailsCopied(true);
+      setTimeout(() => setEmailsCopied(false), 2000);
+      toast({ title: "Copied", description: `${emails.length} email(s) copied.` });
     });
   };
 
   const handleDownload = () => {
-    const headers = ["Business Name", "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "Social Profiles", "LinkedIn", "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker LinkedIn", "Decision Maker Source", "Contact Page"];
-    const headerStyle = {
-      font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11, name: "Calibri" },
-      fill: { fgColor: { rgb: "F7931A" }, patternType: "solid" as const },
-      alignment: { horizontal: "center" as const, vertical: "center" as const },
-      border: { bottom: { style: "thin" as const, color: { rgb: "EA580C" } } },
-    };
-    const cellStyle = {
-      font: { sz: 10, name: "Calibri" },
-      alignment: { vertical: "center" as const, wrapText: true },
-      border: { bottom: { style: "thin" as const, color: { rgb: "E5E7EB" } } },
-    };
-    const altRowStyle = {
-      ...cellStyle,
-      fill: { fgColor: { rgb: "F8F0F0" }, patternType: "solid" as const },
-    };
-    const rows = sortedResults.map((r) => {
-      const contact = getTopContact(r);
+    const headers = [
+      "Business Name", "CRM Status", "Priority", "Next Follow-Up", "Last Contacted", "Notes",
+      "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "LinkedIn",
+      "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker Source", "Contact Page",
+    ];
+    const rows = sortedResults.map(lead => {
+      const contact = getTopContact(lead);
       return [
-        r.name, r.category, r.address, r.phone, r.website,
-        r.emails.join(", "), r.whatsapp.join(", "), (r.socialLinks || []).join(", "), r.linkedinUrl || "",
-        contact?.fullName || "", contact?.title || "", contact?.email || "", contact?.linkedinUrl || "", contact?.source || "",
-        r.contact_page_found ? "Yes" : "No",
+        lead.name,
+        lead.crm_status,
+        lead.crm_priority,
+        lead.next_follow_up_at ? new Date(lead.next_follow_up_at).toLocaleDateString() : "",
+        lead.last_contacted_at ? new Date(lead.last_contacted_at).toLocaleDateString() : "",
+        lead.crm_notes,
+        lead.category,
+        lead.address,
+        lead.phone,
+        lead.website,
+        lead.emails.join(", "),
+        lead.whatsapp.join(", "),
+        lead.linkedinUrl || "",
+        contact?.fullName || "",
+        contact?.title || "",
+        contact?.email || "",
+        contact?.source || "",
+        lead.contact_page_found ? "Yes" : "No",
       ];
     });
-    const wsData = [headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    headers.forEach((_, colIdx) => {
-      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
-      if (ws[cellRef]) ws[cellRef].s = headerStyle;
-    });
-    rows.forEach((row, rowIdx) => {
-      const style = rowIdx % 2 === 1 ? altRowStyle : cellStyle;
-      row.forEach((_, colIdx) => {
-        const cellRef = XLSX.utils.encode_cell({ r: rowIdx + 1, c: colIdx });
-        if (ws[cellRef]) ws[cellRef].s = style;
-      });
-    });
-    const colWidths = headers.map((h, i) => ({ wch: Math.min(Math.max(h.length, ...rows.map((r) => String(r[i] || "").length)) + 2, 50) }));
-    ws["!cols"] = colWidths;
-    ws["!rows"] = [{ hpt: 24 }];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = headers.map((header, index) => ({
+      wch: Math.min(Math.max(header.length, ...rows.map(row => String(row[index] || "").length)) + 2, 56),
+    }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "All Leads");
-    XLSX.writeFile(wb, `GlobaLeads22-All-Leads.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Lead CRM");
+    XLSX.writeFile(wb, "GlobaLeads22-Lead-CRM.xlsx");
   };
 
-  // Filter and sort — multi-predicate filtering
-  const filteredResults = leads.filter(r => {
-    if (filterByEmail && r.emails.length === 0) return false;
-    if (filterByPhone && !r.phone) return false;
-    if (filterByWebsite && !r.website) return false;
-    if (filterByLinkedIn && !r.linkedinUrl) return false;
-    if (filterByIntelligence && !r.intelligence) return false;
-    if (filterScoreMin > 0 && (r.intelligence?.opportunityScore ?? 0) < filterScoreMin) return false;
-    if (filterText.trim()) {
-      const q = filterText.toLowerCase();
-      const contact = getTopContact(r);
-      const contactText = [contact?.fullName, contact?.title, contact?.email].filter(Boolean).join(" ");
-      if (!r.name.toLowerCase().includes(q) && !r.address.toLowerCase().includes(q) && !r.emails.join(" ").toLowerCase().includes(q) && !contactText.toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    const contactDelta = (getTopContact(b)?.decisionMakerScore || 0) - (getTopContact(a)?.decisionMakerScore || 0);
-    if (contactDelta !== 0) return contactDelta;
-    if (sortBy === "name") return a.name.localeCompare(b.name);
-    if (sortBy === "emails") return (b.emails.length) - (a.emails.length);
-    if (sortBy === "score") return ((b.intelligence?.opportunityScore ?? -1) - (a.intelligence?.opportunityScore ?? -1));
-    return 0;
-  });
+  const clearFilters = () => {
+    setFilterText("");
+    setFilterCategory("all");
+    setFilterDate("all");
+    setCustomDateStart("");
+    setCustomDateEnd("");
+    setFilterContactState("all");
+    setFilterStatus("all");
+    setFilterPriority("all");
+    setFilterByEmail(false);
+    setFilterByPhone(false);
+    setFilterByWebsite(false);
+    setFilterByLinkedIn(false);
+    setFilterByPersonName(false);
+    setFilterByIntelligence(false);
+    setFilterDueOnly(false);
+    setFilterScoreMin(0);
+  };
 
-  const emailCount = sortedResults.reduce((acc, r) => acc + r.emails.length, 0);
-  const whatsappCount = sortedResults.reduce((acc, r) => acc + r.whatsapp.length, 0);
-  const activeFilterCount = [filterByEmail, filterByPhone, filterByWebsite, filterByLinkedIn, filterByIntelligence, filterScoreMin > 0, filterText.trim() !== ""].filter(Boolean).length;
-  const totalResultCount = leads.length;
-  const websiteCount = sortedResults.filter(r => r.website).length;
-  const scoredLeads = sortedResults.filter(r => r.intelligence);
-  const averageScore = scoredLeads.length
-    ? Math.round(scoredLeads.reduce((acc, r) => acc + (r.intelligence?.opportunityScore ?? 0), 0) / scoredLeads.length)
-    : "-";
+  const filterButtonClass = (active: boolean) =>
+    `inline-flex h-8 items-center gap-1.5 border px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${
+      active
+        ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
+        : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
+    }`;
+
+  const chipClass = (active: boolean) =>
+    `inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest ${
+      active ? "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]" : "border-slate-300 bg-slate-100 text-slate-500"
+    }`;
+
+  const renderFilterToggle = (key: string, label: string, Icon: ComponentType<{ className?: string }>, active: boolean, toggle: () => void) => (
+    <button key={key} onClick={toggle} className={filterButtonClass(active)}>
+      <Icon className="h-3 w-3" /> {label}
+    </button>
+  );
+
+  const pageMeta = {
+    inbox: {
+      kicker: "Lead Inbox",
+      title: "Review leads",
+      empty: "No leads saved yet.",
+      emptyDescription: "Run a search and your inbox will start filling up.",
+      noMatch: "No leads match these filters.",
+    },
+    pipeline: {
+      kicker: "Pipeline",
+      title: "Sales pipeline",
+      empty: "No pipeline leads yet.",
+      emptyDescription: "Run a search and saved leads will appear by CRM status.",
+      noMatch: "No pipeline leads match these filters.",
+    },
+    "follow-ups": {
+      kicker: "Follow-ups",
+      title: "Due follow-ups",
+      empty: "No follow-ups yet.",
+      emptyDescription: "Add follow-up dates to leads and they will appear here.",
+      noMatch: "No follow-ups are due for these filters.",
+    },
+  }[mode];
+  const effectiveArchiveViewMode = mode === "pipeline" ? "board" : archiveViewMode;
 
   return (
-    <section id="tool" className="flex flex-1 flex-col bg-black py-8 text-[#EFEDE6]">
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-6">
-        <div className="mb-6 flex flex-col gap-5 border-b border-[#EFEDE6]/[0.14] pb-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <button
-              onClick={onBackToSearch}
-              className="mb-5 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#A8A59C] transition-colors hover:text-[#F5FF3D]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to search
-            </button>
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Saved intelligence</p>
-            <h2 className="font-display text-5xl font-black leading-[0.95] tracking-[-0.04em] text-[#EFEDE6]">
-              Lead Archive
-            </h2>
-            <p className="mt-4 max-w-2xl text-base text-[#A8A59C]">
-              Every saved search result, ready to filter, copy, score, and export.
-            </p>
+    <section id="tool" className="flex flex-1 flex-col overflow-hidden bg-black text-[#EFEDE6]">
+      <div className="flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
+        <div className="mb-3 flex flex-col gap-3 border-b border-[#EFEDE6]/[0.14] pb-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            {onBackToSearch && (
+              <button
+                onClick={onBackToSearch}
+                className="flex h-8 shrink-0 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back
+              </button>
+            )}
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[#F5FF3D]">{pageMeta.kicker}</p>
+              <h2 className="truncate font-display text-2xl font-black leading-none tracking-[-0.04em] text-[#EFEDE6]">
+                {pageMeta.title}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-center">
+            {[
+              ["Visible", sortedResults.length],
+              ["Contacted", contactedCount],
+              ["Open", notContactedCount],
+              ["Emails", emailCount],
+              ["People", personNameCount],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="flex h-8 min-w-[86px] items-center justify-between gap-2 border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-2.5">
+                <p className="font-mono text-sm font-black tabular-nums text-[#EFEDE6]">{value}</p>
+                <p className="font-mono text-[8px] uppercase tracking-widest text-[#67645B]">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -299,500 +557,355 @@ const ViewAllLeads = ({ userId, onBackToSearch }: ViewAllLeadsProps) => {
         {!loading && leads.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] py-20 text-center">
             <Archive className="mb-4 h-10 w-10 text-[#67645B]" />
-            <p className="font-display text-2xl font-bold text-[#EFEDE6]">No leads saved yet.</p>
-            <p className="mt-2 text-sm text-[#A8A59C]">Run a search and your archive will start filling up.</p>
+            <p className="font-display text-2xl font-bold text-[#EFEDE6]">{pageMeta.empty}</p>
+            <p className="mt-2 text-sm text-[#A8A59C]">{pageMeta.emptyDescription}</p>
           </div>
         )}
 
         {!loading && leads.length > 0 && (
-          <div className="flex flex-1 flex-col gap-4">
-            <div className="grid border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] sm:grid-cols-5">
-              {[
-                ["Visible", sortedResults.length],
-                ["Total", totalResultCount],
-                ["Emails", emailCount],
-                ["Websites", websiteCount],
-                ["Avg score", averageScore],
-              ].map(([label, value]) => (
-                <div key={String(label)} className="border-b border-r border-[#EFEDE6]/10 p-4 last:border-r-0 sm:border-b-0">
-                  <p className="font-mono text-2xl font-black tabular-nums text-[#EFEDE6]">{value}</p>
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{label}</p>
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-2.5">
+              <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+                <div className="relative min-w-[260px] flex-1">
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#67645B]" />
+                  <input
+                    type="text"
+                    placeholder="Search businesses, people, emails, notes..."
+                    value={filterText}
+                    onChange={event => setFilterText(event.target.value)}
+                    className="h-8 w-full border border-[#EFEDE6]/10 bg-black pl-8 pr-3 font-mono text-[11px] text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                  />
                 </div>
-              ))}
-            </div>
 
-            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Sort</span>
-                  {["name", "emails", "score"].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setSortBy(opt as typeof sortBy)}
-                      className={`border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${
-                        sortBy === opt
-                          ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
-                          : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
-                      }`}
-                    >
-                      {opt}
-                    </button>
+                <select
+                  value={filterCategory}
+                  onChange={event => setFilterCategory(event.target.value)}
+                  className="h-8 min-w-[190px] border border-[#EFEDE6]/10 bg-black px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70"
+                >
+                  <option value="all">All industries</option>
+                  {categoryOptions.map(category => (
+                    <option key={category} value={category}>{category.replace(/_/g, " ")}</option>
                   ))}
-                </div>
+                </select>
 
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67645B]" />
-                    <input
-                      type="text"
-                      placeholder="Search archive..."
-                      value={filterText}
-                      onChange={e => setFilterText(e.target.value)}
-                      className="h-10 w-full border border-[#EFEDE6]/10 bg-black pl-9 pr-3 font-mono text-xs text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 sm:w-64"
-                    />
-                  </div>
-                  <button
-                    onClick={handleCopyEmails}
-                    disabled={emailCount === 0}
-                    className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30"
-                  >
-                    {emailsCopied ? "Copied emails" : "Copy emails"}
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    className="border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]"
-                  >
-                    Export XLSX
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {([
-                  { key: "email", label: "Has email", icon: Mail, active: filterByEmail, toggle: () => setFilterByEmail(v => !v) },
-                  { key: "phone", label: "Has phone", icon: Phone, active: filterByPhone, toggle: () => setFilterByPhone(v => !v) },
-                  { key: "website", label: "Has site", icon: Globe, active: filterByWebsite, toggle: () => setFilterByWebsite(v => !v) },
-                  { key: "linkedin", label: "LinkedIn", icon: Linkedin, active: filterByLinkedIn, toggle: () => setFilterByLinkedIn(v => !v) },
-                  ...(userProfile ? [{ key: "intel", label: "Has intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
-                ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
-                  <button
-                    key={f.key}
-                    onClick={f.toggle}
-                    className={`flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${
-                      f.active
-                        ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
-                        : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
-                    }`}
-                  >
-                    <f.icon className="h-3 w-3" /> {f.label}
-                  </button>
-                ))}
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => {
-                      setFilterByEmail(false);
-                      setFilterByPhone(false);
-                      setFilterByWebsite(false);
-                      setFilterByLinkedIn(false);
-                      setFilterByIntelligence(false);
-                      setFilterScoreMin(0);
-                      setFilterText("");
-                    }}
-                    className="border border-red-400/30 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-red-300 hover:bg-red-400/10"
-                  >
-                    Clear {activeFilterCount}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-x-auto border border-[#EFEDE6]/[0.14] bg-black">
-              <table className="w-full min-w-[1040px] border-collapse text-left">
-                <thead className="sticky top-0 bg-[#0A0A0A]">
-                  <tr className="border-b border-[#EFEDE6]/10">
-                    {["Business", "Channels", "Actions", "Website", "LinkedIn", userProfile ? "Intel" : ""].filter(Boolean).map(h => (
-                      <th key={h} className="px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[#67645B]">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#EFEDE6]/10">
-                  {sortedResults.map((r, i) => (
-                    <tr key={r.id} className="animate-row-in align-top transition-colors hover:bg-[#EFEDE6]/[0.03]" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}>
-                      <td className="px-4 py-4">
-                        <p className="max-w-[220px] truncate font-display text-sm font-semibold text-[#EFEDE6]">{r.name}</p>
-                        {r.category && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{r.category.replace(/_/g, " ")}</p>}
-                        <p className="mt-2 max-w-[240px] truncate text-xs text-[#A8A59C]">{r.address || "No address listed"}</p>
-                        {getTopContact(r) && (
-                          <div className="mt-3 border border-[#EFEDE6]/10 bg-black p-2">
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Likely decision maker</p>
-                            <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-[#EFEDE6]">{getTopContact(r)?.fullName || getTopContact(r)?.email}</p>
-                            {getTopContact(r)?.title && <p className="mt-0.5 max-w-[220px] truncate text-[11px] text-[#A8A59C]">{getTopContact(r)?.title}</p>}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="mb-2 flex gap-1.5">
-                          {[
-                            { ok: r.emails.length > 0, icon: Mail, label: "Email" },
-                            { ok: !!r.phone, icon: Phone, label: "Phone" },
-                            { ok: !!r.website, icon: Globe, label: "Web" },
-                            { ok: !!r.linkedinUrl, icon: Linkedin, label: "LinkedIn" },
-                          ].map(({ ok, icon: Icon, label }) => (
-                            <span key={label} title={label} className={`flex h-7 w-7 items-center justify-center rounded-full border ${ok ? "border-[#F5FF3D]/60 text-[#F5FF3D]" : "border-[#EFEDE6]/10 text-[#67645B]"}`}>
-                              <Icon className="h-3.5 w-3.5" />
-                            </span>
-                          ))}
-                        </div>
-                        <p className="font-mono text-[11px] text-[#A8A59C]">{r.phone || "-"}</p>
-                        {r.emails[0] && <p className="mt-1 max-w-[220px] truncate font-mono text-[11px] text-[#F5FF3D]">{r.emails[0]}</p>}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-1.5">
-                          {r.emails.length > 0 && (
-                            <button onClick={() => handleCopyField(`${r.id}-email`, r.emails[0])} title="Copy email" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
-                              {copiedKeys.has(`${r.id}-email`) ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            </button>
-                          )}
-                          {r.phone && (
-                            <button onClick={() => handleCopyField(`${r.id}-phone`, r.phone)} title="Copy phone" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
-                              {copiedKeys.has(`${r.id}-phone`) ? <CheckCheck className="h-3 w-3" /> : <Phone className="h-3 w-3" />}
-                            </button>
-                          )}
-                          {r.emails.length > 0 && (
-                            <a href={`mailto:${r.emails[0]}`} title="Open in email client" className="border border-[#EFEDE6]/10 p-1.5 text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
-                              <Mail className="h-3 w-3" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        {r.website ? (
-                          <a href={r.website} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-[220px] items-center gap-1.5 truncate font-mono text-[11px] text-[#A8A59C] hover:text-[#EFEDE6]">
-                            <Globe className="h-3.5 w-3.5" />
-                            <span className="truncate">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
-                      </td>
-                      <td className="px-4 py-4">
-                        {r.linkedinUrl ? (
-                          <a href={r.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0A66C2] hover:text-[#4A9BE8]">
-                            <Linkedin className="h-3.5 w-3.5" /> Profile <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
-                      </td>
-                      {userProfile && (
-                        <td className="px-4 py-4">
-                          {r.intelligence ? (
-                            <div className="max-w-[220px]">
-                              <div className="flex items-center gap-3">
-                                <span className="font-mono text-xl font-black text-[#F5FF3D]">{r.intelligence.opportunityScore ?? 0}</span>
-                                <div className="h-1.5 w-28 bg-[#EFEDE6]/10">
-                                  <div className="h-full bg-[#F5FF3D]" style={{ width: `${r.intelligence.opportunityScore ?? 0}%` }} />
-                                </div>
-                              </div>
-                              <p className="mt-2 text-xs leading-5 text-[#A8A59C]">{r.intelligence.positioning}</p>
-                            </div>
-                          ) : <span className="font-mono text-[11px] text-[#67645B]">-</span>}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-
-  return (
-    <section id="tool" className="bg-petrol-950 py-16 sm:py-24 flex-1 flex flex-col">
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 flex flex-col flex-1">
-
-        {/* Header */}
-        <div className="mb-10">
-          <button
-            onClick={onBackToSearch}
-            className="mb-4 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-wine-500 hover:text-cream-100 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Search
-          </button>
-          <div className="text-center">
-            <h2 className="font-heading text-4xl font-bold tracking-tight text-cream-100 sm:text-5xl">
-              Your <span className="gradient-text">Leads</span>
-            </h2>
-            <p className="mt-4 text-cream-300 text-lg">
-              All leads from your searches in one place.
-            </p>
-          </div>
-        </div>
-
-        {/* Loading state */}
-        {loading && (
-          <div className="flex items-center justify-center py-20 flex-1">
-            <Loader2 className="h-8 w-8 animate-spin text-wine-500" />
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && leads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 flex-1 text-center">
-            <p className="text-cream-300 text-base">No leads found. Run a search to get started!</p>
-          </div>
-        )}
-
-        {/* Content */}
-        {!loading && leads.length > 0 && (
-          <div className="rounded-2xl bg-petrol-800 border border-cream-100/10 overflow-hidden flex flex-col flex-1">
-
-            {/* Summary + Controls */}
-            <div className="px-5 py-4 border-b border-cream-100/10 bg-black/30 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex gap-4 font-mono text-xs font-bold uppercase tracking-wider">
-                  <span className="text-cream-100">{sortedResults.length} results</span>
-                  <span className="flex items-center gap-1 text-cream-300">
-                    <Mail className="h-3 w-3" /> {emailCount} emails
-                  </span>
-                  <span className="flex items-center gap-1 text-cream-300">
-                    <Phone className="h-3 w-3" /> {whatsappCount} WhatsApp
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopyEmails}
-                    disabled={emailCount === 0}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider text-cream-300 border border-cream-100/10 bg-cream-100/5 hover:border-wine-700/30 hover:text-cream-100 transition-all disabled:opacity-40"
-                  >
-                    {emailsCopied ? (
-                      <><CheckCheck className="h-3.5 w-3.5 text-emerald-400" />Copied!</>
-                    ) : (
-                      <><Copy className="h-3.5 w-3.5" />Copy Emails</>
-                    )}
-                  </button>
-                  <Button
-                    variant="accent"
-                    className="flex items-center gap-1.5 px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider"
-                    onClick={handleDownload}
-                    style={{ borderRadius: "8px" }}
-                  >
-                    <Download className="h-3.5 w-3.5" />Download XLSX
-                  </Button>
-                </div>
-              </div>
-
-              {/* Row 1: Sort + Text Search */}
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="font-mono text-[9px] text-cream-300 uppercase tracking-wider">Sort:</span>
-                <div className="flex gap-1.5">
-                  {["name", "emails", "score"].map(opt => (
-                    <button key={opt} onClick={() => setSortBy(opt as typeof sortBy)}
-                      className={`px-2.5 py-1.5 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider transition-all ${sortBy === opt ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
-                      {opt === "name" ? "Name" : opt === "emails" ? "Emails" : "Score"}
-                    </button>
-                  ))}
-                </div>
-                <div className="ml-auto">
-                  <input type="text" placeholder="Search leads..." value={filterText} onChange={e => setFilterText(e.target.value)}
-                    className="h-7 w-44 bg-petrol-900/60 border border-cream-100/10 rounded-lg px-3 text-cream-100 text-xs placeholder:text-cream-100/30 outline-none focus:border-wine-700/50 font-mono" />
-                </div>
-              </div>
-
-              {/* Row 2: Filter pills + Score threshold + Clear */}
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {([
-                  { key: "email", label: "Has Email", icon: Mail, active: filterByEmail, toggle: () => setFilterByEmail(v => !v) },
-                  { key: "phone", label: "Has Phone", icon: Phone, active: filterByPhone, toggle: () => setFilterByPhone(v => !v) },
-                  { key: "website", label: "Has Site", icon: Globe, active: filterByWebsite, toggle: () => setFilterByWebsite(v => !v) },
-                  { key: "linkedin", label: "LinkedIn", icon: Linkedin, active: filterByLinkedIn, toggle: () => setFilterByLinkedIn(v => !v) },
-                  ...(userProfile ? [{ key: "intel", label: "Has Intel", icon: Zap, active: filterByIntelligence, toggle: () => setFilterByIntelligence(v => !v) }] : []),
-                ] as { key: string; label: string; icon: React.ComponentType<{ className?: string }>; active: boolean; toggle: () => void }[]).map(f => (
-                  <button key={f.key} onClick={f.toggle}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider transition-all ${f.active ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
-                    <f.icon className="h-3 w-3" />{f.label}
-                  </button>
-                ))}
-
-                {userProfile && (
-                  <div className="flex items-center gap-1 ml-1">
-                    <span className="font-mono text-[9px] text-cream-300 uppercase tracking-wider">Score≥</span>
-                    {[0, 25, 50, 75].map(n => (
-                      <button key={n} onClick={() => setFilterScoreMin(n)}
-                        className={`px-2 py-1 rounded font-mono text-[9px] font-bold transition-all ${filterScoreMin === n ? "bg-wine-700 text-cream-50" : "bg-cream-100/5 border border-cream-100/10 text-cream-300 hover:border-wine-700/30"}`}>
-                        {n === 0 ? "All" : n}
+                <div className="flex flex-wrap gap-1.5">
+                  {mode !== "pipeline" && (
+                    <div className="inline-grid grid-cols-2 border border-[#EFEDE6]/10">
+                      <button
+                        onClick={() => setArchiveViewMode("list")}
+                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#F5FF3D] text-black" : "text-[#A8A59C] hover:text-[#EFEDE6]"}`}
+                      >
+                        <List className="h-3 w-3" /> List
                       </button>
-                    ))}
-                  </div>
-                )}
-
-                <span className="font-mono text-[9px] text-cream-300 ml-auto">
-                  {sortedResults.length}/{totalResultCount}
-                </span>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => {
-                      setFilterByEmail(false);
-                      setFilterByPhone(false);
-                      setFilterByWebsite(false);
-                      setFilterByLinkedIn(false);
-                      setFilterByIntelligence(false);
-                      setFilterScoreMin(0);
-                      setFilterText("");
-                    }}
-                    className="px-2.5 py-1 rounded-lg font-mono text-[9px] font-bold uppercase tracking-wider text-red-400 border border-red-400/30 bg-red-400/10 hover:bg-red-400/20 transition-all">
-                    Clear {activeFilterCount}
+                      <button
+                        onClick={() => setArchiveViewMode("board")}
+                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#F5FF3D] text-black" : "text-[#A8A59C] hover:text-[#EFEDE6]"}`}
+                      >
+                        <LayoutGrid className="h-3 w-3" /> Board
+                      </button>
+                    </div>
+                  )}
+                  {renderFilterToggle("not-contacted", "Not contacted", Phone, filterContactState === "not_contacted", () => setFilterContactState(filterContactState === "not_contacted" ? "all" : "not_contacted"))}
+                  {renderFilterToggle("phone", "Phone", Phone, filterByPhone, () => setFilterByPhone(value => !value))}
+                  {renderFilterToggle("email", "Email", Mail, filterByEmail, () => setFilterByEmail(value => !value))}
+                  {renderFilterToggle("person", "Person", UserRound, filterByPersonName, () => setFilterByPersonName(value => !value))}
+                  <button onClick={() => setShowAdvancedFilters(value => !value)} className={filterButtonClass(showAdvancedFilters || activeFilterCount > 0)}>
+                    <SlidersHorizontal className="h-3.5 w-3.5" /> More {activeFilterCount > 0 ? activeFilterCount : ""}
                   </button>
-                )}
+                  {activeFilterCount > 0 && (
+                    <button onClick={clearFilters} className="inline-flex h-8 items-center gap-1.5 border border-red-400/30 px-2.5 font-mono text-[9px] uppercase tracking-widest text-red-300 hover:bg-red-400/10">
+                      <X className="h-3 w-3" /> Clear
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {showAdvancedFilters && (
+                <div className="mt-3 grid gap-3 border-t border-[#EFEDE6]/10 pt-3 lg:grid-cols-4">
+                  <select value={filterDate} onChange={event => setFilterDate(event.target.value as DateFilter)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                    <option value="all">All time</option>
+                    <option value="today">Today</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="custom">Custom range</option>
+                  </select>
+                  <select value={filterContactState} onChange={event => setFilterContactState(event.target.value as ContactStateFilter)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                    <option value="all">All contact states</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="not_contacted">Not contacted</option>
+                  </select>
+                  <select value={filterStatus} onChange={event => setFilterStatus(event.target.value as "all" | CrmStatus)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                    <option value="all">All pipeline statuses</option>
+                    {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <select value={filterPriority} onChange={event => setFilterPriority(event.target.value as "all" | CrmPriority)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                    <option value="all">All priorities</option>
+                    {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  {filterDate === "custom" && (
+                    <>
+                      <input type="date" value={customDateStart} onChange={event => setCustomDateStart(event.target.value)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70" />
+                      <input type="date" value={customDateEnd} onChange={event => setCustomDateEnd(event.target.value)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70" />
+                    </>
+                  )}
+                  <div className="flex flex-wrap gap-2 lg:col-span-4">
+                    {renderFilterToggle("site", "Website", Globe, filterByWebsite, () => setFilterByWebsite(value => !value))}
+                    {renderFilterToggle("linkedin", "LinkedIn", Linkedin, filterByLinkedIn, () => setFilterByLinkedIn(value => !value))}
+                    {renderFilterToggle("due", "Follow-up due", CalendarClock, filterDueOnly, () => setFilterDueOnly(value => !value))}
+                    {userProfile && renderFilterToggle("intel", "Has intel", Zap, filterByIntelligence, () => setFilterByIntelligence(value => !value))}
+                    {userProfile && (
+                      <div className="flex items-center gap-1 border border-[#EFEDE6]/10 px-2 py-1">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Score</span>
+                        {[0, 50, 75].map(value => (
+                          <button key={value} onClick={() => setFilterScoreMin(value)} className={filterButtonClass(filterScoreMin === value)}>
+                            {value === 0 ? "All" : value}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Results Table */}
-            <div className="overflow-x-auto overflow-y-auto flex-1">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-petrol-800 border-b border-cream-100/10">
-                  <tr>
-                    {["Business", "Phone", "Email", "Actions", "Website", "LinkedIn", userProfile ? "Intelligence" : ""].filter(Boolean).map(h => (
-                      <th key={h} className="px-4 py-3 text-left font-mono text-[9px] font-bold uppercase tracking-widest text-cream-300">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {sortedResults.map((r, i) => (
-                    <tr
-                      key={r.id}
-                      className="transition-colors hover:bg-wine-700/5"
-                      style={{ background: i % 2 === 1 ? "rgba(255,255,255,0.02)" : "transparent" }}
-                    >
-                      <td className="px-4 py-3">
-                        <p className="font-heading font-medium text-cream-100 truncate max-w-[180px]">{r.name}</p>
-                        {r.category && (
-                          <p className="font-mono text-[9px] text-cream-300 capitalize mt-0.5 uppercase tracking-wider">{r.category.replace(/_/g, " ")}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-cream-300 whitespace-nowrap">
-                        {r.phone || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.emails.length > 0 ? (
-                          <div className="space-y-0.5">
-                            {r.emails.slice(0, 2).map((e) => (
-                              <p key={e} className="font-mono text-xs text-wine-500 truncate max-w-[200px]">{e}</p>
-                            ))}
-                            {r.emails.length > 2 && (
-                              <p className="font-mono text-[9px] text-cream-300">+{r.emails.length - 2} more</p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="font-mono text-xs text-cream-100/20">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.website ? (
-                          <a
-                            href={r.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono text-xs text-cream-300 hover:text-wine-500 transition-colors"
-                          >
-                            <Globe className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span className="truncate max-w-[120px]">{r.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="font-mono text-xs text-cream-100/20">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.linkedinUrl ? (
-                          <a
-                            href={r.linkedinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 font-mono text-xs text-[#0A66C2] hover:text-[#004182] transition-colors"
-                          >
-                            <Linkedin className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span className="truncate max-w-[100px]">Profile</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="font-mono text-xs text-cream-100/20">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          {r.emails.length > 0 && (
-                            <button
-                              onClick={() => handleCopyField(`${r.id}-email`, r.emails[0])}
-                              title="Copy email"
-                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
-                            >
-                              {copiedKeys.has(`${r.id}-email`) ? (
-                                <CheckCheck className="h-3 w-3 text-emerald-400" />
-                              ) : (
-                                <Copy className="h-3 w-3 text-cream-300" />
-                              )}
-                            </button>
-                          )}
-                          {r.phone && (
-                            <button
-                              onClick={() => handleCopyField(`${r.id}-phone`, r.phone)}
-                              title="Copy phone"
-                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
-                            >
-                              {copiedKeys.has(`${r.id}-phone`) ? (
-                                <CheckCheck className="h-3 w-3 text-emerald-400" />
-                              ) : (
-                                <Phone className="h-3 w-3 text-cream-300" />
-                              )}
-                            </button>
-                          )}
-                          {r.emails.length > 0 && (
-                            <a
-                              href={`mailto:${r.emails[0]}`}
-                              title="Open in email client"
-                              className="p-1.5 rounded-md bg-cream-100/5 border border-cream-100/10 hover:border-wine-700/40 hover:bg-wine-700/10 transition-all"
-                            >
-                              <Mail className="h-3 w-3 text-cream-300" />
-                            </a>
-                          )}
-                          {!r.emails.length && !r.phone && (
-                            <span className="font-mono text-xs text-cream-100/20">—</span>
-                          )}
+            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] bg-black">
+                {sortedResults.length === 0 ? (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
+                    <Search className="mb-4 h-9 w-9 text-[#67645B]" />
+                    <p className="font-display text-xl font-bold text-[#EFEDE6]">{pageMeta.noMatch}</p>
+                    <p className="mt-2 text-sm text-[#A8A59C]">Clear filters or widen the criteria.</p>
+                    <button onClick={clearFilters} className="mt-5 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black">
+                      Clear filters
+                    </button>
+                  </div>
+                ) : effectiveArchiveViewMode === "board" ? (
+                  <div className="flex h-full gap-3 overflow-x-auto p-3">
+                    {leadsByStatus.map(column => (
+                      <section key={column.value} className="flex min-w-[250px] max-w-[280px] flex-1 flex-col border border-[#EFEDE6]/10 bg-[#0A0A0A]">
+                        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[#EFEDE6]/10 bg-[#0A0A0A] px-3 py-3">
+                          <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${statusTone[column.value]}`}>
+                            {column.label}
+                          </span>
+                          <span className="font-mono text-[10px] font-black tabular-nums text-[#67645B]">{column.leads.length}</span>
                         </div>
-                      </td>
-                      {userProfile && (
-                        <td className="px-4 py-3">
-                          {r.intelligence ? (
-                            <div className="space-y-1.5 min-w-[160px]">
-                              <div className="flex items-center gap-2 bg-wine-700/15 rounded-lg p-2 border border-wine-700/20">
-                                <Zap className="h-3.5 w-3.5 text-wine-500 flex-shrink-0" />
-                                <span className="font-mono text-xs font-bold text-wine-500">
-                                  {r.intelligence.opportunityScore ?? 0}/100
-                                </span>
-                              </div>
-                              <div className="text-[9px] text-cream-300 space-y-0.5">
-                                <p><strong>Maturity:</strong> {r.intelligence.businessMaturity}</p>
-                                <p><strong>Position:</strong> {r.intelligence.positioning}</p>
-                                {r.intelligence.detectedIssues?.length > 0 && (
-                                  <p><strong>Issues:</strong> {r.intelligence.detectedIssues.length}</p>
-                                )}
-                              </div>
+
+                        <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+                          {column.leads.length === 0 ? (
+                            <div className="flex min-h-[120px] items-center justify-center border border-dashed border-[#EFEDE6]/10 px-3 text-center">
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">No leads</p>
                             </div>
                           ) : (
-                            <span className="font-mono text-xs text-cream-100/20">—</span>
+                            column.leads.map(lead => {
+                              const topContact = getTopContact(lead);
+                              const selected = lead.id === selectedLead?.id;
+                              return (
+                                <button
+                                  key={lead.id}
+                                  onClick={() => setSelectedLeadId(lead.id)}
+                                  className={`border p-3 text-left transition-colors ${selected ? "border-[#F5FF3D] bg-[#F5FF3D]/10" : "border-[#EFEDE6]/10 bg-black hover:border-[#F5FF3D]/50"}`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="line-clamp-2 font-display text-sm font-bold leading-tight text-[#EFEDE6]">{lead.name}</p>
+                                    <span className={`shrink-0 border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest ${priorityTone[lead.crm_priority]}`}>
+                                      {lead.crm_priority}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                  <p className="mt-2 truncate text-xs text-[#A8A59C]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
+                                  <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <span className={chipClass(!!lead.phone)}><Phone className="h-3 w-3" /></span>
+                                    <span className={chipClass(lead.emails.length > 0)}><Mail className="h-3 w-3" /></span>
+                                    <span className={chipClass(!!lead.linkedinUrl)}><Linkedin className="h-3 w-3" /></span>
+                                    <span className={chipClass(hasPersonName(lead))}><UserRound className="h-3 w-3" /></span>
+                                  </div>
+                                </button>
+                              );
+                            })
                           )}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#EFEDE6]/10">
+                    {sortedResults.map(lead => {
+                      const topContact = getTopContact(lead);
+                      const selected = lead.id === selectedLead?.id;
+                      return (
+                        <button
+                          key={lead.id}
+                          onClick={() => setSelectedLeadId(lead.id)}
+                          className={`block w-full px-4 py-4 text-left transition-colors ${selected ? "bg-[#F5FF3D]/[0.07]" : "hover:bg-[#EFEDE6]/[0.03]"}`}
+                        >
+                          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="truncate font-display text-base font-semibold text-[#EFEDE6]">{lead.name}</p>
+                                <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${statusTone[lead.crm_status]}`}>
+                                  {lead.crm_status}
+                                </span>
+                                <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${priorityTone[lead.crm_priority]}`}>
+                                  {lead.crm_priority}
+                                </span>
+                              </div>
+                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                              <p className="mt-2 truncate text-xs text-[#A8A59C]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
+                            </div>
+                            <div className="flex shrink-0 flex-wrap gap-1.5">
+                              <span className={chipClass(!!lead.phone)}><Phone className="h-3 w-3" /></span>
+                              <span className={chipClass(lead.emails.length > 0)}><Mail className="h-3 w-3" /></span>
+                              <span className={chipClass(!!lead.linkedinUrl)}><Linkedin className="h-3 w-3" /></span>
+                              <span className={chipClass(hasPersonName(lead))}><UserRound className="h-3 w-3" /></span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <aside className="min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+                {selectedLead ? (
+                  <div className="flex min-h-full flex-col">
+                    <div className="border-b border-[#EFEDE6]/10 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Selected lead</p>
+                          <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#EFEDE6]">{selectedLead.name}</h3>
+                          <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
+                        </div>
+                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-sky-300 bg-sky-100 text-sky-800" : "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]"}`}>
+                          {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid gap-2">
+                        <button
+                          onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
+                          disabled={!selectedLead.phone}
+                          className="inline-flex h-12 items-center justify-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:border-[#EFEDE6]/10 disabled:bg-[#EFEDE6]/10 disabled:text-[#67645B]"
+                        >
+                          {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
+                        </button>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => selectedLead.emails[0] && handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0], "Email copied")}
+                            disabled={!selectedLead.emails[0]}
+                            className="inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D] disabled:opacity-30"
+                          >
+                            <Mail className="h-3.5 w-3.5" /> Email
+                          </button>
+                          <a
+                            href={selectedLead.website || undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]" : "pointer-events-none text-[#67645B] opacity-30"}`}
+                          >
+                            <Globe className="h-3.5 w-3.5" /> Site
+                          </a>
+                          <a
+                            href={selectedLead.linkedinUrl || undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#A8A59C] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#67645B] opacity-30"}`}
+                          >
+                            <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-5 p-5">
+                      <section className="border border-[#EFEDE6]/10 bg-black p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Person</p>
+                        <p className="mt-2 text-sm font-semibold text-[#EFEDE6]">{selectedContact?.fullName || selectedContact?.email || "No person listed"}</p>
+                        {selectedContact?.title && <p className="mt-1 text-sm text-[#A8A59C]">{selectedContact.title}</p>}
+                        {selectedContact?.email && <p className="mt-2 truncate font-mono text-[11px] text-[#F5FF3D]">{selectedContact.email}</p>}
+                      </section>
+
+                      <section className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <label>
+                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Status</span>
+                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${statusTone[selectedLead.crm_status]}`}>
+                              {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                          <label>
+                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority</span>
+                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${priorityTone[selectedLead.crm_priority]}`}>
+                              {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                        </div>
+
+                        <label>
+                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Follow-up</span>
+                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full border bg-black px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#F5FF3D] text-[#F5FF3D]" : "border-[#EFEDE6]/10 text-[#A8A59C]"}`} />
+                        </label>
+
+                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
+                          <Send className="h-3.5 w-3.5" /> Mark contacted
+                        </button>
+
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                          Last contacted: {selectedLead.last_contacted_at ? new Date(selectedLead.last_contacted_at).toLocaleDateString() : "-"}
+                        </p>
+                      </section>
+
+                      <section>
+                        <label>
+                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Notes</span>
+                          <textarea
+                            value={selectedLead.crm_notes}
+                            onChange={event => setLeads(current => current.map(item => item.id === selectedLead.id ? { ...item, crm_notes: event.target.value } : item))}
+                            onBlur={event => patchLead(selectedLead.id, { crm_notes: event.target.value })}
+                            placeholder="Add next step, objection, pitch angle..."
+                            className="h-32 w-full resize-none border border-[#EFEDE6]/10 bg-black p-3 text-sm leading-6 text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                          />
+                        </label>
+                      </section>
+
+                      <section className="space-y-2 border-t border-[#EFEDE6]/10 pt-4">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Business</p>
+                        <p className="text-sm text-[#A8A59C]">{selectedLead.address || "No address listed"}</p>
+                        {selectedLead.intelligence?.positioning && <p className="text-sm leading-6 text-[#A8A59C]">{selectedLead.intelligence.positioning}</p>}
+                        {selectedLead.intelligence?.opportunityScore !== undefined && (
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-xl font-black text-[#F5FF3D]">{selectedLead.intelligence.opportunityScore}</span>
+                            <div className="h-1.5 flex-1 bg-[#EFEDE6]/10">
+                              <div className="h-full bg-[#F5FF3D]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </section>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
+                    <Archive className="mb-4 h-9 w-9 text-[#67645B]" />
+                    <p className="font-display text-xl font-bold text-[#EFEDE6]">Select a lead</p>
+                    <p className="mt-2 text-sm text-[#A8A59C]">Pick a lead from the list to review contact details.</p>
+                  </div>
+                )}
+              </aside>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                {linkedInCount} with LinkedIn · {personNameCount} with person names
+              </p>
+              <div className="flex gap-2">
+                <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30">
+                  {emailsCopied ? "Copied emails" : "Copy visible emails"}
+                </button>
+                <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]">
+                  <Download className="h-3.5 w-3.5" /> Export visible
+                </button>
+              </div>
             </div>
           </div>
         )}

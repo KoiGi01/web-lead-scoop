@@ -281,6 +281,12 @@ function mergeContacts(contacts: DecisionMakerContact[]): DecisionMakerContact[]
 }
 
 Deno.serve(async (req) => {
+  if (new URL(req.url).searchParams.has("ping")) {
+    return new Response(JSON.stringify({ version: "extract-contacts-v2-20260502" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -562,13 +568,6 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error:", error);
-    let usageType = "customer";
-    try {
-      const cloned = req.clone();
-      usageType = (await cloned.json())?.usageType || "customer";
-    } catch {
-      usageType = "customer";
-    }
     return new Response(
       JSON.stringify({
         success: true,
@@ -577,7 +576,7 @@ Deno.serve(async (req) => {
         contactPageFound: false,
         contacts: [],
         emailSource: "none",
-        ...(usageType !== "customer" ? { debugError: error instanceof Error ? error.message : String(error) } : {}),
+        debugError: error instanceof Error ? error.message : String(error),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/hooks/useAuth";
 
 export function useAdmin(userId: string | undefined) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchAdmin = useCallback(async () => {
-    if (!userId || userId === DEMO_USER_ID) {
+    if (!userId) {
       setIsAdmin(false);
       setLoading(false);
       return;

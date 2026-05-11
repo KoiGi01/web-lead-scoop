@@ -62,42 +62,46 @@
 
   /* ── Light theme (.light class on marketing pages) ────────────────────── */
   .light {
-    --background:              39 65% 95%;    /* cream-50    #FAF5EC */
-    --foreground:              186 100% 8%;   /* petrol-900  #00272B */
+    --background:              31 73% 92%;    /* antique white #FBECDA */
+    --foreground:              14 100% 3%;    /* pitch black    #0D0300 */
 
-    --card:                    0 0% 100%;     /* white */
-    --card-foreground:         186 100% 8%;
+    --card:                    31 73% 92%;
+    --card-foreground:         14 100% 3%;
 
-    --popover:                 0 0% 100%;
-    --popover-foreground:      186 100% 8%;
+    --popover:                 31 73% 92%;
+    --popover-foreground:      14 100% 3%;
 
     --primary:                 186 100% 8%;   /* petrol-900 — dark btn on light */
     --primary-foreground:      39 65% 95%;    /* cream-50 text on dark btn */
 
-    --secondary:               33 47% 86%;    /* cream-100 */
-    --secondary-foreground:    186 100% 8%;
+    --secondary:               0 0% 82%;
+    --secondary-foreground:    14 100% 3%;
 
-    --muted:                   33 30% 91%;    /* between cream-50 and cream-100 */
-    --muted-foreground:        186 20% 40%;
+    --muted:                   0 0% 82%;
+    --muted-foreground:        14 12% 36%;
 
     --accent:                  323 36% 22%;   /* wine-700 — same accent both themes */
-    --accent-foreground:       39 65% 95%;
+    --accent-foreground:       14 100% 3%;
 
     --destructive:             0 84% 60%;
     --destructive-foreground:  0 0% 100%;
 
-    --border:                  186 15% 87%;   /* faint petrol-tint border */
-    --input:                   33 47% 86%;    /* cream-100 */
-    --ring:                    323 36% 22%;
+    --border:                  14 18% 72%;
+    --input:                   31 73% 92%;
+    --ring:                    57 100% 50%;
 
-    --sidebar-background:      39 65% 95%;
-    --sidebar-foreground:      186 100% 8%;
-    --sidebar-primary:         186 100% 8%;
-    --sidebar-primary-foreground: 39 65% 95%;
-    --sidebar-accent:          33 47% 86%;
-    --sidebar-accent-foreground: 186 100% 8%;
-    --sidebar-border:          186 15% 87%;
-    --sidebar-ring:            323 36% 22%;
+    --sidebar-background:      31 73% 92%;
+    --sidebar-foreground:      14 100% 3%;
+    --sidebar-primary:         14 100% 3%;
+    --sidebar-primary-foreground: 31 73% 92%;
+    --sidebar-accent:          57 100% 50%;
+    --sidebar-accent-foreground: 14 100% 3%;
+    --sidebar-border:          14 18% 72%;
+    --sidebar-ring:            57 100% 50%;
+
+    --primary:                 14 100% 3%;
+    --primary-foreground:      31 73% 92%;
+    --accent:                  57 100% 50%;   /* bright lemon   #FBEE03 */
   }
 }
 
@@ -109,8 +113,8 @@
   body {
     @apply antialiased;
     font-family: 'Archivo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #000;
-    color: #EFEDE6;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-size: 15px;
     line-height: 1.5;
     font-feature-settings: "ss01", "cv11";
@@ -132,7 +136,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Archivo', sans-serif;
     letter-spacing: -0.02em;
-    color: #EFEDE6;
+    color: hsl(var(--foreground));
     line-height: 1.2;
   }
 
@@ -141,6 +145,222 @@
   ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: #333; }
 }
+
+/* Authenticated app theme bridge.
+   The app predates semantic color tokens and still uses hard-coded Tailwind
+   palette utilities. These scoped overrides let light mode work without
+   rewriting every feature screen in one broad pass. */
+.app-light {
+  --gl-lemon: #FBEE03;
+  --gl-alabaster: #FBECDA;
+  --gl-pitch: #0D0300;
+  --gl-surface: #FBECDA;
+  --gl-surface-raised: #E7D9C7;
+  --gl-surface-subtle: #D4D4D4;
+  --gl-border: rgba(13, 3, 0, 0.18);
+  --gl-border-strong: rgba(13, 3, 0, 0.34);
+  --gl-muted: rgba(13, 3, 0, 0.58);
+  --gl-faint: rgba(13, 3, 0, 0.40);
+  background-color: var(--gl-alabaster) !important;
+  color: var(--gl-pitch) !important;
+}
+
+.app-light .bg-black,
+.app-light [class*="bg-black/"] {
+  background-color: var(--gl-alabaster) !important;
+}
+
+.app-light [class*="bg-[#0A0A0A]"],
+.app-light [class*="bg-[#0A0A0A]/"] {
+  background-color: var(--gl-surface-raised) !important;
+}
+
+.app-light [class*="text-[#EFEDE6]"],
+.app-light h1,
+.app-light h2,
+.app-light h3,
+.app-light h4,
+.app-light h5,
+.app-light h6 {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="text-[#A8A59C]"] {
+  color: var(--gl-muted) !important;
+}
+
+.app-light [class*="text-[#67645B]"] {
+  color: var(--gl-faint) !important;
+}
+
+.app-light [class*="border-[#EFEDE6]"] {
+  border-color: var(--gl-border) !important;
+}
+
+.app-light [class*="divide-[#EFEDE6]"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--gl-border) !important;
+}
+
+.app-light [class*="border-[#F5FF3D]"] {
+  border-color: var(--gl-lemon) !important;
+}
+
+.app-light input,
+.app-light textarea,
+.app-light select {
+  background-color: var(--gl-surface) !important;
+  color: var(--gl-pitch) !important;
+  border-color: var(--gl-border-strong) !important;
+}
+
+.app-light input::placeholder,
+.app-light textarea::placeholder {
+  color: rgba(13, 3, 0, 0.46) !important;
+}
+
+.app-light .bg-\[\#EFEDE6\] {
+  background-color: var(--gl-pitch) !important;
+  color: var(--gl-alabaster) !important;
+}
+
+.app-light .bg-\[\#F5FF3D\] {
+  background-color: var(--gl-lemon) !important;
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="bg-[#F5FF3D]/"] {
+  background-color: rgba(251, 238, 3, 0.16) !important;
+}
+
+.app-light .text-\[\#F5FF3D\] {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light .text-black {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="hover:text-[#EFEDE6]"]:hover {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="hover:text-[#F5FF3D]"]:hover {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="hover:bg-[#EFEDE6]"]:hover {
+  background-color: rgba(13, 3, 0, 0.07) !important;
+}
+
+.app-light [class*="hover:bg-[#F5FF3D]"]:hover {
+  background-color: var(--gl-lemon) !important;
+}
+
+.app-light [class*="hover:border-[#F5FF3D]"]:hover {
+  border-color: var(--gl-lemon) !important;
+}
+
+.app-light [class*="bg-[#EFEDE6]/"] {
+  background-color: rgba(13, 3, 0, 0.08) !important;
+}
+
+.app-light [class*="bg-[#A8A59C]"] {
+  background-color: rgba(13, 3, 0, 0.45) !important;
+}
+
+.app-light [class*="text-slate-"],
+.app-light [class*="text-cyan-"],
+.app-light [class*="text-sky-"],
+.app-light [class*="text-violet-"],
+.app-light [class*="text-emerald-"],
+.app-light [class*="text-red-"] {
+  color: var(--gl-pitch) !important;
+}
+
+.app-light [class*="bg-slate-"],
+.app-light [class*="bg-cyan-"],
+.app-light [class*="bg-sky-"],
+.app-light [class*="bg-violet-"],
+.app-light [class*="bg-emerald-"],
+.app-light [class*="bg-red-"] {
+  background-color: var(--gl-surface-subtle) !important;
+}
+
+.app-light [class*="border-slate-"],
+.app-light [class*="border-cyan-"],
+.app-light [class*="border-sky-"],
+.app-light [class*="border-violet-"],
+.app-light [class*="border-emerald-"],
+.app-light [class*="border-red-"] {
+  border-color: var(--gl-border-strong) !important;
+}
+
+.app-light [class*="shadow-[0_14px_32px_rgba(245,255,61"],
+.app-light [class*="shadow-[0_12px_30px"],
+.app-light [class*="shadow-[0_24px_56px"],
+.app-light [class*="shadow-[0_0_18px"] {
+  box-shadow: 0 18px 42px rgba(13, 3, 0, 0.16) !important;
+}
+
+.app-light [class*="hover:shadow-[0_24px_56px"]:hover {
+  box-shadow: 0 24px 62px rgba(13, 3, 0, 0.24) !important;
+}
+
+.new-search-card {
+  border-radius: 8px;
+}
+
+.new-search-card-featured .new-search-card-rail,
+.new-search-card-muted .new-search-card-rail {
+  color: rgba(251, 238, 3, 0.48);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(251, 238, 3, 0.10), transparent 28%),
+    linear-gradient(160deg, rgba(239, 237, 230, 0.06), rgba(239, 237, 230, 0.02));
+}
+
+.new-search-card:hover .new-search-card-rail {
+  color: #0D0300;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.58), transparent 26%),
+    linear-gradient(160deg, #FBEE03 0%, #FBEE03 54%, #D7CB00 100%);
+}
+
+.app-light .new-search-card {
+  background-color: #FFFFFF !important;
+  border-color: rgba(13, 3, 0, 0.14) !important;
+  box-shadow: 0 24px 64px rgba(13, 3, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.42) inset !important;
+}
+
+.app-light .new-search-card:hover {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 30px 78px rgba(13, 3, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.48) inset !important;
+}
+
+.app-light .new-search-card-featured {
+  border-color: rgba(13, 3, 0, 0.14) !important;
+}
+
+.app-light .new-search-card-featured .new-search-card-rail,
+.app-light .new-search-card-muted .new-search-card-rail {
+  color: rgba(13, 3, 0, 0.30);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(13, 3, 0, 0.04), transparent 30%),
+    linear-gradient(160deg, #FFFFFF 0%, #FBECDA 100%);
+}
+
+.app-light .new-search-card:hover .new-search-card-rail {
+  color: #0D0300;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.58), transparent 26%),
+    linear-gradient(160deg, #FBEE03 0%, #FBEE03 54%, #D7CB00 100%);
+}
+
+.app-light .new-search-card:hover {
+  border-color: var(--gl-lemon) !important;
+}
+
+.app-light ::-webkit-scrollbar-track { background: var(--gl-alabaster); }
+.app-light ::-webkit-scrollbar-thumb { background: rgba(13, 3, 0, 0.32); }
 
 /* ─── Keyframes ─────────────────────────────────────────────────────────── */
 @keyframes march {

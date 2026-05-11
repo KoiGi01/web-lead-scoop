@@ -122,9 +122,20 @@ Deno.serve(async (req) => {
           console.error('Google Places API error:', JSON.stringify(data));
           // If we already have some results, return them instead of failing
           if (allPlaces.length > 0) break;
+          const upstreamMessage = String(data.error?.message || "");
+          const isProviderConfigError =
+            response.status === 403 ||
+            /billing|permission|api key|referer|request_denied/i.test(upstreamMessage);
           return new Response(
-            JSON.stringify({ success: false, error: data.error?.message || 'Google Places API error' }),
-            { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({
+              success: false,
+              error: isProviderConfigError
+                ? "Lead discovery is temporarily unavailable. Please try again later."
+                : "Lead discovery failed. Please try again.",
+              code: isProviderConfigError ? "DISCOVERY_PROVIDER_CONFIG" : "DISCOVERY_PROVIDER_ERROR",
+              ...(usageType !== "customer" ? { providerStatus: response.status, providerError: data.error } : {}),
+            }),
+            { status: isProviderConfigError ? 503 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
