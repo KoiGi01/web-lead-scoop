@@ -367,7 +367,7 @@ const compactUrl = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$
 const getTopContact = (lead: LeadResult | { contacts?: DecisionMakerContact[] }) =>
   [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
 
-const getSearchCost = (depth: Depth, enrich: boolean) => depthConfig[depth].credits * (enrich ? 2 : 1);
+const getSearchCost = (depth: Depth, enrich: boolean) => (depthConfig[depth] ?? depthConfig.normal).credits * (enrich ? 2 : 1);
 
 const hasLinkedInSignal = (lead: LeadResult) =>
   Boolean(lead.linkedinUrl || lead.contacts?.some(contact => contact.linkedinUrl));
@@ -1889,7 +1889,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   </div>
 
                   <button
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate()}
                     disabled={isProcessing}
                     className="h-12 border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
                   >
