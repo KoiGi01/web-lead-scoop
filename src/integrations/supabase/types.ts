@@ -406,7 +406,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      spend_credits: {
+        Args: {
+          p_amount: number
+        }
+        Returns: number
+      }
+      grant_user_credits: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_stripe_customer_id?: string | null
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

@@ -79,20 +79,30 @@ export function useCredits(userId: string | undefined): UseCreditsReturn {
     }
 
     try {
-      const newBalance = credits.balance - amount;
-      const { data, error } = await supabase
-        .from("user_credits")
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .select()
-        .single();
+      const { data: newBalance, error } = await supabase.rpc("spend_credits", {
+        p_amount: amount,
+      });
 
       if (error) {
-        throw error;
+        if (!/spend_credits|Could not find the function|schema cache/i.test(error.message || "")) {
+          throw error;
+        }
+
+        const fallbackBalance = credits.balance - amount;
+        const { data, error: fallbackError } = await supabase
+          .from("user_credits")
+          .update({ balance: fallbackBalance, updated_at: new Date().toISOString() })
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (fallbackError) throw fallbackError;
+        if (data) setCredits(data);
+        return;
       }
 
-      if (data) {
-        setCredits(data);
+      if (typeof newBalance === "number") {
+        setCredits(current => current ? { ...current, balance: newBalance, updated_at: new Date().toISOString() } : current);
       }
     } catch (err) {
       console.error("Error deducting credits:", err);

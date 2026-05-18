@@ -1152,10 +1152,19 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       onSearchComplete?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Search failed";
+      const isCreditError = /INSUFFICIENT_CREDITS|Insufficient credits/i.test(message);
       setStatus(message);
       setStage("idle");
       setProgress(0);
-      toast({ title: "Search failed", description: message, variant: "destructive" });
+      if (isCreditError) {
+        toast({
+          title: "Add credits to continue",
+          description: "Your balance changed before this search could start.",
+        });
+        onBuyCredits?.();
+      } else {
+        toast({ title: "Search failed", description: message, variant: "destructive" });
+      }
       if (searchSessionId) {
         await supabase.from("search_sessions").update({ status: "failed" }).eq("id", searchSessionId);
       }

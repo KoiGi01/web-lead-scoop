@@ -93,34 +93,49 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response(JSON.stringify({ success: true, duplicate: true }), { status: 200 });
       }
 
-      // Fetch current balance and update
-      const { data: currentCredits, error: fetchError } = await supabase
-        .from("user_credits")
-        .select("balance")
-        .eq("user_id", userId)
-        .single();
-
-      if (fetchError) {
-        console.error("Error fetching current credits:", fetchError);
-        return new Response(JSON.stringify({ error: "Failed to fetch credits" }), { status: 500 });
-      }
-
-      const newBalance = (currentCredits?.balance ?? 0) + credits;
       const grossUsd = Number(session.amount_total || 0) / 100;
       const stripeFeeEstimatedUsd = grossUsd > 0 ? (grossUsd * 0.029) + 0.30 : 0;
       const netUsd = Math.max(0, grossUsd - stripeFeeEstimatedUsd);
 
-      const { error: updateError } = await supabase
-        .from("user_credits")
-        .update({
-          balance: newBalance,
-          stripe_customer_id: stripeCustomerId,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
+      let { data: newBalance, error: grantError } = await supabase.rpc("grant_user_credits", {
+        p_user_id: userId,
+        p_amount: credits,
+        p_stripe_customer_id: stripeCustomerId,
+      });
 
-      if (updateError) {
-        console.error("Error updating credits:", updateError);
+      if (grantError && /grant_user_credits|Could not find the function|schema cache/i.test(grantError.message || "")) {
+        const { data: currentCredits, error: fetchError } = await supabase
+          .from("user_credits")
+          .select("balance")
+          .eq("user_id", userId)
+          .single();
+
+        if (fetchError) {
+          console.error("Error fetching current credits:", fetchError);
+          return new Response(JSON.stringify({ error: "Failed to fetch credits" }), { status: 500 });
+        }
+
+        const fallbackBalance = (currentCredits?.balance ?? 0) + credits;
+        const { error: updateError } = await supabase
+          .from("user_credits")
+          .update({
+            balance: fallbackBalance,
+            stripe_customer_id: stripeCustomerId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
+
+        if (updateError) {
+          console.error("Error updating credits:", updateError);
+          return new Response(JSON.stringify({ error: "Failed to update credits" }), { status: 500 });
+        }
+
+        newBalance = fallbackBalance;
+        grantError = null;
+      }
+
+      if (grantError || typeof newBalance !== "number") {
+        console.error("Error granting credits:", grantError);
         return new Response(JSON.stringify({ error: "Failed to update credits" }), { status: 500 });
       }
 

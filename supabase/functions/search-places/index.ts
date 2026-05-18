@@ -23,6 +23,15 @@ async function logUsage(event: Record<string, unknown>) {
   if (error) console.error("Usage logging error:", error);
 }
 
+async function isAuthorizedUser(req: Request, userId: unknown) {
+  if (!supabase || typeof userId !== "string" || !UUID_REGEX.test(userId)) return false;
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return false;
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const { data, error } = await supabase.auth.getUser(token);
+  return !error && data.user?.id === userId;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,6 +50,13 @@ Deno.serve(async (req) => {
       usageType = "customer",
       creditsChargedToUser = 0,
     } = await req.json();
+
+    if (!await isAuthorizedUser(req, userId)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!keyword || !location) {
       return new Response(
