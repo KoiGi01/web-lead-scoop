@@ -71,6 +71,23 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: caller, error: callerError } = await supabase.auth.getUser(token);
+    if (callerError || caller.user?.id !== userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const priceId = PRICE_MAP[bundleKey];
     const credits = CREDITS_MAP[bundleKey];
 
@@ -103,7 +120,6 @@ const handler = async (req: Request): Promise<Response> => {
     // Create Stripe Checkout Session
     const checkoutData: Record<string, unknown> = {
       mode: "payment",
-      payment_method_types: ["card"],
       line_items: [
         {
           price: priceId,

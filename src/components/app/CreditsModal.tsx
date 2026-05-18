@@ -63,7 +63,7 @@ const CreditsModal = ({ open, onClose, onSelectBundle, loading }: CreditsModalPr
                 </div>
 
                 <p className="text-center text-[10px] font-mono text-[#67645B] mt-5 uppercase tracking-widest">
-                    Secure payment via Stripe · 1 search = 10 credits
+                    Secure payment via Stripe · Searches start at 5 credits
                 </p>
             </div>
         </DialogContent>

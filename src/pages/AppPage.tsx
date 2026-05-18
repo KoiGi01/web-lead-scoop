@@ -68,7 +68,7 @@ const AppPage = () => {
   }, [loading, user]);
 
   useEffect(() => {
-    if (user && profileChecked && !hasProfile && !onboardingShown && !devMode) {
+    if (user && profileChecked && !hasProfile && !onboardingShown) {
       setOnboardingOpen(true);
       setOnboardingShown(true);
     }
@@ -258,6 +258,7 @@ const AppPage = () => {
               <LeadGeneratorSection
                 onOpenAuth={() => setAuthOpen(true)}
                 onSearchComplete={handleSearchComplete}
+                onBuyCredits={() => setCreditsOpen(true)}
                 viewMode="search"
                 isAdmin={isAdmin}
               />

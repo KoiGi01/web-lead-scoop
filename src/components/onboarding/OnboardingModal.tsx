@@ -1,13 +1,14 @@
 import { useState } from "react";
+import { Building2, Check, Globe2, Loader2, Search, Sparkles, Target } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OnboardingModalProps {
@@ -16,343 +17,309 @@ interface OnboardingModalProps {
   userId: string;
 }
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
 const SERVICE_TYPES = [
+  "Marketing",
   "Web Design",
   "SEO",
-  "Marketing",
+  "Lead Generation",
   "Automation",
-  "Ads",
-  "Branding",
+  "Consulting",
 ];
 
 const CLIENT_TYPES = [
-  { value: "local_businesses", label: "Local businesses" },
-  { value: "ecommerce", label: "Ecommerce stores" },
-  { value: "agencies", label: "Agencies" },
-  { value: "any", label: "Any business" },
+  { value: "local_businesses", label: "Local businesses", icon: Building2 },
+  { value: "ecommerce", label: "Online stores", icon: Globe2 },
+  { value: "agencies", label: "Agencies", icon: Target },
+  { value: "any", label: "Any good-fit business", icon: Sparkles },
 ];
 
 const PRICING_TIERS = [
-  { value: "budget", label: "Budget", description: "Under $1,000" },
-  { value: "mid_tier", label: "Mid-tier", description: "$1k – $5k" },
-  { value: "premium", label: "Premium", description: "$5k+" },
+  { value: "budget", label: "Starter", description: "Lower-ticket offers" },
+  { value: "mid_tier", label: "Growth", description: "Mid-ticket projects" },
+  { value: "premium", label: "Premium", description: "High-value deals" },
 ];
 
-export function OnboardingModal({
-  open,
-  onClose,
-  userId,
-}: OnboardingModalProps) {
+export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serviceType, setServiceType] = useState("");
+  const [serviceOther, setServiceOther] = useState("");
+  const [clientType, setClientType] = useState("");
+  const [pricingTier, setPricingTier] = useState("");
+  const [location, setLocation] = useState("");
+  const [sellsOnline, setSellsOnline] = useState(true);
 
-  // Form state
-  const [serviceType, setServiceType] = useState<string>("");
-  const [serviceOther, setServiceOther] = useState<string>("");
-  const [clientType, setClientType] = useState<string>("");
-  const [pricingTier, setPricingTier] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
-  const [sellsOnline, setSellsOnline] = useState<boolean>(false);
+  const finalServiceType = serviceType === "Other" ? serviceOther.trim() : serviceType;
+  const canContinue =
+    (step === 1 && Boolean(finalServiceType)) ||
+    (step === 2 && Boolean(clientType)) ||
+    (step === 3 && Boolean(pricingTier));
 
-  const handleNext = () => {
-    if (step < 4) {
-      setStep((step + 1) as Step);
-      setError(null);
-    }
-  };
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep((step - 1) as Step);
-      setError(null);
-    }
-  };
-
-  const handleSkip = async () => {
-    // Skip step 4 and save with defaults
-    await handleSave();
-  };
-
-  const handleSave = async () => {
+  const saveProfile = async (skip = false) => {
     try {
       setSaving(true);
       setError(null);
 
-      // Validate required fields
-      if (!serviceType || !clientType || !pricingTier) {
-        setError("Please complete all required fields");
-        setSaving(false);
+      const profile = {
+        id: userId,
+        service_type: skip ? "Lead research" : finalServiceType,
+        service_other: !skip && serviceType === "Other" ? serviceOther.trim() : null,
+        client_type: skip ? "any" : clientType,
+        pricing_tier: skip ? "mid_tier" : pricingTier,
+        location: location.trim() || null,
+        sells_online: sellsOnline,
+      };
+
+      if (!profile.service_type || !profile.client_type || !profile.pricing_tier) {
+        setError("Choose one option to continue.");
         return;
       }
 
-      const finalServiceType =
-        serviceType === "Other" ? serviceOther : serviceType;
-
-      if (!finalServiceType) {
-        setError("Please specify a service type");
-        setSaving(false);
-        return;
-      }
-
-      const { error: insertError } = await supabase
-        .from("user_profiles")
-        .upsert({
-          id: userId,
-          service_type: finalServiceType,
-          service_other: serviceType === "Other" ? serviceOther : null,
-          client_type: clientType,
-          pricing_tier: pricingTier,
-          location: location || null,
-          sells_online: sellsOnline,
-        });
-
+      const { error: insertError } = await supabase.from("user_profiles").upsert(profile);
       if (insertError) {
         setError(insertError.message);
-        setSaving(false);
         return;
       }
 
-      setSaving(false);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save profile");
+      setError(err instanceof Error ? err.message : "Failed to save your setup.");
+    } finally {
       setSaving(false);
     }
   };
 
-  const isStep1Valid = serviceType && (serviceType !== "Other" || serviceOther);
-  const isStep2Valid = clientType;
-  const isStep3Valid = pricingTier;
+  const handleNext = () => {
+    if (!canContinue) {
+      setError("Choose one option to continue.");
+      return;
+    }
+
+    if (step < 3) {
+      setStep((step + 1) as Step);
+      setError(null);
+      return;
+    }
+
+    void saveProfile();
+  };
+
+  const handleBack = () => {
+    setStep((current) => Math.max(1, current - 1) as Step);
+    setError(null);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border border-cream-100/10 bg-petrol-800">
-        {/* Header gradient */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-wine-700 to-wine-500" />
-
-        <div className="p-6 sm:p-8">
-          {/* Progress dots */}
-          <div className="flex gap-2 mb-8 justify-center">
-            {[1, 2, 3, 4].map((s) => (
-              <div
-                key={s}
-                className={`h-2 rounded-full transition-all ${
-                  s <= step ? "bg-wine-700 w-8" : "bg-cream-100/10 w-2"
-                }`}
-              />
-            ))}
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && !saving && void saveProfile(true)}>
+      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#EFEDE6]/10 bg-black p-0 text-[#EFEDE6] shadow-2xl sm:max-w-xl">
+        <div className="h-1 w-full bg-[#F5FF3D]" />
+        <div className="p-5 sm:p-7">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="flex gap-1.5">
+              {[1, 2, 3].map((item) => (
+                <span
+                  key={item}
+                  className={`h-1.5 rounded-full transition-all ${
+                    item <= step ? "w-8 bg-[#F5FF3D]" : "w-3 bg-[#EFEDE6]/15"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => void saveProfile(true)}
+              disabled={saving}
+              className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:text-[#EFEDE6] disabled:opacity-50"
+            >
+              Skip
+            </button>
           </div>
 
-          <DialogHeader className="mb-6 text-center">
-            <DialogTitle className="text-2xl font-heading font-bold text-cream-100">
-              {step === 1 && "What service do you offer?"}
-              {step === 2 && "Who is your ideal client?"}
-              {step === 3 && "Your pricing range per project?"}
-              {step === 4 && "Almost there! (Optional)"}
+          <DialogHeader className="mb-6 text-left">
+            <DialogTitle className="font-display text-2xl font-black text-[#EFEDE6]">
+              {step === 1 && "What do you sell?"}
+              {step === 2 && "Who should we help you find?"}
+              {step === 3 && "Set your search defaults"}
             </DialogTitle>
-            <DialogDescription className="text-cream-300 mt-2">
-              {step === 1 &&
-                "This helps us personalize pitch angles for your leads"}
-              {step === 2 && "We'll tailor recommendations to your focus"}
-              {step === 3 && "This affects which opportunities we highlight"}
-              {step === 4 && "Location and service type will improve personalization"}
+            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+              {step === 1 && "This helps rank leads around the kind of work you actually want."}
+              {step === 2 && "Pick the buyer type closest to your first campaign."}
+              {step === 3 && "You can still search any niche or country later."}
             </DialogDescription>
           </DialogHeader>
 
-          {/* Step 1: Service Type */}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {SERVICE_TYPES.map((service) => (
                   <button
                     key={service}
+                    type="button"
                     onClick={() => {
                       setServiceType(service);
                       setServiceOther("");
+                      setError(null);
                     }}
-                    className={`p-4 rounded-xl border-2 transition-all text-left font-semibold ${
+                    className={`min-h-16 border px-3 py-3 text-left text-sm font-semibold transition-colors ${
                       serviceType === service
-                        ? "border-wine-700 bg-wine-700/10 text-wine-500"
-                        : "border-cream-100/10 bg-cream-100/5 text-cream-300 hover:border-cream-100/20"
+                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
+                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
                     }`}
                   >
+                    {serviceType === service && <Check className="mb-2 h-3.5 w-3.5" />}
                     {service}
                   </button>
                 ))}
               </div>
 
-              {/* Other input */}
-              <div>
-                <button
-                  onClick={() => setServiceType("Other")}
-                  className={`w-full p-4 rounded-xl border-2 transition-all text-left font-semibold ${
-                    serviceType === "Other"
-                      ? "border-wine-700 bg-wine-700/10 text-wine-500"
-                      : "border-cream-100/10 bg-cream-100/5 text-cream-300 hover:border-cream-100/20"
-                  }`}
-                >
-                  Other
-                </button>
-                {serviceType === "Other" && (
-                  <input
-                    type="text"
-                    placeholder="Specify your service..."
-                    value={serviceOther}
-                    onChange={(e) => setServiceOther(e.target.value)}
-                    className="mt-2 w-full px-3 py-2 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30 outline-none"
-                  />
-                )}
-              </div>
-            </div>
-          )}
+              <button
+                type="button"
+                onClick={() => {
+                  setServiceType("Other");
+                  setError(null);
+                }}
+                className={`w-full border px-3 py-3 text-left text-sm font-semibold transition-colors ${
+                  serviceType === "Other"
+                    ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
+                    : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                }`}
+              >
+                Other
+              </button>
 
-          {/* Step 2: Client Type */}
-          {step === 2 && (
-            <div className="space-y-3">
-              {CLIENT_TYPES.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setClientType(option.value)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                    clientType === option.value
-                      ? "border-wine-700 bg-wine-700/10"
-                      : "border-cream-100/10 bg-cream-100/5 hover:border-cream-100/20"
-                  }`}
-                >
-                  <div
-                    className={`font-semibold ${
-                      clientType === option.value
-                        ? "text-wine-500"
-                        : "text-cream-300"
-                    }`}
-                  >
-                    {option.label}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Step 3: Pricing Tier */}
-          {step === 3 && (
-            <div className="grid grid-cols-3 gap-3">
-              {PRICING_TIERS.map((tier) => (
-                <button
-                  key={tier.value}
-                  onClick={() => setPricingTier(tier.value)}
-                  className={`p-4 rounded-xl border-2 transition-all text-center ${
-                    pricingTier === tier.value
-                      ? "border-wine-700 bg-wine-700/10"
-                      : "border-cream-100/10 bg-cream-100/5 hover:border-cream-100/20"
-                  }`}
-                >
-                  <div
-                    className={`font-semibold text-sm ${
-                      pricingTier === tier.value
-                        ? "text-wine-500"
-                        : "text-cream-300"
-                    }`}
-                  >
-                    {tier.label}
-                  </div>
-                  <div className="text-xs text-cream-300 mt-1">
-                    {tier.description}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Step 4: Optional Details */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-cream-300 mb-2">
-                  Location (optional)
-                </label>
+              {serviceType === "Other" && (
                 <input
                   type="text"
-                  placeholder="e.g., Miami, FL or New York"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30 outline-none text-sm"
+                  autoFocus
+                  placeholder="Example: commercial cleaning, recruiting, software"
+                  value={serviceOther}
+                  onChange={(event) => setServiceOther(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
                 />
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-cream-100/5 border border-cream-100/10">
-                <input
-                  type="checkbox"
-                  id="sells_online"
-                  checked={sellsOnline}
-                  onChange={(e) => setSellsOnline(e.target.checked)}
-                  className="w-4 h-4 cursor-pointer"
-                />
-                <label
-                  htmlFor="sells_online"
-                  className="flex-1 text-sm text-cream-300 cursor-pointer"
-                >
-                  I provide online services (not location-specific)
-                </label>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Error message */}
+          {step === 2 && (
+            <div className="grid gap-2">
+              {CLIENT_TYPES.map((option) => {
+                const Icon = option.icon;
+                const selected = clientType === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setClientType(option.value);
+                      setError(null);
+                    }}
+                    className={`flex min-h-14 items-center gap-3 border px-3 py-3 text-left transition-colors ${
+                      selected
+                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
+                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm font-semibold">{option.label}</span>
+                    {selected && <Check className="ml-auto h-4 w-4" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-5">
+              <div className="grid gap-2 sm:grid-cols-3">
+                {PRICING_TIERS.map((tier) => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => {
+                      setPricingTier(tier.value);
+                      setError(null);
+                    }}
+                    className={`min-h-24 border p-3 text-left transition-colors ${
+                      pricingTier === tier.value
+                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10"
+                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] hover:border-[#EFEDE6]/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-bold text-[#EFEDE6]">{tier.label}</span>
+                      {pricingTier === tier.value && <Check className="h-4 w-4 text-[#F5FF3D]" />}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[#A8A59C]">{tier.description}</p>
+                  </button>
+                ))}
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                  Preferred market
+                </span>
+                <input
+                  type="text"
+                  placeholder="Example: United States, Mexico, Miami"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                />
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-3 border border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] p-3 text-sm text-[#A8A59C]">
+                <input
+                  type="checkbox"
+                  checked={sellsOnline}
+                  onChange={(event) => setSellsOnline(event.target.checked)}
+                  className="h-4 w-4 accent-[#F5FF3D]"
+                />
+                I can work with customers outside my local area
+              </label>
+            </div>
+          )}
+
           {error && (
-            <div className="mt-4 p-3 rounded-lg bg-wine-700/10 border border-wine-700/30 text-sm text-wine-300">
+            <div className="mt-5 border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          {/* Navigation buttons */}
-          <div className="mt-8 flex gap-3 justify-between">
-            <button
+          <div className="mt-7 flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="secondary"
               onClick={handleBack}
-              disabled={step === 1}
-              className="px-4 py-2 rounded-full border border-cream-100/20 text-cream-300 hover:text-cream-100 hover:border-cream-100/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+              disabled={step === 1 || saving}
+              className="min-w-24"
             >
               Back
-            </button>
+            </Button>
 
-            <div className="flex gap-2">
-              {step === 4 && (
-                <button
-                  onClick={handleSkip}
-                  disabled={saving}
-                  className="px-4 py-2 rounded-full border border-cream-100/20 text-cream-300 hover:text-cream-100 hover:border-cream-100/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
-                >
-                  Skip
-                </button>
-              )}
-
-              {step < 4 ? (
-                <Button
-                  variant="accent"
-                  className="px-6 py-2 rounded-full font-semibold text-sm"
-                  onClick={handleNext}
-                  disabled={
-                    (step === 1 && !isStep1Valid) ||
-                    (step === 2 && !isStep2Valid) ||
-                    (step === 3 && !isStep3Valid)
-                  }
-                >
-                  Next
-                </Button>
+            <Button
+              type="button"
+              variant="accent"
+              onClick={handleNext}
+              disabled={saving}
+              className="min-w-36"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving
+                </>
+              ) : step === 3 ? (
+                <>
+                  <Search className="h-4 w-4" />
+                  Start Searching
+                </>
               ) : (
-                <Button
-                  variant="accent"
-                  className="px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2"
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saving ? "Saving..." : "Finish Setup"}
-                </Button>
+                "Continue"
               )}
-            </div>
+            </Button>
           </div>
         </div>
       </DialogContent>

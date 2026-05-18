@@ -138,6 +138,7 @@ interface FreeSearchPlannerResponse {
 interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
   onSearchComplete?: () => void;
+  onBuyCredits?: () => void;
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
   isAdmin?: boolean;
@@ -617,7 +618,7 @@ const passesQualityGate = (lead: LeadResult, config: SearchConfig) => {
   return true;
 };
 
-const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search", isAdmin = false }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
 
@@ -996,7 +997,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, viewMode = "search
       return;
     }
     if (!isAdmin && creditsBalance < runCost) {
-      toast({ title: "Insufficient credits", description: `This search costs ${runCost} credits.`, variant: "destructive" });
+      toast({
+        title: "Add credits to continue",
+        description: `This search costs ${runCost} credits. You have ${creditsBalance}.`,
+      });
+      onBuyCredits?.();
       return;
     }
 
