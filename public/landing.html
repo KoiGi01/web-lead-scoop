@@ -88,9 +88,15 @@
   .btn:hover .arrow{transform:translateX(3px)}
   .magnetic{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
   .container{max-width:1320px;margin:0 auto;padding:0 32px;position:relative;z-index:3}
+  .founder-strip{position:relative;z-index:60;border-bottom:1px solid rgba(0,0,0,.28);background:var(--yellow);color:#000}
+  .founder-inner{max-width:1320px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;justify-content:center;gap:18px;text-align:center;font-weight:800;letter-spacing:-.01em}
+  .founder-kicker{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.14em;border:1px solid #000;padding:4px 8px}
+  .founder-text{font-size:15px}
+  .founder-text b{font-weight:900}
+  .founder-link{font-size:13px;border-bottom:2px solid #000;font-weight:900;white-space:nowrap}
 
   /* ===================== HERO ===================== */
-  .hero{padding:96px 0 100px;position:relative;border-bottom:1px solid var(--line)}
+  .hero{padding:72px 0 92px;position:relative;border-bottom:1px solid var(--line)}
   .hero-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:72px;align-items:center}
 
   h1.hero-title{font-family:var(--display);font-weight:800;font-size:clamp(54px, 7.4vw, 116px);line-height:.94;letter-spacing:-.04em;margin-bottom:32px;text-wrap:balance}
@@ -324,6 +330,10 @@
   .plan .btn{justify-content:center;padding:13px;width:100%}
   .price-foot{text-align:center;margin-top:28px;font-size:13px;color:var(--paper-mid)}
   .price-foot b{color:var(--yellow);font-weight:500}
+  .plan-founder{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--yellow);min-height:18px}
+  .plan-price .old{font-size:18px;color:var(--paper-mid);text-decoration:line-through;text-decoration-color:var(--yellow);text-decoration-thickness:2px}
+  .plan-price .founder{color:var(--yellow)}
+  .topup-note{margin-top:18px;text-align:center;font-size:14px;color:var(--paper-dim)}
 
   /* FAQ */
   .faq{padding:140px 0;border-bottom:1px solid var(--line)}
@@ -375,6 +385,8 @@
   }
   @media (max-width:680px){
     .container{padding:0 20px}
+    .founder-inner{padding:10px 20px;gap:8px;flex-direction:column}
+    .founder-text{font-size:13px}
     .nav-links{display:none}
     .nav-inner{grid-template-columns:auto auto}
     .nav-cta .btn:not(.primary){display:none}
@@ -430,7 +442,7 @@
       "name": "How much does GlobaLeads22 cost?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "GlobaLeads22 uses a one-time credit system with no subscription. Free accounts get 30 credits (3 searches). Paid packs: Starter $9 for 100 credits (10 searches), Growth $19 for 300 credits (30 searches), Pro $39 for 700 credits (70 searches). Credits do not expire."
+        "text": "GlobaLeads22 has a free plan with 30 credits. Paid monthly plans are Starter at $19/month with 150 credits, Growth at $49/month with 500 credits, and Pro at $99/month with 1,500 credits. The first 20 founder users get 50% off Starter or Growth for 3 months."
       }
     },
     {
@@ -438,7 +450,7 @@
       "name": "Is GlobaLeads22 free?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. You can sign up for free and get 30 credits — enough for 3 searches — with no credit card required. When you run out of free credits you can purchase a one-time credit pack starting at $9."
+        "text": "Yes. You can sign up for free and get 30 credits with no credit card required. When you need more, you can upgrade to a monthly plan or buy a one-time credit top-up."
       }
     },
     {
@@ -454,7 +466,7 @@
       "name": "How is GlobaLeads22 different from Apollo or Hunter?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "GlobaLeads22 focuses on discovering local and regional businesses via Google Maps rather than searching a pre-built contact database. This makes it useful for finding small and medium businesses that are not in CRM databases like Apollo. It is also more affordable, with no monthly subscription."
+        "text": "GlobaLeads22 focuses on discovering local and regional businesses via Google Maps and the public web rather than searching a pre-built contact database. This makes it useful for finding small and medium businesses that are often missing from large CRM databases."
       }
     },
     {
@@ -481,29 +493,37 @@
     {
       "@type": "Offer",
       "name": "Starter",
-      "price": "9.00",
+      "price": "19.00",
       "priceCurrency": "USD",
-      "description": "100 credits — 10 searches"
+      "description": "150 credits per month"
     },
     {
       "@type": "Offer",
       "name": "Growth",
-      "price": "19.00",
+      "price": "49.00",
       "priceCurrency": "USD",
-      "description": "300 credits — 30 searches"
+      "description": "500 credits per month"
     },
     {
       "@type": "Offer",
       "name": "Pro",
-      "price": "39.00",
+      "price": "99.00",
       "priceCurrency": "USD",
-      "description": "700 credits — 70 searches"
+      "description": "1,500 credits per month"
     }
   ]
 }
 </script>
 </head>
 <body>
+
+<div class="founder-strip">
+  <div class="founder-inner">
+    <span class="founder-kicker">Founder offer</span>
+    <span class="founder-text"><b>First 20 users:</b> 50% off Starter or Growth for 3 months.</span>
+    <a href="https://app.globaleads22.com" target="_top" class="founder-link">Claim a spot</a>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav class="top">
@@ -514,9 +534,7 @@
     </a>
     <div class="nav-links">
       <a href="#how">How it works</a>
-      <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
     </div>
     <div class="nav-cta">
       <a href="https://app.globaleads22.com" target="_top" class="btn">Sign in</a>
@@ -551,20 +569,21 @@
     <div class="hero-grid">
       <div>
         <h1 class="hero-title fadein">
-          Find buyers,<br>not <em>cold lists.</em>
+          Need leads,<br>not another <em>expensive tool?</em>
         </h1>
         <p class="hero-sub fadein">
-          Type a keyword and a city. Walk away in 90 seconds with a <b>ranked sheet of real businesses</b> — websites, public emails, and likely decision makers when available. Built for operators who'd rather close deals than babysit research.
+          Type a keyword and a city. Get a ranked sheet of <b>real businesses</b> with websites, public emails, and likely decision makers when available.
         </p>
         <div class="hero-cta fadein">
-          <a href="https://app.globaleads22.com" target="_top" class="btn primary lg magnetic">Start free — 30 credits <span class="arrow">→</span></a>
-          <a href="#how" class="btn lg">See how it works</a>
+          <a href="https://app.globaleads22.com" target="_top" class="btn primary lg magnetic">Claim founder offer <span class="arrow">→</span></a>
+          <a href="#pricing" class="btn lg">View pricing</a>
         </div>
         <div class="hero-trust fadein">
-          <span class="stars">★★★★★</span>
-          <span><b>4.9 / 5</b> · 312 operators</span>
+          <span><b>30 free credits</b></span>
           <span class="sep">·</span>
-          <span>No credit card</span>
+          <span>No card required</span>
+          <span class="sep">·</span>
+          <span>First 20 founder spots</span>
         </div>
       </div>
 
@@ -628,7 +647,7 @@
 </header>
 
 <!-- MARQUEE -->
-<section class="marquee">
+<section class="marquee" hidden>
   <div class="marquee-lbl">Operating teams using GlobaLeads22</div>
   <div class="marquee-track">
     <span>NORTHBEAM STUDIO</span>
@@ -649,7 +668,7 @@
 </section>
 
 <!-- STATS -->
-<section class="stats-band">
+<section class="stats-band" hidden>
   <div class="container">
     <div class="head">
       <div class="left fadein">
@@ -718,7 +737,7 @@
 </section>
 
 <!-- FEATURES -->
-<section class="features" id="features">
+<section class="features" id="features" hidden>
   <div class="container">
     <div class="section-head">
       <div class="left fadein">
@@ -808,7 +827,7 @@
 </section>
 
 <!-- QUOTE -->
-<section class="quote-section">
+<section class="quote-section" hidden>
   <div class="container">
     <div class="quote-grid">
       <div class="fadein">
@@ -830,61 +849,65 @@
   <div class="container">
     <div class="section-head">
       <div class="left fadein">
-        <h2>Pay for what you <em>extract</em>.</h2>
+        <h2>Founder pricing for the <em>first 20</em>.</h2>
       </div>
-      <div class="right fadein"><p>One-time credit packs. No monthly lock-in. Normal searches start at 5 credits, and Search + Enrich starts at 10 credits. Credits never expire.</p></div>
+      <div class="right fadein"><p>Start free with 30 credits. Upgrade when you need full search quality, exports, workflow tools, or team access. Founder discount applies automatically to Starter and Growth while spots remain.</p></div>
     </div>
 
     <div class="price-grid">
       <div class="plan fadein">
         <div class="plan-tag"><span>Starter</span><span>For solo operators</span></div>
         <div class="plan-name">Starter</div>
-        <div class="plan-price"><b>$9</b><small>one-time</small></div>
-        <div class="plan-credits"><b>100 credits</b> · ~10 searches</div>
+        <div class="plan-founder">Founder: $9.50/mo for 3 months</div>
+        <div class="plan-price"><span class="old">$19</span><b class="founder">$9.50</b><small>/mo</small></div>
+        <div class="plan-credits"><b>150 credits/month</b> · ~15 searches</div>
         <ul>
           <li>Full discovery + enrichment</li>
-          <li>Email, LinkedIn, WhatsApp</li>
-          <li>AI intel scoring (per unlock)</li>
+          <li>Public emails, websites, phones</li>
+          <li>AI lead scoring</li>
           <li>Excel export</li>
-          <li class="muted">Priority queue</li>
+          <li>Saved searches</li>
         </ul>
-        <a href="https://app.globaleads22.com?bundle=starter" target="_top" class="btn">Buy Starter</a>
+        <a href="https://app.globaleads22.com" target="_top" class="btn">Start Starter</a>
       </div>
       <div class="plan feat fadein" style="transition-delay:.1s">
         <div class="plan-tag"><span>Growth</span><span class="pop">Popular</span></div>
         <div class="plan-name"><em>Growth</em></div>
-        <div class="plan-price"><b>$19</b><small>one-time</small></div>
-        <div class="plan-credits"><b>300 credits</b> · ~30 searches</div>
+        <div class="plan-founder">Founder: $24.50/mo for 3 months</div>
+        <div class="plan-price"><span class="old">$49</span><b class="founder">$24.50</b><small>/mo</small></div>
+        <div class="plan-credits"><b>500 credits/month</b> · ~50 searches</div>
         <ul>
           <li>Everything in Starter</li>
-          <li>Bulk intel-unlock</li>
-          <li>Sort &amp; filter — score, email, name</li>
-          <li>Persistent search history</li>
-          <li>Priority queue</li>
+          <li>Lead inbox and pipeline workflow</li>
+          <li>Follow-ups, notes, status, priority</li>
+          <li>Bulk actions and better exports</li>
+          <li>Best plan for active prospecting</li>
         </ul>
-        <a href="https://app.globaleads22.com?bundle=growth" target="_top" class="btn primary magnetic">Buy Growth →</a>
+        <a href="https://app.globaleads22.com" target="_top" class="btn primary magnetic">Claim Growth →</a>
       </div>
       <div class="plan fadein" style="transition-delay:.2s">
         <div class="plan-tag"><span>Pro</span><span>For agencies</span></div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price"><b>$39</b><small>one-time</small></div>
-        <div class="plan-credits"><b>700 credits</b> · ~70 searches</div>
+        <div class="plan-founder">Team plan</div>
+        <div class="plan-price"><b>$99</b><small>/mo</small></div>
+        <div class="plan-credits"><b>1,500 credits/month</b> · ~150 searches</div>
         <ul>
           <li>Everything in Growth</li>
-          <li>Best $/credit ratio</li>
-          <li>Higher concurrent searches</li>
-          <li>Email support · 24h SLA</li>
-          <li>Early access to API</li>
+          <li>Organization and 3 shared seats</li>
+          <li>Priority support</li>
+          <li>Early feature access</li>
+          <li>Best for teams and agencies</li>
         </ul>
-        <a href="https://app.globaleads22.com?bundle=pro" target="_top" class="btn">Buy Pro</a>
+        <a href="https://app.globaleads22.com" target="_top" class="btn">Start Pro</a>
       </div>
     </div>
-    <p class="price-foot">Every account starts with <b>30 free credits</b> — no card required.</p>
+    <p class="price-foot">Every account starts with <b>30 free credits</b> - no card required. Top-ups stay available when you need extra credits.</p>
+    <p class="topup-note">Top-ups: $10 for 100 credits, $25 for 300 credits, $59 for 800 credits.</p>
   </div>
 </section>
 
 <!-- FAQ -->
-<section class="faq" id="faq">
+<section class="faq" id="faq" hidden>
   <div class="container">
     <div class="section-head">
       <div class="left fadein">
@@ -896,7 +919,7 @@
       <details class="qa fadein"><summary><span>Where do the leads come from?</span><span class="qchev">+</span></summary><div class="qa-body">Public Google Maps results plus a focused crawl of the company's own site and indexed social pages. Nothing behind logins, nothing scraped from gated databases.</div></details>
       <details class="qa fadein"><summary><span>How accurate are the emails?</span><span class="qchev">+</span></summary><div class="qa-body">~91% deliverable on average across our last 30 days. Role inboxes (info@, contact@) and burner addresses are flagged separately so you can route them differently.</div></details>
       <details class="qa fadein"><summary><span>Is this GDPR-compliant?</span><span class="qchev">+</span></summary><div class="qa-body">We only surface data already published on the public web by the businesses themselves. You're responsible for outreach compliance in your jurisdiction — we link straight to source pages so it's auditable.</div></details>
-      <details class="qa fadein"><summary><span>Do credits expire?</span><span class="qchev">+</span></summary><div class="qa-body">No. Buy a pack, burn it on your timeline. There are no auto-renewals, no recurring charges, and no "use it or lose it" clauses.</div></details>
+      <details class="qa fadein"><summary><span>Do credits expire?</span><span class="qchev">+</span></summary><div class="qa-body">Subscription credits refresh monthly. One-time top-up credits remain available while your account is active.</div></details>
       <details class="qa fadein"><summary><span>Can I export to my CRM?</span><span class="qchev">+</span></summary><div class="qa-body">Yes — every search exports as a clean .xlsx with stable columns. Native HubSpot, Pipedrive and Zapier integrations are on the roadmap.</div></details>
       <details class="qa fadein"><summary><span>What's the refund policy?</span><span class="qchev">+</span></summary><div class="qa-body">Credits are restored when a search fails because of a technical issue on our side. Purchased credits are otherwise non-refundable except where required by law.</div></details>
     </div>
@@ -908,14 +931,14 @@
   <div class="cta-bg" id="ctaBg" aria-hidden="true">22</div>
   <div class="container">
     <div class="cta-inner">
-      <h2 class="fadein">Run your first search<br>in <em>90 seconds</em>.</h2>
-      <p class="fadein">Two fields. One button. Walk away with a ranked sheet of qualified leads — or close the tab. No demo call, no Slack onboarding.</p>
+      <h2 class="fadein">Claim one of the first<br><em>20 founder spots</em>.</h2>
+      <p class="fadein">Start free, run a real search, then upgrade only if the leads are useful. Founder pricing is applied automatically in the app while spots remain.</p>
       <div class="cta-btns fadein">
-        <a href="https://app.globaleads22.com" target="_top" class="btn primary lg magnetic">Start free — 30 credits <span class="arrow">→</span></a>
+        <a href="https://app.globaleads22.com" target="_top" class="btn primary lg magnetic">Start free - 30 credits <span class="arrow">→</span></a>
         <a href="#pricing" class="btn lg">View pricing</a>
       </div>
       <div class="cta-foot fadein">
-        <span>No credit card</span><span>30-second setup</span><span>Credits never expire</span><span>Failed-search restore</span>
+        <span>No credit card</span><span>30-second setup</span><span>Founder discount</span><span>Top-ups available</span>
       </div>
     </div>
   </div>
@@ -929,9 +952,9 @@
         <a href="/" class="logo"><img src="/logo.png" alt="GlobaLeads22" class="logo-img"><span class="logo-text">GlobaLeads<sup>22</sup></span></a>
         <p class="blurb">B2B prospecting for operators who'd rather close deals than babysit scrapers.</p>
       </div>
-      <div><h5>Product</h5><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li></ul></div>
-      <div><h5>Company</h5><ul><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Contact</a></li><li><a href="#">Status</a></li></ul></div>
-      <div><h5>Legal</h5><ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="#">DPA</a></li><li><a href="#">Security</a></li></ul></div>
+      <div><h5>Product</h5><ul><li><a href="#how">How it works</a></li><li><a href="#pricing">Pricing</a></li><li><a href="https://app.globaleads22.com">Start free</a></li></ul></div>
+      <div><h5>Company</h5><ul><li><a href="mailto:support@globaleads22.com">Contact</a></li><li><a href="https://app.globaleads22.com">Sign in</a></li></ul></div>
+      <div><h5>Legal</h5><ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul></div>
     </div>
     <div class="foot-bottom">
       <span>© 2026 GlobaLeads22. All rights reserved.</span>
