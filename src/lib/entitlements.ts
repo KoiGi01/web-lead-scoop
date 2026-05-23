@@ -5,9 +5,9 @@ export const PLAN_ORDER: PlanKey[] = ["free", "starter", "growth", "pro"];
 
 export const PLAN_CREDITS: Record<PlanKey, number> = {
   free: 30,
-  starter: 100,
-  growth: 300,
-  pro: 700,
+  starter: 150,
+  growth: 500,
+  pro: 1500,
 };
 
 export const PLAN_LABELS: Record<PlanKey, string> = {

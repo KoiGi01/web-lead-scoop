@@ -19,9 +19,9 @@ type PlanKey = "free" | "starter" | "growth" | "pro";
 
 const PLAN_CREDITS: Record<PlanKey, number> = {
   free: 30,
-  starter: 100,
-  growth: 300,
-  pro: 700,
+  starter: 150,
+  growth: 500,
+  pro: 1500,
 };
 
 const isPlanKey = (value: unknown): value is PlanKey =>

@@ -10,7 +10,7 @@ const TermsOfService = () => {
                 </Link>
 
                 <h1 className="text-4xl font-bold mb-2">Terms of Service</h1>
-                <p className="text-muted-foreground mb-10">Last updated: April 28, 2026</p>
+                <p className="text-muted-foreground mb-10">Last updated: May 23, 2026</p>
 
                 <div className="prose prose-invert max-w-none space-y-8 text-muted-foreground leading-relaxed">
 
@@ -43,8 +43,8 @@ const TermsOfService = () => {
 
                     <section>
                         <h2 className="text-xl font-semibold text-foreground mb-3">5. Credits and Payments</h2>
-                        <p>The Service operates on a credit system. Credits are purchased as one-time payments — there are no automatic renewals or subscriptions. Credits do not expire. All payments are processed by Stripe and are subject to their terms at stripe.com/legal.</p>
-                        <p className="mt-2">Credits are non-refundable once purchased, except where required by applicable law. If a search fails due to a technical error on our side, credits will be restored to your account. Contact support@globaleads22.com within 14 days of a failed search to request a credit restore.</p>
+                        <p>The Service operates on a hybrid subscription and credit system. Paid plans renew monthly unless canceled and include monthly credits and plan-based feature access. One-time credit top-ups may also be purchased for additional usage. All payments are processed by Stripe and are subject to their terms at stripe.com/legal.</p>
+                        <p className="mt-2">Credits and subscription payments are non-refundable once purchased, except where required by applicable law. If a search fails due to a technical error on our side, credits will be restored to your account. Contact support@globaleads22.com within 14 days of a failed search to request a credit restore.</p>
                     </section>
 
                     <section>

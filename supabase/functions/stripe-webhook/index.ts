@@ -11,9 +11,9 @@ if (!supabaseUrl || !supabaseServiceKey || !stripeWebhookSecret) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const PLAN_CREDITS_MAP: Record<string, number> = {
-  starter: 100,
-  growth: 300,
-  pro: 700,
+  starter: 150,
+  growth: 500,
+  pro: 1500,
 };
 
 // Verify Stripe webhook signature

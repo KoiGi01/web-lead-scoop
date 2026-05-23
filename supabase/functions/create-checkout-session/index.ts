@@ -12,6 +12,7 @@ const stripeSubscriptionPricePro = Deno.env.get("STRIPE_SUBSCRIPTION_PRICE_PRO")
 const stripeTopupPriceStarter = Deno.env.get("STRIPE_TOPUP_PRICE_STARTER") || stripePriceStarter;
 const stripeTopupPriceGrowth = Deno.env.get("STRIPE_TOPUP_PRICE_GROWTH") || stripePriceGrowth;
 const stripeTopupPricePro = Deno.env.get("STRIPE_TOPUP_PRICE_PRO") || stripePricePro;
+const stripeFounderCouponId = Deno.env.get("STRIPE_FOUNDER_COUPON_ID");
 
 if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey || !stripePriceStarter || !stripePriceGrowth || !stripePricePro) {
   throw new Error("Missing required environment variables");
@@ -20,15 +21,15 @@ if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey || !stripePriceStart
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const PLAN_CREDITS_MAP: Record<string, number> = {
-  starter: 100,
-  growth: 300,
-  pro: 700,
+  starter: 150,
+  growth: 500,
+  pro: 1500,
 };
 
 const TOPUP_CREDITS_MAP: Record<string, number> = {
   starter: 100,
   growth: 300,
-  pro: 700,
+  pro: 800,
 };
 
 const SUBSCRIPTION_PRICE_MAP: Record<string, string> = {
@@ -139,6 +140,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const existingCustomerId = creditsData?.stripe_customer_id || null;
 
+    const applyFounderCoupon = isSubscription && (key === "starter" || key === "growth")
+      ? await hasFounderCouponRedemptions()
+      : false;
+
     // Create Stripe Checkout Session
     const checkoutData: Record<string, unknown> = {
       mode: isSubscription ? "subscription" : "payment",
@@ -156,12 +161,15 @@ const handler = async (req: Request): Promise<Response> => {
         plan_key: key,
         bundle_key: key,
         credits: credits.toString(),
+        founder_discount: applyFounderCoupon ? "true" : "false",
       },
+      discounts: applyFounderCoupon ? [{ coupon: stripeFounderCouponId }] : undefined,
       subscription_data: isSubscription ? {
         metadata: {
           user_id: userId,
           plan_key: key,
           included_credits: credits.toString(),
+          founder_discount: applyFounderCoupon ? "true" : "false",
         },
       } : undefined,
     };
@@ -206,6 +214,25 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 };
+
+async function hasFounderCouponRedemptions(): Promise<boolean> {
+  if (!stripeFounderCouponId) return false;
+
+  try {
+    const response = await fetch(`https://api.stripe.com/v1/coupons/${stripeFounderCouponId}`, {
+      headers: { Authorization: `Bearer ${stripeSecretKey}` },
+    });
+    if (!response.ok) return false;
+
+    const coupon = await response.json();
+    if (!coupon.valid) return false;
+    if (typeof coupon.max_redemptions !== "number") return true;
+    return (coupon.times_redeemed || 0) < coupon.max_redemptions;
+  } catch (error) {
+    console.error("Founder coupon lookup failed:", error);
+    return false;
+  }
+}
 
 // Helper to flatten nested objects for URLSearchParams
 function flattenObject(obj: Record<string, unknown>, prefix = ""): Record<string, string> {

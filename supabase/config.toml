@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.founder-offer]
+verify_jwt = false
