@@ -13,6 +13,7 @@ type StripePayment = Tables<"stripe_payments">;
 
 interface AdminDashboardProps {
   onBackToSearch: () => void;
+  onUserCreditsChanged?: () => void;
 }
 
 interface AdminUserRow {
@@ -61,7 +62,7 @@ const formatDate = (value: string | null) => {
   return Number.isNaN(date.getTime()) ? "Never" : dateFmt.format(date);
 };
 
-const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
+const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboardProps) => {
   const [usageEvents, setUsageEvents] = useState<UsageEvent[]>([]);
   const [creditTransactions, setCreditTransactions] = useState<CreditTransaction[]>([]);
   const [searchSessions, setSearchSessions] = useState<SearchSession[]>([]);
@@ -185,6 +186,7 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
       if (error || data?.error) throw new Error(error?.message || data?.error || "Update failed");
       toast({ title: "User updated", description: selectedUser.email });
       await loadDashboard();
+      onUserCreditsChanged?.();
     } catch (error) {
       toast({
         title: "Admin update failed",
@@ -261,8 +263,8 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
           ))}
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="self-start overflow-hidden border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
             <div className="flex flex-col gap-3 border-b border-[#EFEDE6]/10 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-[#F5FF3D]" />
@@ -278,7 +280,7 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
                 />
               </label>
             </div>
-            <div className="max-h-[520px] overflow-y-auto overflow-x-hidden">
+            <div className="max-h-[calc(100vh-360px)] overflow-y-auto overflow-x-hidden">
               <table className="w-full table-fixed text-left">
                 <colgroup>
                   <col className="w-[24%]" />

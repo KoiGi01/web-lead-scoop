@@ -299,7 +299,13 @@ const AppPage = () => {
                 onOrganizationCreated={() => entitlements.refetch()}
               />
             ) : (
-              <AdminDashboard onBackToSearch={() => setViewMode("search")} />
+              <AdminDashboard
+                onBackToSearch={() => setViewMode("search")}
+                onUserCreditsChanged={() => {
+                  refetchCredits();
+                  entitlements.refetch();
+                }}
+              />
             )}
           </ErrorBoundary>
         </main>
