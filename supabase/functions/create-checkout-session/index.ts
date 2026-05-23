@@ -189,7 +189,9 @@ const handler = async (req: Request): Promise<Response> => {
       checkoutData.customer = existingCustomerId;
     } else {
       checkoutData.customer_email = authUser.user.email;
-      checkoutData.customer_creation = "always";
+      if (!isSubscription) {
+        checkoutData.customer_creation = "always";
+      }
     }
 
     const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
