@@ -14,7 +14,17 @@ const stripeTopupPriceGrowth = Deno.env.get("STRIPE_TOPUP_PRICE_GROWTH") || stri
 const stripeTopupPricePro = Deno.env.get("STRIPE_TOPUP_PRICE_PRO") || stripePricePro;
 const stripeFounderCouponId = Deno.env.get("STRIPE_FOUNDER_COUPON_ID");
 
-if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey || !stripePriceStarter || !stripePriceGrowth || !stripePricePro) {
+if (
+  !supabaseUrl ||
+  !supabaseServiceKey ||
+  !stripeSecretKey ||
+  !stripeSubscriptionPriceStarter ||
+  !stripeSubscriptionPriceGrowth ||
+  !stripeSubscriptionPricePro ||
+  !stripeTopupPriceStarter ||
+  !stripeTopupPriceGrowth ||
+  !stripeTopupPricePro
+) {
   throw new Error("Missing required environment variables");
 }
 
@@ -91,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
     const priceId = isSubscription ? SUBSCRIPTION_PRICE_MAP[key] : TOPUP_PRICE_MAP[key];
 
     if (!credits || !priceId) {
-      return new Response(JSON.stringify({ error: "Invalid checkout key" }), {
+      return new Response(JSON.stringify({ error: "Invalid checkout key", key, checkoutType }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -194,7 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!stripeResponse.ok) {
       const error = await stripeResponse.text();
       console.error("Stripe API error:", stripeResponse.status, error);
-      return new Response(JSON.stringify({ error: "Failed to create checkout session" }), {
+      return new Response(JSON.stringify({ error: "Failed to create checkout session", status: stripeResponse.status }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
