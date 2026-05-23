@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCredits } from "@/hooks/useCredits";
+import { useEntitlements } from "@/hooks/useEntitlements";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
 import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
+import { getIncludedCredits } from "@/lib/entitlements";
 import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
@@ -23,13 +25,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
 
-const PLAN_CREDITS: Record<string, number> = {
-  free: 30,
-  starter: 100,
-  growth: 300,
-  pro: 700,
-};
-
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
 
@@ -41,6 +36,7 @@ const AppPage = () => {
   const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { isAdmin } = useAdmin(user?.id);
+  const entitlements = useEntitlements(user?.id, creditsPlan, isAdmin);
   const { history: searchHistory, loading: searchHistoryLoading, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
@@ -77,12 +73,15 @@ const AppPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.get('checkout') === 'success') {
+    if (params.get('checkout') === 'success' || params.get('checkout') === 'subscription_success') {
       toast({
-        title: "Credits added!",
-        description: "Your credits have been added to your account.",
+        title: params.get('checkout') === 'subscription_success' ? "Plan activated!" : "Credits added!",
+        description: params.get('checkout') === 'subscription_success'
+          ? "Your plan and credits have been updated."
+          : "Your credits have been added to your account.",
       });
       refetchCredits();
+      entitlements.refetch();
       window.history.replaceState({}, '', window.location.pathname);
     }
 
@@ -148,7 +147,7 @@ const AppPage = () => {
     await refetchProfile();
   };
 
-  const handleBuyCredits = async (bundleKey: string) => {
+  const handleBuyCredits = async (bundleKey: string, checkoutType: "topup" | "subscription" = "topup") => {
     if (!user) {
       setAuthOpen(true);
       return;
@@ -157,7 +156,7 @@ const AppPage = () => {
     setCheckoutLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { bundleKey, userId: user.id },
+        body: { bundleKey, planKey: bundleKey, checkoutType, userId: user.id },
       });
 
       if (error || !data?.url) {
@@ -182,7 +181,7 @@ const AppPage = () => {
     }
   };
 
-  const planCredits = PLAN_CREDITS[creditsPlan] ?? 50;
+  const planCredits = entitlements.includedCredits || getIncludedCredits(creditsPlan);
 
   return (
     <div className={`app-theme ${theme === "light" ? "app-light light" : "app-dark dark"} h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]`}>
@@ -261,6 +260,7 @@ const AppPage = () => {
                 onBuyCredits={() => setCreditsOpen(true)}
                 viewMode="search"
                 isAdmin={isAdmin}
+                effectivePlan={entitlements.effectivePlan}
               />
             ) : viewMode === "lead-inbox" ? (
               <ViewAllLeads
@@ -290,8 +290,13 @@ const AppPage = () => {
                 creditsBalance={creditsBalance}
                 creditsTotal={planCredits}
                 isAdmin={isAdmin}
+                plan={entitlements.effectivePlan}
+                organizationName={entitlements.organizationName}
+                organizationId={entitlements.organizationId}
+                canCreateOrganization={entitlements.canCreateOrganization}
                 onBuyCredits={() => setCreditsOpen(true)}
                 onSignOut={signOut}
+                onOrganizationCreated={() => entitlements.refetch()}
               />
             ) : (
               <AdminDashboard onBackToSearch={() => setViewMode("search")} />
@@ -304,7 +309,7 @@ const AppPage = () => {
       <CreditsModal
         open={creditsOpen}
         onClose={() => setCreditsOpen(false)}
-        onSelectBundle={(bundleKey) => { setCreditsOpen(false); handleBuyCredits(bundleKey); }}
+        onSelectBundle={(bundleKey, checkoutType) => { setCreditsOpen(false); handleBuyCredits(bundleKey, checkoutType); }}
         loading={checkoutLoading}
       />
       {user && (

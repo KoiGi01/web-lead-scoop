@@ -23,6 +23,7 @@ export type Database = {
           pricing_tier: string
           location: string | null
           sells_online: boolean
+          company_name: string | null
           created_at: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           pricing_tier: string
           location?: string | null
           sells_online?: boolean
+          company_name?: string | null
           created_at?: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           pricing_tier?: string
           location?: string | null
           sells_online?: boolean
+          company_name?: string | null
           created_at?: string
         }
       }
@@ -82,6 +85,14 @@ export type Database = {
           balance: number
           plan: string
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string
+          current_period_start: string | null
+          current_period_end: string | null
+          included_monthly_credits: number
+          monthly_credits_reset_at: string | null
+          plan_source: string
+          organization_id: string | null
           created_at: string
           updated_at: string
         }
@@ -91,6 +102,14 @@ export type Database = {
           balance?: number
           plan?: string
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          included_monthly_credits?: number
+          monthly_credits_reset_at?: string | null
+          plan_source?: string
+          organization_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -100,8 +119,135 @@ export type Database = {
           balance?: number
           plan?: string
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          included_monthly_credits?: number
+          monthly_credits_reset_at?: string | null
+          plan_source?: string
+          organization_id?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          owner_user_id: string
+          plan: string
+          seat_limit: number
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          owner_user_id: string
+          plan?: string
+          seat_limit?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          owner_user_id?: string
+          plan?: string
+          seat_limit?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      organization_memberships: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string
+          role: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string
+          role?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      admin_audit_log: {
+        Row: {
+          id: string
+          admin_user_id: string | null
+          target_user_id: string | null
+          action: string
+          before_data: Json
+          after_data: Json
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_user_id?: string | null
+          target_user_id?: string | null
+          action: string
+          before_data?: Json
+          after_data?: Json
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          admin_user_id?: string | null
+          target_user_id?: string | null
+          action?: string
+          before_data?: Json
+          after_data?: Json
+          metadata?: Json
+          created_at?: string
+        }
+      }
+      stripe_events: {
+        Row: {
+          id: string
+          event_type: string
+          processed_at: string
+          metadata: Json
+        }
+        Insert: {
+          id: string
+          event_type: string
+          processed_at?: string
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          event_type?: string
+          processed_at?: string
+          metadata?: Json
         }
       }
       admin_users: {

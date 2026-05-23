@@ -155,12 +155,12 @@
   --gl-alabaster: #FBECDA;
   --gl-pitch: #0D0300;
   --gl-surface: #FBECDA;
-  --gl-surface-raised: #E7D9C7;
-  --gl-surface-subtle: #D4D4D4;
-  --gl-border: rgba(13, 3, 0, 0.18);
-  --gl-border-strong: rgba(13, 3, 0, 0.34);
-  --gl-muted: rgba(13, 3, 0, 0.58);
-  --gl-faint: rgba(13, 3, 0, 0.40);
+  --gl-surface-raised: #E9D9C4;
+  --gl-surface-subtle: #D8C9B7;
+  --gl-border: rgba(13, 3, 0, 0.24);
+  --gl-border-strong: rgba(13, 3, 0, 0.46);
+  --gl-muted: rgba(13, 3, 0, 0.72);
+  --gl-faint: rgba(13, 3, 0, 0.62);
   background-color: var(--gl-alabaster) !important;
   color: var(--gl-pitch) !important;
 }
@@ -361,6 +361,91 @@
 
 .app-light ::-webkit-scrollbar-track { background: var(--gl-alabaster); }
 .app-light ::-webkit-scrollbar-thumb { background: rgba(13, 3, 0, 0.32); }
+
+/* Radix portals render outside .app-light, so app dialogs need light-mode
+   contrast from the html theme class instead of the app wrapper. */
+.light [role="dialog"] {
+  background-color: #FBECDA !important;
+  color: #0D0300 !important;
+  border-color: rgba(13, 3, 0, 0.28) !important;
+  box-shadow: 0 28px 82px rgba(13, 3, 0, 0.34) !important;
+}
+
+.light [role="dialog"] .bg-black,
+.light [role="dialog"] [class*="bg-black/"],
+.light [role="dialog"] [class*="bg-[#050505]"],
+.light [role="dialog"] [class*="bg-[#0A0A0A]"] {
+  background-color: #FBECDA !important;
+}
+
+.light [role="dialog"] [class*="text-[#EFEDE6]"],
+.light [role="dialog"] [class*="text-cream-100"],
+.light [role="dialog"] h1,
+.light [role="dialog"] h2,
+.light [role="dialog"] h3 {
+  color: #0D0300 !important;
+}
+
+.light [role="dialog"] [class*="text-[#A8A59C]"],
+.light [role="dialog"] [class*="text-cream-300"] {
+  color: rgba(13, 3, 0, 0.72) !important;
+}
+
+.light [role="dialog"] [class*="text-[#67645B]"] {
+  color: rgba(13, 3, 0, 0.62) !important;
+}
+
+.light [role="dialog"] [class*="border-[#EFEDE6]"],
+.light [role="dialog"] [class*="border-cream-100"] {
+  border-color: rgba(13, 3, 0, 0.28) !important;
+}
+
+.light [role="dialog"] [class*="bg-[#EFEDE6]/"],
+.light [role="dialog"] [class*="bg-cream-100/"],
+.light [role="dialog"] [class*="bg-petrol-"] {
+  background-color: rgba(13, 3, 0, 0.07) !important;
+}
+
+.light [role="dialog"] input,
+.light [role="dialog"] textarea,
+.light [role="dialog"] select {
+  background-color: #FFF8EF !important;
+  color: #0D0300 !important;
+  border-color: rgba(13, 3, 0, 0.42) !important;
+}
+
+.light [role="dialog"] input::placeholder,
+.light [role="dialog"] textarea::placeholder {
+  color: rgba(13, 3, 0, 0.52) !important;
+}
+
+.light [role="dialog"] [class*="bg-[#F5FF3D]"],
+.light [role="dialog"] [class*="bg-[#F5FF3D]/"] {
+  background-color: #FBEE03 !important;
+  color: #0D0300 !important;
+}
+
+.light [role="dialog"] [class*="text-[#F5FF3D]"],
+.light [role="dialog"] [class*="text-wine-500"] {
+  color: #0D0300 !important;
+}
+
+.light [role="dialog"] button[aria-label="Close"],
+.light [role="dialog"] button.absolute {
+  color: #0D0300 !important;
+}
+
+.light .cookie-banner {
+  background-color: rgba(251, 236, 218, 0.96) !important;
+  border-color: rgba(13, 3, 0, 0.24) !important;
+  color: #0D0300 !important;
+  box-shadow: 0 -16px 44px rgba(13, 3, 0, 0.18);
+}
+
+.light .cookie-banner [class*="text-[#A8A59C]"],
+.light .cookie-banner [class*="text-[#67645B]"] {
+  color: rgba(13, 3, 0, 0.72) !important;
+}
 
 /* ─── Keyframes ─────────────────────────────────────────────────────────── */
 @keyframes march {

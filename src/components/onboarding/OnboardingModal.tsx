@@ -47,6 +47,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   const [error, setError] = useState<string | null>(null);
   const [serviceType, setServiceType] = useState("");
   const [serviceOther, setServiceOther] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [clientType, setClientType] = useState("");
   const [pricingTier, setPricingTier] = useState("");
   const [location, setLocation] = useState("");
@@ -67,6 +68,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         id: userId,
         service_type: skip ? "Lead research" : finalServiceType,
         service_other: !skip && serviceType === "Other" ? serviceOther.trim() : null,
+        company_name: companyName.trim() || null,
         client_type: skip ? "any" : clientType,
         pricing_tier: skip ? "mid_tier" : pricingTier,
         location: location.trim() || null,
@@ -200,6 +202,14 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
                 />
               )}
+
+              <input
+                type="text"
+                placeholder="Company name (optional)"
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+                className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+              />
             </div>
           )}
 

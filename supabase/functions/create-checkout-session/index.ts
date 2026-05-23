@@ -6,6 +6,12 @@ const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 const stripePriceStarter = Deno.env.get("STRIPE_PRICE_STARTER");
 const stripePriceGrowth = Deno.env.get("STRIPE_PRICE_GROWTH");
 const stripePricePro = Deno.env.get("STRIPE_PRICE_PRO");
+const stripeSubscriptionPriceStarter = Deno.env.get("STRIPE_SUBSCRIPTION_PRICE_STARTER") || stripePriceStarter;
+const stripeSubscriptionPriceGrowth = Deno.env.get("STRIPE_SUBSCRIPTION_PRICE_GROWTH") || stripePriceGrowth;
+const stripeSubscriptionPricePro = Deno.env.get("STRIPE_SUBSCRIPTION_PRICE_PRO") || stripePricePro;
+const stripeTopupPriceStarter = Deno.env.get("STRIPE_TOPUP_PRICE_STARTER") || stripePriceStarter;
+const stripeTopupPriceGrowth = Deno.env.get("STRIPE_TOPUP_PRICE_GROWTH") || stripePriceGrowth;
+const stripeTopupPricePro = Deno.env.get("STRIPE_TOPUP_PRICE_PRO") || stripePricePro;
 
 if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey || !stripePriceStarter || !stripePriceGrowth || !stripePricePro) {
   throw new Error("Missing required environment variables");
@@ -13,20 +19,34 @@ if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey || !stripePriceStart
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const CREDITS_MAP: Record<string, number> = {
+const PLAN_CREDITS_MAP: Record<string, number> = {
   starter: 100,
   growth: 300,
   pro: 700,
 };
 
-const PRICE_MAP: Record<string, string> = {
-  starter: stripePriceStarter,
-  growth: stripePriceGrowth,
-  pro: stripePricePro,
+const TOPUP_CREDITS_MAP: Record<string, number> = {
+  starter: 100,
+  growth: 300,
+  pro: 700,
+};
+
+const SUBSCRIPTION_PRICE_MAP: Record<string, string> = {
+  starter: stripeSubscriptionPriceStarter!,
+  growth: stripeSubscriptionPriceGrowth!,
+  pro: stripeSubscriptionPricePro!,
+};
+
+const TOPUP_PRICE_MAP: Record<string, string> = {
+  starter: stripeTopupPriceStarter!,
+  growth: stripeTopupPriceGrowth!,
+  pro: stripeTopupPricePro!,
 };
 
 interface CheckoutRequest {
-  bundleKey: string;
+  bundleKey?: string;
+  planKey?: string;
+  checkoutType?: "subscription" | "topup";
   userId: string;
 }
 
@@ -55,17 +75,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { bundleKey, userId } = (await req.json()) as CheckoutRequest;
+    const { bundleKey, planKey, checkoutType = "topup", userId } = (await req.json()) as CheckoutRequest;
+    const key = planKey || bundleKey;
 
-    if (!bundleKey || !userId) {
-      return new Response(JSON.stringify({ error: "Missing bundleKey or userId" }), {
+    if (!key || !userId) {
+      return new Response(JSON.stringify({ error: "Missing plan/bundle key or userId" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!CREDITS_MAP[bundleKey] || !PRICE_MAP[bundleKey]) {
-      return new Response(JSON.stringify({ error: "Invalid bundleKey" }), {
+    const isSubscription = checkoutType === "subscription";
+    const credits = isSubscription ? PLAN_CREDITS_MAP[key] : TOPUP_CREDITS_MAP[key];
+    const priceId = isSubscription ? SUBSCRIPTION_PRICE_MAP[key] : TOPUP_PRICE_MAP[key];
+
+    if (!credits || !priceId) {
+      return new Response(JSON.stringify({ error: "Invalid checkout key" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -87,9 +112,6 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const priceId = PRICE_MAP[bundleKey];
-    const credits = CREDITS_MAP[bundleKey];
 
     // Get user email from auth.users
     const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
@@ -119,20 +141,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create Stripe Checkout Session
     const checkoutData: Record<string, unknown> = {
-      mode: "payment",
+      mode: isSubscription ? "subscription" : "payment",
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      success_url: "https://app.globaleads22.com/?checkout=success",
+      success_url: `https://app.globaleads22.com/?checkout=${isSubscription ? "subscription_success" : "success"}`,
       cancel_url: "https://globaleads22.com/#pricing",
       metadata: {
         user_id: userId,
-        bundle_key: bundleKey,
+        checkout_type: checkoutType,
+        plan_key: key,
+        bundle_key: key,
         credits: credits.toString(),
       },
+      subscription_data: isSubscription ? {
+        metadata: {
+          user_id: userId,
+          plan_key: key,
+          included_credits: credits.toString(),
+        },
+      } : undefined,
     };
 
     // Use existing customer if available, otherwise create one
@@ -182,6 +213,7 @@ function flattenObject(obj: Record<string, unknown>, prefix = ""): Record<string
 
   for (const key in obj) {
     const value = obj[key];
+    if (value === undefined || value === null) continue;
     const newKey = prefix ? `${prefix}[${key}]` : key;
 
     if (Array.isArray(value)) {

@@ -15,7 +15,7 @@ const CookieBanner = () => {
     if (!visible) return null;
 
     return (
-        <div className="fixed bottom-0 inset-x-0 z-50 border-t border-[#EFEDE6]/10 bg-black/95 backdrop-blur-sm">
+        <div className="cookie-banner fixed bottom-0 inset-x-0 z-50 border-t border-[#EFEDE6]/10 bg-black/95 backdrop-blur-sm">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-8">
                 <p className="flex-1 text-[11px] text-[#A8A59C] font-mono leading-relaxed">
                     We use essential cookies to keep you signed in. No tracking or advertising cookies are used.{" "}

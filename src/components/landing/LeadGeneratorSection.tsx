@@ -23,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
+import { canUseSearchQuality, PLAN_LABELS, normalizePlan } from "@/lib/entitlements";
 
 interface Business {
   placeId: string;
@@ -142,6 +143,7 @@ interface LeadGeneratorSectionProps {
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
   isAdmin?: boolean;
+  effectivePlan?: string;
 }
 
 const depthConfig: Record<Depth, { label: string; credits: number; maxResults: 20 | 40 | 60; shards: number; websiteLimit: number }> = {
@@ -618,9 +620,10 @@ const passesQualityGate = (lead: LeadResult, config: SearchConfig) => {
   return true;
 };
 
-const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free" }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
+  const plan = normalizePlan(effectivePlan);
 
   const [searchMode, setSearchMode] = useState<SearchMode | null>(null);
   const [industry, setIndustry] = useState("");
@@ -710,6 +713,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     required: requiredContacts,
     preferPublicEmail,
   };
+
+  const requestUpgrade = (reason = "Upgrade to unlock full search quality.") => {
+    toast({
+      title: "Upgrade for full search quality",
+      description: `${PLAN_LABELS[plan]} is limited to simple searches. ${reason}`,
+    });
+    onBuyCredits?.();
+  };
+
+  const canRunConfig = (config: SearchConfig) => canUseSearchQuality(plan, config.depth, config.enrichMode, isAdmin);
 
   const progressSteps = [
     { key: "maps", label: "Searching Maps" },
@@ -1002,6 +1015,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         description: `This search costs ${runCost} credits. You have ${creditsBalance}.`,
       });
       onBuyCredits?.();
+      return;
+    }
+    if (!canRunConfig(config)) {
+      requestUpgrade("Paid plans unlock normal, deep, and enrichment searches.");
       return;
     }
 
@@ -1543,8 +1560,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
                               >
                                 <option value="simple">Simple</option>
-                                <option value="normal">Normal</option>
-                                <option value="deep">Deep</option>
+                                <option value="normal" disabled={!canUseSearchQuality(plan, "normal", freePlan.config.enrichMode, isAdmin)}>Normal</option>
+                                <option value="deep" disabled={!canUseSearchQuality(plan, "deep", freePlan.config.enrichMode, isAdmin)}>Deep</option>
                               </select>
                             </label>
                           </div>
@@ -1559,7 +1576,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
                               >
                                 <option value="normal">Normal</option>
-                                <option value="enrich">Enrich</option>
+                                <option value="enrich" disabled={!canUseSearchQuality(plan, freePlan.config.depth, true, isAdmin)}>Enrich</option>
                               </select>
                             </label>
 
@@ -1637,6 +1654,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 order: T[],
                 labels: Record<T, string>,
                 onSelect: (next: T) => void,
+                gateSearchQuality = false,
               ) => {
                 const idx = order.indexOf(value);
                 const heights = ["h-3", "h-5", "h-7", "h-9"];
@@ -1650,7 +1668,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <button
                           key={option}
                           type="button"
-                          onClick={() => onSelect(option)}
+                          onClick={() => {
+                            if (gateSearchQuality && !canUseSearchQuality(plan, option as Depth, enrichMode, isAdmin)) {
+                              requestUpgrade("Paid plans unlock normal, deep, and enrichment searches.");
+                              return;
+                            }
+                            onSelect(option);
+                          }}
                           disabled={isProcessing}
                           className="group flex flex-1 flex-col items-center gap-2 disabled:cursor-not-allowed"
                           aria-pressed={active}
@@ -1785,14 +1809,20 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     <div className="grid gap-x-8 gap-y-5 md:grid-cols-[1fr_auto_1fr] md:items-end md:gap-x-10">
                       <div>
                         <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Search depth</p>
-                        {renderRange(depth, depthOrder, { simple: "Simple", normal: "Normal", deep: "Deep" }, setDepth)}
+                        {renderRange(depth, depthOrder, { simple: "Simple", normal: "Normal", deep: "Deep" }, setDepth, true)}
                       </div>
 
                       <div>
                         <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Contact mode</p>
                         <button
                           type="button"
-                          onClick={() => setEnrichMode(!enrichMode)}
+                          onClick={() => {
+                            if (!enrichMode && !canUseSearchQuality(plan, depth, true, isAdmin)) {
+                              requestUpgrade("Paid plans unlock enrichment searches.");
+                              return;
+                            }
+                            setEnrichMode(!enrichMode);
+                          }}
                           disabled={isProcessing}
                           className="relative inline-grid h-11 w-[200px] grid-cols-2 border border-[#EFEDE6]/15 bg-black"
                         >
