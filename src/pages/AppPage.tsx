@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { CreditCard, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import CreditsModal from "@/components/app/CreditsModal";
+import EditProfileModal from "@/components/app/EditProfileModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import AppSidebar from "@/components/app/AppSidebar";
@@ -24,6 +25,15 @@ import SettingsCredits from "@/components/app/SettingsCredits";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
@@ -33,13 +43,14 @@ type AppViewMode = AppSidebarView;
 
 const AppPage = () => {
   const { user, loading, signOut } = useAuth();
-  const { hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
+  const { profile, hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
   const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
   const { isAdmin } = useAdmin(user?.id);
   const entitlements = useEntitlements(user?.id, creditsPlan, isAdmin);
   const { history: searchHistory, loading: searchHistoryLoading, refetch: refetchHistory } = useSearchHistory(user?.id);
   const [authOpen, setAuthOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [viewMode, setViewMode] = useState<AppViewMode>("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -182,6 +193,18 @@ const AppPage = () => {
   };
 
   const planCredits = entitlements.includedCredits || getIncludedCredits(creditsPlan);
+  const avatarUrl = typeof user?.user_metadata?.avatar_url === "string"
+    ? user.user_metadata.avatar_url
+    : typeof user?.user_metadata?.picture === "string"
+      ? user.user_metadata.picture
+      : "";
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "Account";
+  const fallbackInitials = String(displayName)
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join("") || "GL";
 
   return (
     <div className={`app-theme ${theme === "light" ? "app-light light" : "app-dark dark"} h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]`}>
@@ -216,15 +239,57 @@ const AppPage = () => {
                     {isAdmin ? "Admin" : `${creditsBalance} credits`}
                   </span>
                 </div>
-                <span className="hidden sm:block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] max-w-[200px] truncate">
-                  {user.email}
-                </span>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:text-[#EFEDE6] transition-colors"
-                >
-                  <LogOut className="h-3 w-3" /> SIGN OUT
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-10 items-center gap-2 border border-[#EFEDE6]/10 px-2 pr-3 transition-colors hover:border-[#F5FF3D]/60"
+                      aria-label="Open account menu"
+                    >
+                      <Avatar className="h-7 w-7 border border-[#EFEDE6]/10">
+                        <AvatarImage src={avatarUrl} alt={String(displayName)} />
+                        <AvatarFallback className="bg-[#F5FF3D] font-mono text-[10px] font-black text-black">
+                          {fallbackInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden max-w-[160px] truncate font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] sm:block">
+                        {profile?.full_name || user.email}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 border-[#EFEDE6]/10 bg-black p-1 text-[#EFEDE6]">
+                    <DropdownMenuLabel className="px-3 py-2">
+                      <p className="truncate text-sm font-semibold text-[#EFEDE6]">{displayName}</p>
+                      <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-[#EFEDE6]/10" />
+                    <DropdownMenuItem
+                      onClick={() => setEditProfileOpen(true)}
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                    >
+                      <UserRound className="h-3.5 w-3.5" /> Edit profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setCreditsOpen(true)}
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                    >
+                      <CreditCard className="h-3.5 w-3.5" /> Upgrade or top up
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setViewMode("settings")}
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                    >
+                      <Settings className="h-3.5 w-3.5" /> Account settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#EFEDE6]/10" />
+                    <DropdownMenuItem
+                      onClick={signOut}
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-red-300 focus:bg-red-500/10 focus:text-red-200"
+                    >
+                      <LogOut className="h-3.5 w-3.5" /> Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <Button variant="accent" size="sm" onClick={() => setAuthOpen(true)}>
@@ -317,6 +382,13 @@ const AppPage = () => {
         onClose={() => setCreditsOpen(false)}
         onSelectBundle={(bundleKey, checkoutType) => { setCreditsOpen(false); handleBuyCredits(bundleKey, checkoutType); }}
         loading={checkoutLoading}
+      />
+      <EditProfileModal
+        open={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+        user={user}
+        profile={profile}
+        onSaved={refetchProfile}
       />
       {user && (
         <OnboardingModal
