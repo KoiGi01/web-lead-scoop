@@ -15,7 +15,9 @@ import {
   Loader2,
   Mail,
   MessageSquare,
+  MoreHorizontal,
   Phone,
+  Plus,
   Search,
   Send,
   SlidersHorizontal,
@@ -124,6 +126,45 @@ const priorityTone: Record<CrmPriority, string> = {
   low: "border-slate-300 bg-slate-100 text-slate-700",
   normal: "border-cyan-200 bg-cyan-50 text-cyan-800",
   high: "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]",
+};
+
+const boardColumnTone: Record<CrmStatus, { shell: string; header: string; badge: string; accent: string }> = {
+  new: {
+    shell: "border-violet-200 bg-violet-50/90",
+    header: "bg-violet-100/90 text-violet-900",
+    badge: "bg-violet-600 text-white",
+    accent: "border-violet-300",
+  },
+  contacted: {
+    shell: "border-sky-200 bg-sky-50/90",
+    header: "bg-sky-100/90 text-sky-900",
+    badge: "bg-sky-600 text-white",
+    accent: "border-sky-300",
+  },
+  qualified: {
+    shell: "border-amber-200 bg-amber-50/90",
+    header: "bg-amber-100/90 text-amber-950",
+    badge: "bg-amber-500 text-black",
+    accent: "border-amber-300",
+  },
+  proposal: {
+    shell: "border-fuchsia-200 bg-fuchsia-50/90",
+    header: "bg-fuchsia-100/90 text-fuchsia-950",
+    badge: "bg-fuchsia-600 text-white",
+    accent: "border-fuchsia-300",
+  },
+  won: {
+    shell: "border-emerald-200 bg-emerald-50/90",
+    header: "bg-emerald-100/90 text-emerald-950",
+    badge: "bg-emerald-600 text-white",
+    accent: "border-emerald-300",
+  },
+  lost: {
+    shell: "border-slate-200 bg-slate-50/90",
+    header: "bg-slate-100/90 text-slate-700",
+    badge: "bg-slate-500 text-white",
+    accent: "border-slate-300",
+  },
 };
 
 const contactedStatuses: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
@@ -286,6 +327,20 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
   const isContactedLead = (lead: SavedLead) =>
     Boolean(lead.last_contacted_at) || contactedStatuses.includes(lead.crm_status);
+
+  const formatFollowUpLabel = (lead: SavedLead) => {
+    if (!lead.next_follow_up_at) return "-";
+    const date = new Date(lead.next_follow_up_at);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+    if (dateOnly.getTime() === today.getTime()) return "Today";
+
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
 
   const isWithinCreatedDateFilter = (lead: SavedLead) => {
     if (filterDate === "all") return true;
@@ -668,8 +723,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
               )}
             </div>
 
-            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] bg-black">
+            <div className={`grid min-h-0 flex-1 gap-4 ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
+              <div className={`min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] ${mode === "pipeline" ? "bg-[#F6F3EA]" : "bg-black"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
                     <Search className="mb-4 h-9 w-9 text-[#67645B]" />
@@ -680,52 +735,101 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     </button>
                   </div>
                 ) : effectiveArchiveViewMode === "board" ? (
-                  <div className="flex h-full gap-3 overflow-x-auto p-3">
-                    {leadsByStatus.map(column => (
-                      <section key={column.value} className="flex min-w-[250px] max-w-[280px] flex-1 flex-col border border-[#EFEDE6]/10 bg-[#0A0A0A]">
-                        <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-[#EFEDE6]/10 bg-[#0A0A0A] px-3 py-3">
-                          <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${statusTone[column.value]}`}>
-                            {column.label}
-                          </span>
-                          <span className="font-mono text-[10px] font-black tabular-nums text-[#67645B]">{column.leads.length}</span>
-                        </div>
+                  <div className="flex h-full gap-4 overflow-x-auto p-4">
+                    {leadsByStatus.map(column => {
+                      const tone = boardColumnTone[column.value];
 
-                        <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
+                      return (
+                      <section key={column.value} className={`flex min-w-[286px] max-w-[320px] flex-1 overflow-hidden rounded-lg border shadow-sm ${tone.shell}`}>
+                        <div className="flex min-h-0 w-full flex-col">
+                          <div className={`sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3 py-2.5 ${tone.header} ${tone.accent}`}>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className={`inline-flex h-6 items-center gap-1 rounded-md px-2 font-display text-xs font-bold ${tone.badge}`}>
+                                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                                {column.label}
+                              </span>
+                              <span className="font-mono text-xs font-bold tabular-nums opacity-70">{column.leads.length}</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-70">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <Plus className="h-4 w-4" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
                           {column.leads.length === 0 ? (
-                            <div className="flex min-h-[120px] items-center justify-center border border-dashed border-[#EFEDE6]/10 px-3 text-center">
-                              <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">No leads</p>
+                            <div className="flex min-h-[120px] items-center justify-center rounded-md border border-dashed border-black/10 bg-white/35 px-3 text-center">
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">No leads</p>
                             </div>
                           ) : (
                             column.leads.map(lead => {
                               const topContact = getTopContact(lead);
                               const selected = lead.id === selectedLead?.id;
                               return (
-                                <button
+                                <article
                                   key={lead.id}
-                                  onClick={() => setSelectedLeadId(lead.id)}
-                                  className={`border p-3 text-left transition-colors ${selected ? "border-[#F5FF3D] bg-[#F5FF3D]/10" : "border-[#EFEDE6]/10 bg-black hover:border-[#F5FF3D]/50"}`}
+                                  className={`rounded-md border bg-white p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] ${selected ? `${tone.accent} ring-2 ring-black/10` : "border-slate-200"}`}
                                 >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="line-clamp-2 font-display text-sm font-bold leading-tight text-[#EFEDE6]">{lead.name}</p>
-                                    <span className={`shrink-0 border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-widest ${priorityTone[lead.crm_priority]}`}>
-                                      {lead.crm_priority}
-                                    </span>
+                                  <button onClick={() => setSelectedLeadId(lead.id)} className="block w-full text-left">
+                                    <p className="line-clamp-2 font-display text-sm font-bold leading-snug text-slate-900">{lead.name}</p>
+                                    <p className="mt-0.5 text-xs font-medium text-slate-500">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                  </button>
+
+                                  <div className="mt-3 flex items-center gap-2 text-slate-500">
+                                    <UserRound className="h-3.5 w-3.5" />
+                                    <p className="min-w-0 truncate text-xs">{topContact?.fullName || topContact?.email || "No person listed"}</p>
                                   </div>
-                                  <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
-                                  <p className="mt-2 truncate text-xs text-[#A8A59C]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
-                                  <div className="mt-3 flex flex-wrap gap-1.5">
-                                    <span className={chipClass(!!lead.phone)}><Phone className="h-3 w-3" /></span>
-                                    <span className={chipClass(lead.emails.length > 0)}><Mail className="h-3 w-3" /></span>
-                                    <span className={chipClass(!!lead.linkedinUrl)}><Linkedin className="h-3 w-3" /></span>
-                                    <span className={chipClass(hasPersonName(lead))}><UserRound className="h-3 w-3" /></span>
+
+                                  <div className="mt-2 grid grid-cols-[16px_1fr] items-center gap-x-2 gap-y-2 text-xs text-slate-600">
+                                    <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                                    <span>{lead.emails.length + (lead.phone ? 1 : 0) + (lead.linkedinUrl ? 1 : 0)} channels</span>
+                                    <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
+                                    <span className={isDue(lead) ? "font-semibold text-red-500" : ""}>{formatFollowUpLabel(lead)}</span>
+                                    <Flag className={`h-3.5 w-3.5 ${lead.crm_priority === "high" ? "fill-red-500 text-red-500" : lead.crm_priority === "normal" ? "fill-blue-500 text-blue-500" : "text-slate-300"}`} />
+                                    <span className="capitalize">{lead.crm_priority}</span>
                                   </div>
-                                </button>
+
+                                  <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <select
+                                      value={lead.crm_status}
+                                      onChange={event => patchLead(lead.id, { crm_status: event.target.value as CrmStatus })}
+                                      className="h-8 min-w-0 rounded border border-slate-200 bg-slate-50 px-2 font-mono text-[10px] uppercase tracking-widest text-slate-700 outline-none focus:border-slate-400"
+                                    >
+                                      {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                    </select>
+                                    <select
+                                      value={lead.crm_priority}
+                                      onChange={event => patchLead(lead.id, { crm_priority: event.target.value as CrmPriority })}
+                                      className="h-8 min-w-0 rounded border border-slate-200 bg-slate-50 px-2 font-mono text-[10px] uppercase tracking-widest text-slate-700 outline-none focus:border-slate-400"
+                                    >
+                                      {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                    </select>
+                                  </div>
+
+                                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                                    <div className="flex -space-x-1">
+                                      {[
+                                        { active: !!lead.phone, Icon: Phone },
+                                        { active: lead.emails.length > 0, Icon: Mail },
+                                        { active: !!lead.website, Icon: Globe },
+                                        { active: !!lead.linkedinUrl, Icon: Linkedin },
+                                      ].map(({ active, Icon }, index) => (
+                                        <span key={index} className={`grid h-6 w-6 place-items-center rounded-full border border-white ${active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-300"}`}>
+                                          <Icon className="h-3 w-3" />
+                                        </span>
+                                      ))}
+                                    </div>
+                                    {savingLeadIds.has(lead.id) && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+                                  </div>
+                                </article>
                               );
                             })
                           )}
+                          </div>
                         </div>
                       </section>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="divide-y divide-[#EFEDE6]/10">
@@ -766,6 +870,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                 )}
               </div>
 
+              {mode !== "pipeline" && (
               <aside className="min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
                 {selectedLead ? (
                   <div className="flex min-h-full flex-col">
@@ -892,6 +997,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                   </div>
                 )}
               </aside>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
