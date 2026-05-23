@@ -268,33 +268,6 @@
   background-color: rgba(13, 3, 0, 0.45) !important;
 }
 
-.app-light [class*="text-slate-"],
-.app-light [class*="text-cyan-"],
-.app-light [class*="text-sky-"],
-.app-light [class*="text-violet-"],
-.app-light [class*="text-emerald-"],
-.app-light [class*="text-red-"] {
-  color: var(--gl-pitch) !important;
-}
-
-.app-light [class*="bg-slate-"],
-.app-light [class*="bg-cyan-"],
-.app-light [class*="bg-sky-"],
-.app-light [class*="bg-violet-"],
-.app-light [class*="bg-emerald-"],
-.app-light [class*="bg-red-"] {
-  background-color: var(--gl-surface-subtle) !important;
-}
-
-.app-light [class*="border-slate-"],
-.app-light [class*="border-cyan-"],
-.app-light [class*="border-sky-"],
-.app-light [class*="border-violet-"],
-.app-light [class*="border-emerald-"],
-.app-light [class*="border-red-"] {
-  border-color: var(--gl-border-strong) !important;
-}
-
 .app-light [class*="shadow-[0_14px_32px_rgba(245,255,61"],
 .app-light [class*="shadow-[0_12px_30px"],
 .app-light [class*="shadow-[0_24px_56px"],

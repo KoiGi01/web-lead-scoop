@@ -7,14 +7,12 @@ import {
   Copy,
   Download,
   ExternalLink,
-  Flag,
   Globe,
   LayoutGrid,
   List,
   Linkedin,
   Loader2,
   Mail,
-  MessageSquare,
   MoreHorizontal,
   Phone,
   Plus,
@@ -203,9 +201,16 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
   const [filterScoreMin, setFilterScoreMin] = useState(0);
   const [emailsCopied, setEmailsCopied] = useState(false);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
+  const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<CrmStatus | null>(null);
 
   const getTopContact = (lead: SavedLead) =>
     [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
+
+  const getLeadPersonLabel = (lead: SavedLead) => {
+    const topContact = getTopContact(lead);
+    return topContact?.fullName || topContact?.email || "No person listed";
+  };
 
   const mapLead = (lead: RawLead): SavedLead => ({
     ...lead,
@@ -292,6 +297,20 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
     }
   };
 
+  const moveLeadToStatus = (leadId: string, crm_status: CrmStatus) => {
+    const lead = leads.find(item => item.id === leadId);
+    if (!lead || lead.crm_status === crm_status) return;
+
+    setSelectedLeadId(leadId);
+    patchLead(leadId, { crm_status });
+  };
+
+  const handlePipelineDrop = (crm_status: CrmStatus) => {
+    if (draggedLeadId) moveLeadToStatus(draggedLeadId, crm_status);
+    setDraggedLeadId(null);
+    setDragOverStatus(null);
+  };
+
   const markContacted = (lead: SavedLead) => {
     patchLead(lead.id, {
       crm_status: lead.crm_status === "new" ? "contacted" : lead.crm_status,
@@ -327,20 +346,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
   const isContactedLead = (lead: SavedLead) =>
     Boolean(lead.last_contacted_at) || contactedStatuses.includes(lead.crm_status);
-
-  const formatFollowUpLabel = (lead: SavedLead) => {
-    if (!lead.next_follow_up_at) return "-";
-    const date = new Date(lead.next_follow_up_at);
-    if (Number.isNaN(date.getTime())) return "-";
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
-    if (dateOnly.getTime() === today.getTime()) return "Today";
-
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  };
 
   const isWithinCreatedDateFilter = (lead: SavedLead) => {
     if (filterDate === "all") return true;
@@ -739,8 +744,25 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     {leadsByStatus.map(column => {
                       const tone = boardColumnTone[column.value];
 
+                      const isDropTarget = dragOverStatus === column.value;
+
                       return (
-                      <section key={column.value} className={`flex min-w-[286px] max-w-[320px] flex-1 overflow-hidden rounded-lg border shadow-sm ${tone.shell}`}>
+                      <section
+                        key={column.value}
+                        onDragOver={event => {
+                          event.preventDefault();
+                          if (dragOverStatus !== column.value) setDragOverStatus(column.value);
+                        }}
+                        onDragLeave={event => {
+                          const nextTarget = event.relatedTarget as Node | null;
+                          if (!nextTarget || !event.currentTarget.contains(nextTarget)) setDragOverStatus(null);
+                        }}
+                        onDrop={event => {
+                          event.preventDefault();
+                          handlePipelineDrop(column.value);
+                        }}
+                        className={`flex min-w-[286px] max-w-[320px] flex-1 overflow-hidden rounded-lg border shadow-sm transition-all ${tone.shell} ${isDropTarget ? "scale-[1.01] ring-2 ring-black/20" : ""}`}
+                      >
                         <div className="flex min-h-0 w-full flex-col">
                           <div className={`sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3 py-2.5 ${tone.header} ${tone.accent}`}>
                             <div className="flex min-w-0 items-center gap-2">
@@ -758,69 +780,40 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
                           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
                           {column.leads.length === 0 ? (
-                            <div className="flex min-h-[120px] items-center justify-center rounded-md border border-dashed border-black/10 bg-white/35 px-3 text-center">
-                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">No leads</p>
+                            <div className={`flex min-h-[120px] items-center justify-center rounded-md border border-dashed px-3 text-center transition-colors ${isDropTarget ? "border-black/25 bg-white/70" : "border-black/10 bg-white/35"}`}>
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">{isDropTarget ? "Drop to move here" : "No leads"}</p>
                             </div>
                           ) : (
                             column.leads.map(lead => {
-                              const topContact = getTopContact(lead);
+                              const personLabel = getLeadPersonLabel(lead);
                               const selected = lead.id === selectedLead?.id;
+                              const isDragging = draggedLeadId === lead.id;
                               return (
                                 <article
                                   key={lead.id}
-                                  className={`rounded-md border bg-white p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] ${selected ? `${tone.accent} ring-2 ring-black/10` : "border-slate-200"}`}
+                                  draggable
+                                  onDragStart={event => {
+                                    setDraggedLeadId(lead.id);
+                                    event.dataTransfer.effectAllowed = "move";
+                                    event.dataTransfer.setData("text/plain", lead.id);
+                                  }}
+                                  onDragEnd={() => {
+                                    setDraggedLeadId(null);
+                                    setDragOverStatus(null);
+                                  }}
+                                  className={`rounded-md border bg-white p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] ${selected ? `${tone.accent} ring-2 ring-black/10` : "border-slate-200"} ${isDragging ? "scale-[0.98] cursor-grabbing opacity-45" : "cursor-grab"}`}
                                 >
                                   <button onClick={() => setSelectedLeadId(lead.id)} className="block w-full text-left">
-                                    <p className="line-clamp-2 font-display text-sm font-bold leading-snug text-slate-900">{lead.name}</p>
-                                    <p className="mt-0.5 text-xs font-medium text-slate-500">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                    <p className="truncate font-display text-sm font-bold leading-snug text-slate-950">{personLabel}</p>
+                                    <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-slate-500">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                    <p className="mt-2 truncate text-xs font-semibold text-slate-700">{lead.name || "No company name"}</p>
                                   </button>
 
-                                  <div className="mt-3 flex items-center gap-2 text-slate-500">
-                                    <UserRound className="h-3.5 w-3.5" />
-                                    <p className="min-w-0 truncate text-xs">{topContact?.fullName || topContact?.email || "No person listed"}</p>
-                                  </div>
-
-                                  <div className="mt-2 grid grid-cols-[16px_1fr] items-center gap-x-2 gap-y-2 text-xs text-slate-600">
-                                    <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
-                                    <span>{lead.emails.length + (lead.phone ? 1 : 0) + (lead.linkedinUrl ? 1 : 0)} channels</span>
-                                    <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
-                                    <span className={isDue(lead) ? "font-semibold text-red-500" : ""}>{formatFollowUpLabel(lead)}</span>
-                                    <Flag className={`h-3.5 w-3.5 ${lead.crm_priority === "high" ? "fill-red-500 text-red-500" : lead.crm_priority === "normal" ? "fill-blue-500 text-blue-500" : "text-slate-300"}`} />
-                                    <span className="capitalize">{lead.crm_priority}</span>
-                                  </div>
-
-                                  <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <select
-                                      value={lead.crm_status}
-                                      onChange={event => patchLead(lead.id, { crm_status: event.target.value as CrmStatus })}
-                                      className="h-8 min-w-0 rounded border border-slate-200 bg-slate-50 px-2 font-mono text-[10px] uppercase tracking-widest text-slate-700 outline-none focus:border-slate-400"
-                                    >
-                                      {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                                    </select>
-                                    <select
-                                      value={lead.crm_priority}
-                                      onChange={event => patchLead(lead.id, { crm_priority: event.target.value as CrmPriority })}
-                                      className="h-8 min-w-0 rounded border border-slate-200 bg-slate-50 px-2 font-mono text-[10px] uppercase tracking-widest text-slate-700 outline-none focus:border-slate-400"
-                                    >
-                                      {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                                    </select>
-                                  </div>
-
-                                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
-                                    <div className="flex -space-x-1">
-                                      {[
-                                        { active: !!lead.phone, Icon: Phone },
-                                        { active: lead.emails.length > 0, Icon: Mail },
-                                        { active: !!lead.website, Icon: Globe },
-                                        { active: !!lead.linkedinUrl, Icon: Linkedin },
-                                      ].map(({ active, Icon }, index) => (
-                                        <span key={index} className={`grid h-6 w-6 place-items-center rounded-full border border-white ${active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-300"}`}>
-                                          <Icon className="h-3 w-3" />
-                                        </span>
-                                      ))}
+                                  {savingLeadIds.has(lead.id) && (
+                                    <div className="mt-2 flex justify-end">
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
                                     </div>
-                                    {savingLeadIds.has(lead.id) && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
-                                  </div>
+                                  )}
                                 </article>
                               );
                             })
