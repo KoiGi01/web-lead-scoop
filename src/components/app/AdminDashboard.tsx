@@ -278,19 +278,30 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
                 />
               </label>
             </div>
-            <div className="max-h-[520px] overflow-auto">
-              <table className="w-full min-w-[1080px] text-left">
+            <div className="max-h-[520px] overflow-y-auto overflow-x-hidden">
+              <table className="w-full table-fixed text-left">
+                <colgroup>
+                  <col className="w-[24%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[10%]" />
+                </colgroup>
                 <thead className="sticky top-0 bg-[#0A0A0A] font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
                   <tr>
-                    <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Company</th>
-                    <th className="px-4 py-3">Plan</th>
-                    <th className="px-4 py-3">Credits</th>
-                    <th className="px-4 py-3">Joined</th>
-                    <th className="px-4 py-3">Searches</th>
-                    <th className="px-4 py-3">Leads</th>
-                    <th className="px-4 py-3">Org</th>
-                    <th className="px-4 py-3">Revenue</th>
+                    <th className="min-w-0 px-3 py-3">User</th>
+                    <th className="min-w-0 px-3 py-3">Company</th>
+                    <th className="min-w-0 px-3 py-3">Plan</th>
+                    <th className="min-w-0 px-3 py-3">Credits</th>
+                    <th className="min-w-0 px-3 py-3">Joined</th>
+                    <th className="min-w-0 px-3 py-3">Searches</th>
+                    <th className="min-w-0 px-3 py-3">Leads</th>
+                    <th className="min-w-0 px-3 py-3">Org</th>
+                    <th className="min-w-0 px-3 py-3">Revenue</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EFEDE6]/10 font-mono text-xs">
@@ -300,18 +311,18 @@ const AdminDashboard = ({ onBackToSearch }: AdminDashboardProps) => {
                       onClick={() => setSelectedUserId(user.id)}
                       className={`cursor-pointer transition-colors hover:bg-[#EFEDE6]/5 ${selectedUser?.id === user.id ? "bg-[#F5FF3D]/10" : ""}`}
                     >
-                      <td className="px-4 py-3">
-                        <p className="max-w-[220px] truncate text-[#EFEDE6]">{user.email}</p>
+                      <td className="min-w-0 px-3 py-3">
+                        <p title={user.email} className="w-full truncate text-[#EFEDE6]">{user.email}</p>
                         <p className="mt-1 text-[10px] uppercase text-[#67645B]">{user.role}</p>
                       </td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{user.company_name || "-"}</td>
-                      <td className="px-4 py-3 text-[#F5FF3D]">{PLAN_LABELS[user.plan] || user.plan}</td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{user.credits_left}</td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{formatDate(user.date_joined)}</td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{user.searches_run}</td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{user.leads_generated}</td>
-                      <td className="px-4 py-3 text-[#A8A59C]">{user.organization_name || "-"}</td>
-                      <td className="px-4 py-3 text-[#F5FF3D]">{currency.format(user.net_revenue_usd || 0)}</td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]"><span className="block truncate">{user.company_name || "-"}</span></td>
+                      <td className="min-w-0 px-3 py-3 text-[#F5FF3D]"><span className="block truncate">{PLAN_LABELS[user.plan] || user.plan}</span></td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]">{user.credits_left}</td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]"><span className="block truncate">{formatDate(user.date_joined)}</span></td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]">{user.searches_run}</td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]">{user.leads_generated}</td>
+                      <td className="min-w-0 px-3 py-3 text-[#A8A59C]"><span className="block truncate">{user.organization_name || "-"}</span></td>
+                      <td className="min-w-0 px-3 py-3 text-[#F5FF3D]"><span className="block truncate">{currency.format(user.net_revenue_usd || 0)}</span></td>
                     </tr>
                   ))}
                   {!filteredUsers.length && (
