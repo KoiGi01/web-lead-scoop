@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, Check, Globe2, Loader2, Search, Sparkles, Target } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -47,7 +47,11 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   const [error, setError] = useState<string | null>(null);
   const [serviceType, setServiceType] = useState("");
   const [serviceOther, setServiceOther] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [roleTitle, setRoleTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [phone, setPhone] = useState("");
   const [clientType, setClientType] = useState("");
   const [pricingTier, setPricingTier] = useState("");
   const [location, setLocation] = useState("");
@@ -59,6 +63,26 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     (step === 2 && Boolean(clientType)) ||
     (step === 3 && Boolean(pricingTier));
 
+  useEffect(() => {
+    if (!open) return;
+
+    const loadAuthDefaults = async () => {
+      const { data } = await supabase.auth.getUser();
+      const metadata = data.user?.user_metadata || {};
+      const name =
+        metadata.full_name ||
+        metadata.name ||
+        [metadata.given_name, metadata.family_name].filter(Boolean).join(" ");
+
+      if (typeof name === "string" && name.trim()) setFullName(current => current || name.trim());
+      if (typeof metadata.company_name === "string" && metadata.company_name.trim()) {
+        setCompanyName(current => current || metadata.company_name.trim());
+      }
+    };
+
+    void loadAuthDefaults();
+  }, [open]);
+
   const saveProfile = async (skip = false) => {
     try {
       setSaving(true);
@@ -68,7 +92,11 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         id: userId,
         service_type: skip ? "Lead research" : finalServiceType,
         service_other: !skip && serviceType === "Other" ? serviceOther.trim() : null,
+        full_name: fullName.trim() || null,
+        role_title: roleTitle.trim() || null,
         company_name: companyName.trim() || null,
+        company_website: companyWebsite.trim() || null,
+        phone: phone.trim() || null,
         client_type: skip ? "any" : clientType,
         pricing_tier: skip ? "mid_tier" : pricingTier,
         location: location.trim() || null,
@@ -155,26 +183,71 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {SERVICE_TYPES.map((service) => (
-                  <button
-                    key={service}
-                    type="button"
-                    onClick={() => {
-                      setServiceType(service);
-                      setServiceOther("");
-                      setError(null);
-                    }}
-                    className={`min-h-16 border px-3 py-3 text-left text-sm font-semibold transition-colors ${
-                      serviceType === service
-                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
-                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
-                    }`}
-                  >
-                    {serviceType === service && <Check className="mb-2 h-3.5 w-3.5" />}
-                    {service}
-                  </button>
-                ))}
+              <input
+                type="text"
+                placeholder="Your name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={companyName}
+                  onChange={(event) => setCompanyName(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                />
+                <input
+                  type="text"
+                  placeholder="Your role (optional)"
+                  value={roleTitle}
+                  onChange={(event) => setRoleTitle(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  type="url"
+                  placeholder="Company website (optional)"
+                  value={companyWebsite}
+                  onChange={(event) => setCompanyWebsite(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone (optional)"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                />
+              </div>
+
+              <div className="border-t border-[#EFEDE6]/10 pt-4">
+                <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">What do you sell?</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {SERVICE_TYPES.map((service) => (
+                    <button
+                      key={service}
+                      type="button"
+                      onClick={() => {
+                        setServiceType(service);
+                        setServiceOther("");
+                        setError(null);
+                      }}
+                      className={`min-h-16 border px-3 py-3 text-left text-sm font-semibold transition-colors ${
+                        serviceType === service
+                          ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
+                          : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                      }`}
+                    >
+                      {serviceType === service && <Check className="mb-2 h-3.5 w-3.5" />}
+                      {service}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <button
@@ -203,13 +276,6 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 />
               )}
 
-              <input
-                type="text"
-                placeholder="Company name (optional)"
-                value={companyName}
-                onChange={(event) => setCompanyName(event.target.value)}
-                className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
-              />
             </div>
           )}
 

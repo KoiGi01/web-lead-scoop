@@ -19,7 +19,11 @@ interface AdminDashboardProps {
 interface AdminUserRow {
   id: string;
   email: string;
+  full_name: string | null;
+  role_title: string | null;
   company_name: string | null;
+  company_website: string | null;
+  phone: string | null;
   date_joined: string | null;
   last_sign_in_at: string | null;
   last_activity_at: string | null;
@@ -137,7 +141,11 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
     if (!needle) return users;
     return users.filter(user => [
       user.email,
+      user.full_name,
       user.company_name,
+      user.role_title,
+      user.company_website,
+      user.phone,
       user.plan,
       user.role,
       user.organization_name,
@@ -314,8 +322,8 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
                       className={`cursor-pointer transition-colors hover:bg-[#EFEDE6]/5 ${selectedUser?.id === user.id ? "bg-[#F5FF3D]/10" : ""}`}
                     >
                       <td className="min-w-0 px-3 py-3">
-                        <p title={user.email} className="w-full truncate text-[#EFEDE6]">{user.email}</p>
-                        <p className="mt-1 text-[10px] uppercase text-[#67645B]">{user.role}</p>
+                        <p title={user.full_name || user.email} className="w-full truncate text-[#EFEDE6]">{user.full_name || user.email}</p>
+                        <p title={user.email} className="mt-1 truncate text-[10px] text-[#67645B]">{user.email}</p>
                       </td>
                       <td className="min-w-0 px-3 py-3 text-[#A8A59C]"><span className="block truncate">{user.company_name || "-"}</span></td>
                       <td className="min-w-0 px-3 py-3 text-[#F5FF3D]"><span className="block truncate">{PLAN_LABELS[user.plan] || user.plan}</span></td>
@@ -341,6 +349,7 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Selected user</p>
                   <h3 className="mt-1 truncate font-display text-xl font-black text-[#EFEDE6]">{selectedUser.email}</h3>
+                  {selectedUser.full_name && <p className="mt-1 text-sm text-[#A8A59C]">{selectedUser.full_name}</p>}
                   <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{selectedUser.id}</p>
                 </div>
 
@@ -364,10 +373,51 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
                 </label>
 
                 <label className="grid gap-1.5">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Full name</span>
+                  <input
+                    defaultValue={selectedUser.full_name || ""}
+                    onBlur={event => updateSelectedUser({ fullName: event.target.value })}
+                    disabled={saving}
+                    className="h-10 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]"
+                  />
+                </label>
+
+                <label className="grid gap-1.5">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Company name</span>
                   <input
                     defaultValue={selectedUser.company_name || ""}
                     onBlur={event => updateSelectedUser({ companyName: event.target.value })}
+                    disabled={saving}
+                    className="h-10 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Role/title</span>
+                    <input
+                      defaultValue={selectedUser.role_title || ""}
+                      onBlur={event => updateSelectedUser({ roleTitle: event.target.value })}
+                      disabled={saving}
+                      className="h-10 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]"
+                    />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Phone</span>
+                    <input
+                      defaultValue={selectedUser.phone || ""}
+                      onBlur={event => updateSelectedUser({ phone: event.target.value })}
+                      disabled={saving}
+                      className="h-10 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-1.5">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Company website</span>
+                  <input
+                    defaultValue={selectedUser.company_website || ""}
+                    onBlur={event => updateSelectedUser({ companyWebsite: event.target.value })}
                     disabled={saving}
                     className="h-10 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]"
                   />

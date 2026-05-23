@@ -24,6 +24,10 @@ export type Database = {
           location: string | null
           sells_online: boolean
           company_name: string | null
+          full_name: string | null
+          role_title: string | null
+          company_website: string | null
+          phone: string | null
           created_at: string
         }
         Insert: {
@@ -35,6 +39,10 @@ export type Database = {
           location?: string | null
           sells_online?: boolean
           company_name?: string | null
+          full_name?: string | null
+          role_title?: string | null
+          company_website?: string | null
+          phone?: string | null
           created_at?: string
         }
         Update: {
@@ -46,6 +54,10 @@ export type Database = {
           location?: string | null
           sells_online?: boolean
           company_name?: string | null
+          full_name?: string | null
+          role_title?: string | null
+          company_website?: string | null
+          phone?: string | null
           created_at?: string
         }
       }

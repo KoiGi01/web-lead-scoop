@@ -140,7 +140,11 @@ const listUsers = async () => {
     return {
       id: authUser.id,
       email: authUser.email || "",
+      full_name: profile?.full_name || null,
+      role_title: profile?.role_title || null,
       company_name: profile?.company_name || null,
+      company_website: profile?.company_website || null,
+      phone: profile?.phone || null,
       date_joined: authUser.created_at || profile?.created_at || null,
       last_sign_in_at: authUser.last_sign_in_at || null,
       last_activity_at: usage.lastActivity,
@@ -178,6 +182,10 @@ const updateUser = async (callerId: string, body: Record<string, unknown>) => {
   const creditDelta = Number(body.creditDelta || 0);
   const plan = body.plan;
   const companyName = typeof body.companyName === "string" ? body.companyName.trim() : undefined;
+  const fullName = typeof body.fullName === "string" ? body.fullName.trim() : undefined;
+  const roleTitle = typeof body.roleTitle === "string" ? body.roleTitle.trim() : undefined;
+  const companyWebsite = typeof body.companyWebsite === "string" ? body.companyWebsite.trim() : undefined;
+  const phone = typeof body.phone === "string" ? body.phone.trim() : undefined;
   const role = typeof body.role === "string" ? body.role.trim() : undefined;
   const hasOrganizationUpdate = Object.prototype.hasOwnProperty.call(body, "organizationId");
   const organizationId = typeof body.organizationId === "string" && body.organizationId ? body.organizationId : null;
@@ -223,12 +231,22 @@ const updateUser = async (callerId: string, body: Record<string, unknown>) => {
     });
   }
 
-  if (companyName !== undefined) {
+  if (
+    companyName !== undefined ||
+    fullName !== undefined ||
+    roleTitle !== undefined ||
+    companyWebsite !== undefined ||
+    phone !== undefined
+  ) {
     await supabase
       .from("user_profiles")
       .upsert({
         id: targetUserId,
-        company_name: companyName || null,
+        company_name: companyName !== undefined ? (companyName || null) : profileBefore.data?.company_name || null,
+        full_name: fullName !== undefined ? (fullName || null) : profileBefore.data?.full_name || null,
+        role_title: roleTitle !== undefined ? (roleTitle || null) : profileBefore.data?.role_title || null,
+        company_website: companyWebsite !== undefined ? (companyWebsite || null) : profileBefore.data?.company_website || null,
+        phone: phone !== undefined ? (phone || null) : profileBefore.data?.phone || null,
         service_type: profileBefore.data?.service_type || "Lead research",
         client_type: profileBefore.data?.client_type || "any",
         pricing_tier: profileBefore.data?.pricing_tier || "mid_tier",
