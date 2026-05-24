@@ -646,6 +646,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [stage, setStage] = useState<ProgressStage>("idle");
   const [status, setStatus] = useState("Ready");
   const [progress, setProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
   const [results, setResults] = useState<LeadResult[] | null>(null);
   const [filterText, setFilterText] = useState("");
   const [emailsCopied, setEmailsCopied] = useState(false);
@@ -724,12 +725,34 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const canRunConfig = (config: SearchConfig) => canUseSearchQuality(plan, config.depth, config.enrichMode, isAdmin);
 
-  const progressSteps = [
-    { key: "maps", label: "Searching Maps" },
-    { key: "scrape", label: "Scraping websites" },
-    { key: "enrich", label: "Enriching contacts" },
-    { key: "rank", label: "Ranking leads" },
-  ] as const;
+  const progressLabels: Record<ProgressStage, string> = {
+    idle: "Preparing search...",
+    maps: "Searching...",
+    scrape: "Scraping websites...",
+    enrich: "Enriching contacts...",
+    rank: "Ranking leads...",
+    done: "Search complete",
+  };
+  const progressBlockCount = 12;
+  const filledProgressBlocks = Math.max(1, Math.min(progressBlockCount, Math.ceil((displayProgress / 100) * progressBlockCount)));
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setDisplayProgress(stage === "done" ? 100 : 0);
+      return;
+    }
+
+    setDisplayProgress(current => Math.max(current, Math.min(progress, 8)));
+    const interval = window.setInterval(() => {
+      setDisplayProgress(current => {
+        const stageCap = stage === "maps" ? 82 : stage === "rank" ? 98 : 94;
+        const target = Math.max(progress, current + (stage === "rank" ? 1.5 : 2.5));
+        return Math.min(stageCap, Math.max(current + 1, target));
+      });
+    }, 420);
+
+    return () => window.clearInterval(interval);
+  }, [isProcessing, progress, stage]);
 
   const filteredResults = useMemo(() => {
     if (!results) return null;
@@ -1939,29 +1962,41 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               );
             })()}
 
-            {(isProcessing || results) && (
-              <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-4 py-3">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                  <div className="flex flex-wrap gap-3">
-                    {progressSteps.map(step => {
-                      const active = stage === step.key;
-                      const complete =
-                        stage === "done" ||
-                        progressSteps.findIndex(item => item.key === stage) > progressSteps.findIndex(item => item.key === step.key);
-                      const hidden = step.key === "enrich" && !enrichMode;
-                      if (hidden) return null;
-                      return (
-                        <span key={step.key} className={`inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest ${active || complete ? "text-[#EFEDE6]" : "text-[#67645B]"}`}>
-                          <span className={`h-2 w-2 rounded-full ${complete ? "bg-[#F5FF3D]" : active ? "border border-[#F5FF3D]" : "border border-[#67645B]"}`} />
-                          {step.label}
-                        </span>
-                      );
-                    })}
+            {isProcessing && (
+              <div className="overflow-hidden border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-4 py-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                  <div className="flex min-w-[220px] items-center gap-3">
+                    <span className="relative grid h-8 w-8 place-items-center border border-[#F5FF3D]/40 bg-[#F5FF3D]/10">
+                      <span className="absolute h-2 w-2 animate-ping rounded-full bg-[#F5FF3D]" />
+                      <Loader2 className="relative h-4 w-4 animate-spin text-[#F5FF3D]" />
+                    </span>
+                    <div>
+                      <p className="font-display text-sm font-bold text-[#EFEDE6]">{progressLabels[stage]}</p>
+                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Building your lead list</p>
+                    </div>
                   </div>
-                  <div className="h-1 flex-1 bg-[#EFEDE6]/10">
-                    <div className="h-full bg-[#F5FF3D] transition-all duration-500" style={{ width: `${progress}%` }} />
+
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="grid min-w-0 flex-1 grid-cols-12 gap-1.5">
+                      {Array.from({ length: progressBlockCount }).map((_, index) => {
+                        const filled = index < filledProgressBlocks;
+                        const active = index === filledProgressBlocks - 1;
+                        return (
+                          <span
+                            key={index}
+                            className={`h-4 border transition-all duration-500 ${
+                              filled
+                                ? `border-[#F5FF3D] bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.35)] ${active ? "animate-pulse" : ""}`
+                                : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.04]"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-[#F5FF3D]">
+                      {Math.round(displayProgress)}%
+                    </span>
                   </div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">{status}</span>
                 </div>
               </div>
             )}
