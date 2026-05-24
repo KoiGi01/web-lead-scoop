@@ -181,9 +181,13 @@ const GENERIC_EMAIL_LOCAL_PARTS = new Set([
   "ventas",
 ]);
 
+const NAVIGATION_NAME_REGEX = /\b(who we are|faq|faqs|blog|home|services|service|contact|contacto|menu|privacy|terms|about us|learn more|read more|gallery|testimonials|reviews|appointment|appointments|booking|book now|login|sign in)\b/i;
+const TITLE_CONTEXT_REGEX = /\b(Dr\.?|Dra\.?|Doctor|Doctora|C\.?D\.?|Director(?:a)?|Fundador(?:a)?|Founder|Owner|CEO|Gerente|Manager|Administrador(?:a)?|Dentista|Odont[oÃ³]logo(?:a)?|Cirujano Dentista|Especialista)\b/i;
+
 function isLikelyPersonName(value?: string): boolean {
   const name = String(value || "").trim();
   if (!name || name.includes("@") || /\d/.test(name)) return false;
+  if (NAVIGATION_NAME_REGEX.test(name)) return false;
   if (/(clinic|clinica|clínica|dental|dentist|dentista|office|contact|info|support|ventas|equipo|team|admin|linkedin profile)/i.test(name)) return false;
   const parts = name.split(/\s+/).filter(Boolean);
   return parts.length >= 2 && parts.length <= 5 && parts.every(part => /^[A-Za-zÀ-ÖØ-öø-ÿ'.-]{2,}$/.test(part)) && !GENERIC_EMAIL_LOCAL_PARTS.has(name.toLowerCase());
@@ -200,7 +204,7 @@ function cleanPersonName(value: string): string {
 }
 
 function titleFromContext(context: string): string {
-  const title = context.match(/\b(Director(?:a)?|Fundador(?:a)?|Founder|Owner|CEO|Gerente|Manager|Administrador(?:a)?|Dentista|Odont[oó]logo(?:a)?|Cirujano Dentista|Especialista|Doctor(?:a)?)\b/i)?.[0] || "";
+  const title = context.match(TITLE_CONTEXT_REGEX)?.[0] || "";
   return title;
 }
 
@@ -219,9 +223,12 @@ function extractWebsiteContactsFromText(text: string, industry: string): Decisio
       const matchIndex = match.index || 0;
       const start = Math.max(0, matchIndex - 120);
       const context = normalizedText.slice(start, Math.min(normalizedText.length, (match.index || 0) + 180));
+      if (NAVIGATION_NAME_REGEX.test(context.slice(0, 80)) && !TITLE_CONTEXT_REGEX.test(context)) continue;
+      const title = titleFromContext(context);
+      if (!title && fullName.split(/\s+/).length > 3) continue;
       const base: Partial<DecisionMakerContact> = {
         fullName,
-        title: titleFromContext(context),
+        title,
         confidence: 70,
       };
       const ranked = scoreDecisionMaker(base, industry);

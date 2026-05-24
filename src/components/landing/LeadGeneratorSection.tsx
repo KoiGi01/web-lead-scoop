@@ -83,6 +83,13 @@ type ProgressStage = "idle" | "maps" | "scrape" | "enrich" | "rank" | "done";
 type SearchMode = "free" | "manual";
 type ChatRole = "user" | "assistant";
 
+interface SearchStepStatus {
+  current: number;
+  total: number;
+  peopleFound: number;
+  businessName: string;
+}
+
 interface RequiredContactFilters {
   phone: boolean;
   website: boolean;
@@ -680,6 +687,37 @@ const getPreferredSignalScore = (lead: LeadResult, required: RequiredContactFilt
   (required.linkedin && hasPersonLinkedInSignal(lead) ? 14 : 0) +
   (required.person && hasPersonName(lead) ? 8 : 0);
 
+const BURST_PROGRESS_STEPS = [24, 26, 40, 57, 68, 79, 87, 92, 96, 97];
+
+const getBurstProgressTarget = (stage: ProgressStage, progress: number) => {
+  if (stage === "done") return 100;
+  if (stage === "rank") return 97;
+  const desired = Math.max(progress, stage === "maps" ? 40 : stage === "scrape" ? 79 : 92);
+  return BURST_PROGRESS_STEPS.find(step => step >= desired) ?? 97;
+};
+
+const getInvokeTimeoutMs = (depth: Depth) => {
+  if (depth === "deep") return 22000;
+  if (depth === "normal") return 18000;
+  return 14000;
+};
+
+const invokeWithTimeout = async <T,>(
+  promise: PromiseLike<T>,
+  timeoutMs: number,
+  message = "Provider timed out",
+): Promise<T> => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+};
+
 const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free" }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
@@ -707,6 +745,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [status, setStatus] = useState("Ready");
   const [progress, setProgress] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
+  const [searchStepStatus, setSearchStepStatus] = useState<SearchStepStatus | null>(null);
   const [results, setResults] = useState<LeadResult[] | null>(null);
   const [searchDiagnostics, setSearchDiagnostics] = useState<SearchDiagnostics | null>(null);
   const [filterText, setFilterText] = useState("");
@@ -745,11 +784,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setCountry(customEvent.detail.location || "");
       setResults(null);
       setSearchDiagnostics(null);
+      setSearchStepStatus(null);
     };
     const handleNewSearch = () => {
       setSearchMode(null);
       setResults(null);
       setSearchDiagnostics(null);
+      setSearchStepStatus(null);
       setFilterText("");
       setStage("idle");
       setProgress(0);
@@ -793,7 +834,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     maps: "Searching...",
     scrape: "Scraping websites...",
     enrich: "Enriching contacts...",
-    rank: "Ranking leads...",
+    rank: "Finalizing...",
     done: "Search complete",
   };
   const progressBlockCount = 12;
@@ -805,14 +846,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       return;
     }
 
-    setDisplayProgress(current => Math.max(current, Math.min(progress, 8)));
+    setDisplayProgress(current => Math.max(current, Math.min(progress, 6)));
     const interval = window.setInterval(() => {
       setDisplayProgress(current => {
-        const stageCap = stage === "maps" ? 82 : stage === "rank" ? 98 : 94;
-        const target = Math.max(progress, current + (stage === "rank" ? 1.5 : 2.5));
-        return Math.min(stageCap, Math.max(current + 1, target));
+        const target = getBurstProgressTarget(stage, progress);
+        if (current >= target) return current;
+        const gap = target - current;
+        const jump = gap > 18 ? 9 : gap > 8 ? 4 : gap > 3 ? 1.4 : 0.45;
+        return Math.min(target, current + jump);
       });
-    }, 420);
+    }, 520);
 
     return () => window.clearInterval(interval);
   }, [isProcessing, progress, stage]);
@@ -1113,6 +1156,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     setIsProcessing(true);
     setResults(null);
     setSearchDiagnostics(null);
+    setSearchStepStatus(null);
     setProgress(0);
     setStage("maps");
     setStatus("Searching trusted Maps businesses...");
@@ -1170,37 +1214,51 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         if (leads.filter(hasQualifiedPersonLead).length >= depthSettings.targetPeople) break;
         const business = websitesToScan[index];
         scannedWebsites += 1;
+        const peopleFoundBefore = leads.filter(hasQualifiedPersonLead).length;
         const currentStage = config.enrichMode ? "enrich" : "scrape";
         setStage(currentStage);
-        setStatus(`${config.enrichMode ? "Enriching" : "Scraping"} ${index + 1}/${websitesToScan.length}: looking for a person at ${business.name}`);
-        setProgress(25 + Math.round(((index + 1) / Math.max(1, websitesToScan.length)) * 60));
+        setSearchStepStatus({
+          current: index + 1,
+          total: websitesToScan.length,
+          peopleFound: peopleFoundBefore,
+          businessName: business.name,
+        });
+        setStatus(`${config.enrichMode ? "Enriching contacts" : "Scraping websites"} · Website ${index + 1}/${websitesToScan.length}`);
+        setProgress(26 + Math.round((index / Math.max(1, websitesToScan.length)) * 66));
 
         try {
-          const { data: contactData } = await supabase.functions.invoke("extract-contacts", {
-            body: {
-              url: business.website,
-              businessName: business.name,
-              location: business.address || config.location,
-              enrichMode: config.enrichMode,
-              industry: config.industry,
-              depth: config.depth,
-              userId: user.id,
-              searchSessionId,
-              usageType,
-              creditsChargedToUser: runChargedCredits,
-            },
-          });
-          leads.push({
+          const contactResponse = await invokeWithTimeout(
+            supabase.functions.invoke("extract-contacts", {
+              body: {
+                url: business.website,
+                businessName: business.name,
+                location: business.address || config.location,
+                enrichMode: config.enrichMode,
+                industry: config.industry,
+                depth: config.depth,
+                userId: user.id,
+                searchSessionId,
+                usageType,
+                creditsChargedToUser: runChargedCredits,
+              },
+            }),
+            getInvokeTimeoutMs(config.depth),
+            "Contact enrichment timed out",
+          );
+          const lead = {
             ...business,
-            emails: contactData?.emails || [],
-            whatsapp: contactData?.whatsapp || [],
-            linkedinUrl: contactData?.linkedinUrl,
-            socialLinks: contactData?.socialLinks || [],
-            contactPageFound: contactData?.contactPageFound || false,
-            emailSource: contactData?.emailSource || "none",
-            contacts: contactData?.contacts || [],
-          });
-        } catch {
+            emails: contactResponse.data?.emails || [],
+            whatsapp: contactResponse.data?.whatsapp || [],
+            linkedinUrl: contactResponse.data?.linkedinUrl,
+            socialLinks: contactResponse.data?.socialLinks || [],
+            contactPageFound: contactResponse.data?.contactPageFound || false,
+            emailSource: contactResponse.data?.emailSource || "none",
+            contacts: contactResponse.data?.contacts || [],
+          };
+          leads.push(lead);
+          setSearchStepStatus(current => current ? { ...current, peopleFound: leads.filter(hasQualifiedPersonLead).length } : current);
+        } catch (error) {
+          console.warn(`Skipping slow contact enrichment for ${business.name}:`, error);
           leads.push({
             ...business,
             emails: [],
@@ -1214,8 +1272,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       }
 
       setStage("rank");
-      setStatus("Ranking leads...");
-      setProgress(95);
+      setStatus("Finalizing person-qualified leads...");
+      setProgress(96);
 
       const seen = new Set<string>();
       const deduped = leads.map(enrichLeadQuality).filter(lead => {
@@ -1226,6 +1284,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       });
 
       const qualityFiltered = deduped.filter(lead => passesQualityGate(lead, config));
+      setSearchStepStatus(current => current ? { ...current, peopleFound: qualityFiltered.length } : current);
       const diagnostics: SearchDiagnostics = {
         discoveredCompanies: businesses.length,
         scannedWebsites,
@@ -1250,6 +1309,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
       setResults(ranked);
       setSearchDiagnostics({ ...diagnostics, savedLeads: ranked.length });
+      setSearchStepStatus(null);
       setStage("done");
       setStatus(`${ranked.length} leads ready`);
       setProgress(100);
@@ -1267,6 +1327,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setStatus(message);
       setStage("idle");
       setProgress(0);
+      setSearchStepStatus(null);
       if (isCreditError) {
         toast({
           title: "Add credits to continue",
@@ -2044,30 +2105,43 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     </span>
                     <div>
                       <p className="font-display text-sm font-bold text-[#EFEDE6]">{progressLabels[stage]}</p>
-                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Building your lead list</p>
+                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">
+                        {searchStepStatus
+                          ? `Website ${searchStepStatus.current}/${searchStepStatus.total}`
+                          : stage === "rank"
+                            ? "Finalizing..."
+                            : "Building your lead list"}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <div className="grid min-w-0 flex-1 grid-cols-12 gap-1.5">
-                      {Array.from({ length: progressBlockCount }).map((_, index) => {
-                        const filled = index < filledProgressBlocks;
-                        const active = index === filledProgressBlocks - 1;
-                        return (
-                          <span
-                            key={index}
-                            className={`h-4 border transition-all duration-500 ${
-                              filled
-                                ? `border-[#F5FF3D] bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.35)] ${active ? "animate-pulse" : ""}`
-                                : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.04]"
-                            }`}
-                          />
-                        );
-                      })}
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="grid min-w-0 flex-1 grid-cols-12 gap-1.5">
+                        {Array.from({ length: progressBlockCount }).map((_, index) => {
+                          const filled = index < filledProgressBlocks;
+                          const active = index === filledProgressBlocks - 1;
+                          return (
+                            <span
+                              key={index}
+                              className={`h-4 border transition-all duration-500 ${
+                                filled
+                                  ? `border-[#F5FF3D] bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.35)] ${active ? "animate-pulse" : ""}`
+                                  : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.04]"
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                      <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-[#F5FF3D]">
+                        {Math.round(displayProgress)}%
+                      </span>
                     </div>
-                    <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-[#F5FF3D]">
-                      {Math.round(displayProgress)}%
-                    </span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">
+                      <span>{searchStepStatus ? "Finding people, emails, and public profiles" : status}</span>
+                      {searchStepStatus && <span className="text-[#F5FF3D]">People found: {searchStepStatus.peopleFound}</span>}
+                      {searchStepStatus?.businessName && <span className="max-w-[320px] truncate text-[#A8A59C]">{searchStepStatus.businessName}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
