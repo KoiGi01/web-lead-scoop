@@ -718,6 +718,38 @@ const invokeWithTimeout = async <T,>(
   }
 };
 
+const SegmentedCircularProgress = ({ value, label }: { value: number; label: string }) => {
+  const segments = 28;
+  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  const filled = Math.round((clamped / 100) * segments);
+
+  return (
+    <div className="relative mx-auto grid h-44 w-44 place-items-center">
+      <div className="absolute inset-0 rounded-full border border-[#F5FF3D]/10 bg-[#F5FF3D]/[0.03] shadow-[0_0_60px_rgba(245,255,61,0.08)]" />
+      {Array.from({ length: segments }).map((_, index) => {
+        const active = index < filled;
+        return (
+          <span
+            key={index}
+            className={`absolute left-1/2 top-1/2 h-5 w-1.5 origin-[50%_82px] -translate-x-1/2 -translate-y-[82px] rounded-[2px] transition-all duration-500 ${
+              active
+                ? "bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.7)]"
+                : "bg-[#EFEDE6]/10"
+            }`}
+            style={{ transform: `translateX(-50%) translateY(-82px) rotate(${index * (360 / segments)}deg)` }}
+          />
+        );
+      })}
+      <div className="relative grid h-28 w-28 place-items-center rounded-full border border-[#EFEDE6]/10 bg-black text-center shadow-[inset_0_0_32px_rgba(245,255,61,0.04)]">
+        <div>
+          <p className="font-mono text-3xl font-black tabular-nums text-[#EFEDE6]">{clamped}%</p>
+          <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">{label}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free" }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
   const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
@@ -1535,7 +1567,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   ];
 
   return (
-    <section id="tool" className="h-full w-full overflow-auto bg-black text-[#EFEDE6]">
+    <section id="tool" className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" ? "overflow-hidden" : "overflow-auto"}`}>
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6">
         {authLoading && (
           <div className="flex min-h-[360px] items-center justify-center">
@@ -1828,14 +1860,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 onSelect: (next: T) => void,
                 gateSearchQuality = false,
               ) => {
-                const idx = order.indexOf(value);
-                const heights = ["h-3", "h-5", "h-7", "h-9"];
                 return (
-                  <div className="flex items-end gap-2">
-                    {order.map((option, i) => {
+                  <div
+                    className="relative inline-grid h-12 w-full overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black/60"
+                    style={{ gridTemplateColumns: `repeat(${order.length}, minmax(0, 1fr))` }}
+                  >
+                    {order.map((option) => {
                       const active = option === value;
-                      const passed = i < idx;
-                      const h = heights[i] ?? "h-9";
                       return (
                         <button
                           key={option}
@@ -1848,21 +1879,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             onSelect(option);
                           }}
                           disabled={isProcessing}
-                          className="group flex flex-1 flex-col items-center gap-2 disabled:cursor-not-allowed"
+                          className={`relative z-10 flex items-center justify-center border-r border-[#EFEDE6]/10 px-4 font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-all last:border-r-0 disabled:cursor-not-allowed ${
+                            active
+                              ? "bg-[#F5FF3D] text-black shadow-[0_0_24px_rgba(245,255,61,0.45)]"
+                              : "text-[#A8A59C] hover:bg-[#EFEDE6]/5 hover:text-[#EFEDE6]"
+                          }`}
                           aria-pressed={active}
                         >
-                          <span className={`w-full border-2 transition-all duration-150 ${h} ${
-                            active
-                              ? "border-[#F5FF3D] bg-[#F5FF3D] shadow-[0_0_18px_-2px_rgba(245,255,61,0.55)]"
-                              : passed
-                                ? "border-[#F5FF3D]/70 bg-[#F5FF3D]/10"
-                                : "border-[#EFEDE6]/20 bg-transparent group-hover:border-[#F5FF3D]/60 group-hover:bg-[#F5FF3D]/[0.06]"
-                          }`} />
-                          <span className={`font-mono text-[11px] uppercase tracking-widest transition-colors ${
-                            active ? "text-[#F5FF3D]" : "text-[#A8A59C] group-hover:text-[#EFEDE6]"
-                          }`}>
-                            {labels[option]}
-                          </span>
+                          {labels[option]}
                         </button>
                       );
                     })}
@@ -1871,38 +1895,187 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               };
 
               const sectionEyebrow = (label: string, hint: ReactNode) => (
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="h-px w-8 bg-[#F5FF3D]" />
-                  <p className="font-mono text-xs uppercase tracking-[0.4em] text-[#EFEDE6]">{label}</p>
-                  <HelpHint>{hint}</HelpHint>
+                <div className="mb-5 flex items-start gap-4">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#F5FF3D] font-display text-base font-black text-black shadow-[0_0_24px_rgba(245,255,61,0.55)]">
+                    {label === "Target" ? "1" : label === "Strategy" ? "2" : "3"}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <p className="font-mono text-base font-bold uppercase tracking-[0.18em] text-[#EFEDE6]">{label}</p>
+                      <HelpHint>{hint}</HelpHint>
+                    </div>
+                    <p className="mt-1 text-sm text-[#A8A59C]">
+                      {label === "Target"
+                        ? "Who are you looking for?"
+                        : label === "Strategy"
+                          ? "Define how broad or specific to search."
+                          : "Choose the most important priority signals."}
+                    </p>
+                  </div>
                 </div>
+              );
+              const selectedSignalLabels = getRequiredContactLabels(requiredContacts);
+              const previewLeads = sortedResults ?? [];
+              const manualPreview = (
+                <aside className="flex max-h-[calc(100vh-9.25rem)] min-h-0 flex-col border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Search preview</p>
+                      <p className="mt-1 text-sm text-[#A8A59C]">
+                        {isProcessing ? "Searching and enriching leads now." : results ? "Review the latest results." : "Review your current setup."}
+                      </p>
+                    </div>
+                    {isProcessing && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#F5FF3D]" />}
+                  </div>
+
+                  {results && !isProcessing ? (
+                    <div className="flex min-h-0 flex-1 flex-col">
+                      <div className="mb-4 border-b border-[#EFEDE6]/10 pb-4">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                          {previewLeads.length} person-qualified lead{previewLeads.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                        {previewLeads.map((lead, index) => {
+                          const contact = getTopContact(lead);
+                          return (
+                            <article key={`${lead.placeId || lead.name}-${index}`} className="border border-[#EFEDE6]/10 bg-black/60 p-3">
+                              <p className="truncate font-display text-sm font-bold text-[#EFEDE6]">{contact?.fullName || "Named contact"}</p>
+                              <p className="mt-1 truncate text-xs text-[#A8A59C]">{lead.name}</p>
+                              <p className="mt-1 truncate text-[11px] text-[#67645B]">{lead.category?.replace(/_/g, " ") || lead.address || "No category listed"}</p>
+                              <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">
+                                {lead.leadQualityLabel || "Lead"} / {lead.leadQualityScore || 0}
+                              </p>
+                            </article>
+                          );
+                        })}
+                        {previewLeads.length === 0 && (
+                          <div className="border border-[#EFEDE6]/10 bg-black/60 p-5 text-sm text-[#A8A59C]">
+                            No person-qualified leads were found. Try a deeper search or a more specific city.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {isProcessing ? (
+                        <div className="flex min-h-0 flex-1 flex-col justify-center border-y border-[#EFEDE6]/10 py-6">
+                          <SegmentedCircularProgress value={displayProgress} label={progressLabels[stage]} />
+                          <div className="mt-5 text-center">
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                              {searchStepStatus ? `Website ${searchStepStatus.current}/${searchStepStatus.total}` : status}
+                            </p>
+                            {searchStepStatus && (
+                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">
+                                People found: {searchStepStatus.peopleFound}
+                              </p>
+                            )}
+                            {searchStepStatus?.businessName && (
+                              <p className="mx-auto mt-1 max-w-[260px] truncate text-xs text-[#A8A59C]">
+                                {searchStepStatus.businessName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="min-h-0 flex-1 space-y-4 overflow-hidden">
+                          <div>
+                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Target</p>
+                            <div className="divide-y divide-[#EFEDE6]/10 border-y border-[#EFEDE6]/10">
+                              <div className="flex justify-between gap-4 py-2 text-sm">
+                                <span className="text-[#A8A59C]">Industry / niche</span>
+                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{industry.trim() || "Not set"}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 py-2 text-sm">
+                                <span className="text-[#A8A59C]">Location</span>
+                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{country.trim() ? `${country.trim()} (${locationMode})` : "Not set"}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 py-2 text-sm">
+                                <span className="text-[#A8A59C]">Language</span>
+                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{language.trim() || "Optional"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Strategy</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                ["Depth", depthConfig[depth].label],
+                                ["Mode", enrichMode ? "Enrich" : "Normal"],
+                                ["Quality", strictness],
+                              ].map(([label, value]) => (
+                                <div key={label} className="border border-[#EFEDE6]/10 bg-black/60 p-2">
+                                  <p className="font-mono text-[8px] uppercase tracking-widest text-[#67645B]">{label}</p>
+                                  <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">{value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Filters</p>
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                              {selectedSignalLabels === "none" ? "No priority signals selected" : selectedSignalLabels}
+                            </p>
+                            <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                              Public email ranking: <span className="text-[#EFEDE6]">{preferPublicEmail ? "On" : "Off"}</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 border-t border-[#EFEDE6]/10 pt-4">
+                        <div className="flex items-end justify-between gap-4">
+                          <div>
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Credits</p>
+                            <p className="mt-1 font-mono text-2xl font-black text-[#EFEDE6]">{creditsBalance}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Cost</p>
+                            <p className="mt-1 font-mono text-2xl font-black text-[#F5FF3D]">{isAdmin ? "Admin" : searchCost}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleGenerate()}
+                          disabled={isProcessing}
+                          className="mt-4 h-12 w-full border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isProcessing ? "Finding leads..." : isAdmin ? `Find leads - admin` : `Find leads - ${searchCost} credits`}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </aside>
               );
 
               return (
-              <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-4 sm:px-6 sm:py-5">
-                <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mx-auto flex h-full w-full max-w-[1440px] flex-col px-4 py-3 sm:px-6">
+                <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
                   <button onClick={() => setSearchMode(null)} className="inline-flex h-8 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
                     <ArrowLeft className="h-3.5 w-3.5" /> Options
                   </button>
                   <span className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#F5FF3D]">Manual search</span>
                 </div>
 
-                <div className="mb-5">
-                  <h1 className="font-display text-2xl font-black leading-tight tracking-tight text-[#EFEDE6]">Set up your search.</h1>
-                  <p className="mt-1.5 max-w-xl text-sm leading-5 text-[#A8A59C]">Pick the target, the strategy, and the filters that matter.</p>
-                </div>
+                <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="min-w-0">
+                    <div className="mb-4">
+                      <h1 className="font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your search.</h1>
+                      <p className="mt-2 max-w-xl text-sm leading-6 text-[#A8A59C]">Pick the target, the strategy, and the filters that matter.</p>
+                    </div>
 
-                <div className="flex flex-1 flex-col gap-6 md:gap-7">
-                  <section>
+                    <div className="flex min-h-0 flex-1 flex-col gap-3">
+                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
                     {sectionEyebrow("Target", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">What to look for</p>
                         <p><span className="text-[#EFEDE6]">Industry</span> is the niche or business type. <span className="text-[#EFEDE6]">Location</span> narrows results to a country or a specific city. <span className="text-[#EFEDE6]">Language</span> is optional and skews discovery toward businesses operating in that language.</p>
                       </>
                     ))}
-                    <div className="grid gap-5 md:grid-cols-[1.3fr_1fr_0.9fr]">
+                    <div className="grid gap-5 md:grid-cols-[1.25fr_1fr_0.9fr]">
                       <div>
-                        <div className="mb-1.5 flex h-7 items-center">
+                        <div className="mb-2 flex h-5 items-center">
                           <label htmlFor="industry" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Industry / niche</label>
                         </div>
                         <input
@@ -1912,15 +2085,15 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           onChange={event => setIndustry(event.target.value)}
                           placeholder="AI agencies"
                           disabled={isProcessing}
-                          className={`h-11 w-full max-w-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
+                          className={`h-12 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
                         />
                         {fieldErrors.industry && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.industry}</p>}
                       </div>
 
                       <div>
-                        <div className="mb-1.5 flex h-7 items-center justify-between gap-2">
+                        <div className="mb-2 flex h-5 items-center justify-between gap-2">
                           <label htmlFor="country" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Location</label>
-                          <div className="relative inline-grid h-7 w-[148px] grid-cols-2 border border-[#EFEDE6]/15 bg-black">
+                          <div className="relative inline-grid h-8 w-[160px] grid-cols-2 overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black">
                             <span
                               className={`absolute inset-y-0 w-1/2 transition-transform duration-200 ease-out ${
                                 locationMode === "country" ? "translate-x-0 bg-[#EFEDE6]" : "translate-x-full bg-[#EFEDE6]"
@@ -1948,13 +2121,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           onChange={event => setCountry(event.target.value)}
                           placeholder={locationMode === "country" ? "Mexico" : "Lisbon, Portugal"}
                           disabled={isProcessing}
-                          className={`h-11 w-full border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
+                          className={`h-12 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
                         />
                         {fieldErrors.country && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.country}</p>}
                       </div>
 
                       <div>
-                        <div className="mb-1.5 flex h-7 items-center">
+                        <div className="mb-2 flex h-5 items-center">
                           <label htmlFor="language" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Language <span className="text-[#67645B]/60">(optional)</span></label>
                         </div>
                         <input
@@ -1963,13 +2136,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           onChange={event => setLanguage(event.target.value)}
                           placeholder="Spanish"
                           disabled={isProcessing}
-                          className="h-11 w-full border border-[#EFEDE6]/15 bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50"
+                          className="h-12 w-full rounded-md border border-[#EFEDE6]/15 bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50"
                         />
                       </div>
                     </div>
                   </section>
 
-                  <section>
+                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
                     {sectionEyebrow("Strategy", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">How hard the search works</p>
@@ -1978,7 +2151,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <p><span className="text-[#EFEDE6]">Strictness</span> — how loosely we match your niche. Broad casts a wide net; Strict keeps only tight matches.</p>
                       </>
                     ))}
-                    <div className="grid gap-x-8 gap-y-5 md:grid-cols-[1fr_auto_1fr] md:items-end md:gap-x-10">
+                    <div className="grid gap-x-7 gap-y-4 md:grid-cols-3 md:items-end">
                       <div>
                         <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Search depth</p>
                         {renderRange(depth, depthOrder, { simple: "Simple", normal: "Normal", deep: "Deep" }, setDepth, true)}
@@ -1996,7 +2169,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             setEnrichMode(!enrichMode);
                           }}
                           disabled={isProcessing}
-                          className="relative inline-grid h-11 w-[200px] grid-cols-2 border border-[#EFEDE6]/15 bg-black"
+                          className="relative inline-grid h-12 w-full grid-cols-2 overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black"
                         >
                           <span
                             className={`absolute inset-y-0 w-1/2 transition-transform duration-200 ease-out ${
@@ -2004,10 +2177,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             }`}
                             aria-hidden
                           />
-                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] uppercase tracking-widest transition-colors ${!enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
+                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${!enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
                             Normal
                           </span>
-                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] uppercase tracking-widest transition-colors ${enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
+                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
                             Enrich
                           </span>
                         </button>
@@ -2020,7 +2193,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     </div>
                   </section>
 
-                  <section>
+                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
                     {sectionEyebrow("Filters", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">Trim and rank the results</p>
@@ -2031,7 +2204,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     ))}
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                       <div>
-                        <p className="mb-2.5 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
+                        <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
                         <div className="flex flex-wrap gap-2">
                           {requiredOptions.map(({ key, label, Icon }) => {
                             const active = requiredContacts[key];
@@ -2046,9 +2219,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                   active
                                     ? "border-[#F5FF3D] bg-[#F5FF3D] text-black shadow-[0_0_0_1px_rgba(245,255,61,0.4)]"
                                     : "border-[#EFEDE6]/20 bg-[#0A0A0A] text-[#A8A59C] hover:-translate-y-px hover:border-[#F5FF3D]/60 hover:text-[#EFEDE6]"
-                                }`}
+                                } h-11 rounded-md px-4 text-[11px] tracking-widest`}
                               >
-                                <Icon className="h-3.5 w-3.5" /> {label}
+                                <Icon className="h-4 w-4" /> {label}
                               </button>
                             );
                           })}
@@ -2062,14 +2235,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         className="group inline-flex items-center gap-3 self-start md:self-end md:pb-1"
                         aria-pressed={preferPublicEmail}
                       >
-                        <span className="relative inline-flex h-5 w-9 items-center border border-[#EFEDE6]/20 bg-black">
+                        <span className="relative inline-flex h-6 w-10 items-center rounded-sm border border-[#EFEDE6]/20 bg-black">
                           <span
-                            className={`absolute h-3 w-3 transition-all duration-200 ease-out ${
-                              preferPublicEmail ? "left-[18px] bg-[#F5FF3D]" : "left-[2px] bg-[#A8A59C]"
+                            className={`absolute h-3.5 w-3.5 transition-all duration-200 ease-out ${
+                              preferPublicEmail ? "left-[21px] bg-[#F5FF3D]" : "left-[3px] bg-[#A8A59C]"
                             }`}
                           />
                         </span>
-                        <span className={`font-mono text-[11px] uppercase tracking-widest transition-colors ${
+                        <span className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
                           preferPublicEmail ? "text-[#EFEDE6]" : "text-[#A8A59C] group-hover:text-[#EFEDE6]"
                         }`}>
                           Prefer public email in ranking
@@ -2079,7 +2252,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   </section>
                 </div>
 
-                <div className="mt-6 flex flex-col gap-4 border-t border-[#EFEDE6]/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="hidden">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-widest text-[#67645B]">
                     {industry.trim()
                       ? <span className="text-[#EFEDE6]">{industry.trim()}</span>
@@ -2108,11 +2281,15 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     {isProcessing ? "Finding leads..." : isAdmin ? `Find leads - admin` : `Find leads - ${searchCost} credits`}
                   </button>
                 </div>
+                  </div>
+
+                  {manualPreview}
+                </div>
               </div>
               );
             })()}
 
-            {isProcessing && (
+            {isProcessing && searchMode !== "manual" && (
               <div className="overflow-hidden border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-4 py-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                   <div className="flex min-w-[220px] items-center gap-3">
@@ -2164,7 +2341,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               </div>
             )}
 
-            {results && !isProcessing && (
+            {results && !isProcessing && searchMode !== "manual" && (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-5">
                   {[
