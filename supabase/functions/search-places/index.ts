@@ -73,23 +73,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    const limit = Math.min(maxResults || 20, 60); // cap at 60 (3 pages)
+    const limit = Math.min(maxResults || 40, 150);
     const allPlaces: any[] = [];
     const seenPlaceIds = new Set<string>();
     const queries = Array.isArray(queryVariants) && queryVariants.length > 0
-      ? queryVariants.map((q: string) => String(q).trim()).filter(Boolean).slice(0, 16)
+      ? queryVariants.map((q: string) => String(q).trim()).filter(Boolean).slice(0, 32)
       : [`${keyword} in ${location}`];
+    const perQueryLimit = Math.max(10, Math.min(30, Math.ceil(limit / Math.min(queries.length, 5))));
 
     for (const query of queries) {
       let pageToken: string | undefined;
-      // Fetch pages until we have enough results or no more pages
-      while (allPlaces.length < limit) {
+      let queryPlacesSeen = 0;
+      // Spread requests across query variants so person-intent searches are not starved by the first broad query.
+      while (allPlaces.length < limit && queryPlacesSeen < perQueryLimit) {
         const remaining = limit - allPlaces.length;
+        const queryRemaining = perQueryLimit - queryPlacesSeen;
         const searchUrl = `https://places.googleapis.com/v1/places:searchText`;
 
         const body: any = {
           textQuery: query,
-          maxResultCount: Math.min(remaining, 20),
+          maxResultCount: Math.min(remaining, queryRemaining, 20),
         };
 
         if (pageToken) {
@@ -156,6 +159,7 @@ Deno.serve(async (req) => {
         }
 
         const places = data.places || [];
+        queryPlacesSeen += places.length;
         for (const place of places) {
           if (!place.id || seenPlaceIds.has(place.id)) continue;
           seenPlaceIds.add(place.id);

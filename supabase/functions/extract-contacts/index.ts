@@ -94,8 +94,9 @@ function extractLinkedInProfiles(text: string, links: string[]): string[] {
 
 function extractLinkedInCompany(text: string, links: string[]): string | undefined {
   const htmlMatch = text.match(LINKEDIN_COMPANY_REGEX)?.[0];
-  if (htmlMatch) return htmlMatch;
-  return links.find(link => /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+\/?/i.test(link));
+  if (htmlMatch) return normalizeUrl(htmlMatch);
+  const link = links.find(link => /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+\/?/i.test(link));
+  return link ? normalizeUrl(link) : undefined;
 }
 
 function extractSocialLinks(text: string, links: string[], sourceUrl?: string): string[] {
@@ -117,8 +118,117 @@ function extractProfessionalLinks(text: string, links: string[]): string[] {
   return [...urls].slice(0, 6);
 }
 
-function looksLikeLinkedIn(url: string) {
-  return /https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[a-zA-Z0-9\-_%]+\/?/i.test(url);
+function normalizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    parsed.search = "";
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return url;
+  }
+}
+
+function resolveUrl(url: string, baseUrl: string): string | null {
+  try {
+    return new URL(url, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&aacute;/gi, "á")
+    .replace(/&eacute;/gi, "é")
+    .replace(/&iacute;/gi, "í")
+    .replace(/&oacute;/gi, "ó")
+    .replace(/&uacute;/gi, "ú")
+    .replace(/&ntilde;/gi, "ñ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const GENERIC_EMAIL_LOCAL_PARTS = new Set([
+  "admin",
+  "contact",
+  "contacto",
+  "hello",
+  "hola",
+  "info",
+  "mail",
+  "office",
+  "recepcion",
+  "reception",
+  "sales",
+  "soporte",
+  "support",
+  "ventas",
+]);
+
+function isLikelyPersonName(value?: string): boolean {
+  const name = String(value || "").trim();
+  if (!name || name.includes("@") || /\d/.test(name)) return false;
+  if (/(clinic|clinica|clínica|dental|dentist|dentista|office|contact|info|support|ventas|equipo|team|admin|linkedin profile)/i.test(name)) return false;
+  const parts = name.split(/\s+/).filter(Boolean);
+  return parts.length >= 2 && parts.length <= 5 && parts.every(part => /^[A-Za-zÀ-ÖØ-öø-ÿ'.-]{2,}$/.test(part)) && !GENERIC_EMAIL_LOCAL_PARTS.has(name.toLowerCase());
+}
+
+function cleanPersonName(value: string): string {
+  return value
+    .replace(/\b(Dr\.?|Dra\.?|Doctor|Doctora|C\.?D\.?|Mtro\.?|Mtra\.?|Lic\.?)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w*[0-9]\w*\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function titleFromContext(context: string): string {
+  const title = context.match(/\b(Director(?:a)?|Fundador(?:a)?|Founder|Owner|CEO|Gerente|Manager|Administrador(?:a)?|Dentista|Odont[oó]logo(?:a)?|Cirujano Dentista|Especialista|Doctor(?:a)?)\b/i)?.[0] || "";
+  return title;
+}
+
+function extractWebsiteContactsFromText(text: string, industry: string): DecisionMakerContact[] {
+  const contacts: DecisionMakerContact[] = [];
+  const normalizedText = text.replace(/\s+/g, " ");
+  const patterns = [
+    /\b(?:Dr\.?|Dra\.?|Doctor|Doctora|C\.?D\.?|Mtro\.?|Mtra\.?|Lic\.?)\s+([A-ZÁÉÍÓÚÑ][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){1,4})/g,
+    /([A-ZÁÉÍÓÚÑ][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-ZÁÉÍÓÚÑ][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){1,4})\s*(?:-|–|—|\||,)?\s*(?:Director(?:a)?|Fundador(?:a)?|Founder|Owner|CEO|Gerente|Manager|Administrador(?:a)?|Dentista|Odont[oó]logo(?:a)?|Cirujano Dentista|Especialista)/g,
+  ];
+
+  for (const pattern of patterns) {
+    for (const match of normalizedText.matchAll(pattern)) {
+      const fullName = cleanPersonName(match[1] || "");
+      if (!isLikelyPersonName(fullName)) continue;
+      const matchIndex = match.index || 0;
+      const start = Math.max(0, matchIndex - 120);
+      const context = normalizedText.slice(start, Math.min(normalizedText.length, (match.index || 0) + 180));
+      const base: Partial<DecisionMakerContact> = {
+        fullName,
+        title: titleFromContext(context),
+        confidence: 70,
+      };
+      const ranked = scoreDecisionMaker(base, industry);
+      contacts.push({
+        ...base,
+        source: "website",
+        decisionMakerScore: Math.max(ranked.score, 48),
+        decisionMakerReason: ranked.reason.includes("available contact") ? "named person found on website" : ranked.reason,
+      });
+    }
+  }
+
+  return contacts;
+}
+
+function looksLikeLinkedInProfile(url: string) {
+  return /https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+\/?/i.test(url);
 }
 
 async function discoverPublicProfiles(apiKey: string, businessName: string, location: string) {
@@ -167,8 +277,10 @@ async function discoverPublicProfiles(apiKey: string, businessName: string, loca
   }
 
   const uniqueLinks = [...new Set(profileLinks)];
+  const linkedinProfiles = uniqueLinks.filter(looksLikeLinkedInProfile).map(normalizeUrl).slice(0, 5);
   return {
-    linkedinUrl: uniqueLinks.find(looksLikeLinkedIn),
+    linkedinUrl: undefined,
+    linkedinProfiles,
     profileLinks: uniqueLinks
       .filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\/|https?:\/\/(?:www\.)?(?:doximity\.com|healthgrades\.com|webmd\.com|vitals\.com|zocdoc\.com|sharecare\.com|doctor\.webmd\.com|npidb\.org|npi-profile\.com)\//i.test(link))
       .slice(0, 6),
@@ -238,10 +350,11 @@ function normalizeHunterContact(raw: any, industry: string): DecisionMakerContac
   const email = String(raw?.value || raw?.email || "").toLowerCase();
   const firstName = raw?.first_name || raw?.firstName || "";
   const lastName = raw?.last_name || raw?.lastName || "";
-  const fullName = [firstName, lastName].filter(Boolean).join(" ") || raw?.full_name || raw?.name || email;
+  const fullName = cleanPersonName([firstName, lastName].filter(Boolean).join(" ") || raw?.full_name || raw?.name || "");
   const title = raw?.position || raw?.title || "";
   const confidence = typeof raw?.confidence === "number" ? raw.confidence : undefined;
-  if (!email && !fullName) return null;
+  const localPart = email.split("@")[0] || "";
+  if (!isLikelyPersonName(fullName) || GENERIC_EMAIL_LOCAL_PARTS.has(localPart.toLowerCase())) return null;
   const base: Partial<DecisionMakerContact> = {
     email,
     firstName,
@@ -263,10 +376,24 @@ function normalizeHunterContact(raw: any, industry: string): DecisionMakerContac
 }
 
 function linkedinContact(url: string, industry: string): DecisionMakerContact {
-  const slug = decodeURIComponent(url.split("/in/")[1]?.replace(/\/$/, "") || "LinkedIn profile")
+  const slug = decodeURIComponent(url.split("/in/")[1]?.replace(/\/$/, "") || "")
     .replace(/[-_]+/g, " ")
+    .split(/\s+/)
+    .filter(part => !/\d/.test(part))
+    .slice(0, 4)
+    .join(" ")
     .trim();
-  const base = { fullName: slug, linkedinUrl: url };
+  const fullName = cleanPersonName(slug);
+  if (!isLikelyPersonName(fullName)) {
+    return {
+      fullName: "",
+      linkedinUrl: normalizeUrl(url),
+      source: "linkedin",
+      decisionMakerScore: 0,
+      decisionMakerReason: "LinkedIn profile found but name could not be verified",
+    };
+  }
+  const base = { fullName, linkedinUrl: normalizeUrl(url) };
   const ranked = scoreDecisionMaker(base, industry);
   return {
     ...base,
@@ -280,6 +407,7 @@ function mergeContacts(contacts: DecisionMakerContact[]): DecisionMakerContact[]
   const seen = new Set<string>();
   return contacts
     .filter(contact => {
+      if (!isLikelyPersonName(contact.fullName || [contact.firstName, contact.lastName].filter(Boolean).join(" "))) return false;
       const key = (contact.email || contact.linkedinUrl || contact.fullName || "").toLowerCase();
       if (!key || seen.has(key)) return false;
       seen.add(key);
@@ -336,11 +464,13 @@ Deno.serve(async (req) => {
     }
 
     let discoveredLinkedinUrl: string | undefined;
+    let discoveredLinkedinProfiles: string[] = [];
     let discoveredProfileLinks: string[] = [];
     let discoveredDebugLinks: string[] = [];
     if (enrichMode && businessName) {
       const discovered = await discoverPublicProfiles(firecrawlApiKey, String(businessName), String(location));
       discoveredLinkedinUrl = discovered.linkedinUrl;
+      discoveredLinkedinProfiles = discovered.linkedinProfiles || [];
       discoveredProfileLinks = discovered.profileLinks;
       discoveredDebugLinks = discovered.debugLinks;
     }
@@ -392,7 +522,7 @@ Deno.serve(async (req) => {
           contactPageFound: false,
           linkedinUrl: discoveredLinkedinUrl,
           socialLinks: discoveredProfileLinks,
-          contacts: [],
+          contacts: mergeContacts(discoveredLinkedinProfiles.map(profile => linkedinContact(profile, industry))),
           emailSource: "none",
           ...(usageType !== "customer" ? { debugProfileLinks: discoveredDebugLinks } : {}),
         }),
@@ -406,14 +536,21 @@ Deno.serve(async (req) => {
 
     let allEmails = extractEmails(html);
     let allWhatsApp = extractWhatsApp(html);
-    let linkedInProfiles = extractLinkedInProfiles(html, links);
+    let linkedInProfiles = [...new Set([...discoveredLinkedinProfiles, ...extractLinkedInProfiles(html, links).map(normalizeUrl)])].slice(0, 8);
     let linkedinUrl = extractLinkedInCompany(html, links) || discoveredLinkedinUrl;
     let socialLinks = [...new Set([...discoveredProfileLinks, ...extractSocialLinks(html, links, formattedUrl), ...extractProfessionalLinks(html, links)])].slice(0, 6);
+    const pageTexts = [stripHtml(html)];
 
-    const contactPaths = ["/contact", "/about", "/team", "/people", "/leadership", "/kontakt", "/contacto", "/sobre"];
-    const contactLinks = links
-      .filter(link => contactPaths.some(path => link.toLowerCase().includes(path)))
-      .slice(0, 4);
+    const contactPaths = ["/contact", "/about", "/team", "/people", "/leadership", "/staff", "/doctors", "/doctor", "/providers", "/kontakt", "/contacto", "/sobre", "/nosotros", "/equipo", "/doctores", "/especialistas"];
+    const origin = new URL(formattedUrl).origin;
+    const contactLinks = [...new Set([
+      ...links
+        .filter(link => contactPaths.some(path => link.toLowerCase().includes(path)))
+        .map(link => resolveUrl(link, formattedUrl))
+        .filter((link): link is string => Boolean(link)),
+      ...contactPaths.map(path => `${origin}${path}`),
+    ])].slice(0, depth === "deep" ? 10 : depth === "normal" ? 8 : 5);
+    let contactPageFound = false;
 
     for (const contactUrl of contactLinks) {
       try {
@@ -454,9 +591,11 @@ Deno.serve(async (req) => {
         const contactData = await contactResp.json();
         const contactHtml = contactData.data?.html || contactData.html || "";
         const contactPageLinks: string[] = contactData.data?.links || contactData.links || [];
+        contactPageFound = true;
+        pageTexts.push(stripHtml(contactHtml));
         allEmails = [...new Set([...allEmails, ...extractEmails(contactHtml)])];
         allWhatsApp = [...new Set([...allWhatsApp, ...extractWhatsApp(contactHtml)])];
-        linkedInProfiles = [...new Set([...linkedInProfiles, ...extractLinkedInProfiles(contactHtml, contactPageLinks)])].slice(0, 5);
+        linkedInProfiles = [...new Set([...linkedInProfiles, ...extractLinkedInProfiles(contactHtml, contactPageLinks).map(normalizeUrl)])].slice(0, 8);
         linkedinUrl = linkedinUrl || extractLinkedInCompany(contactHtml, contactPageLinks);
         socialLinks = [...new Set([...socialLinks, ...extractSocialLinks(contactHtml, contactPageLinks), ...extractProfessionalLinks(contactHtml, contactPageLinks)])].slice(0, 6);
       } catch (error) {
@@ -464,7 +603,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const contacts: DecisionMakerContact[] = linkedInProfiles.map(profile => linkedinContact(profile, industry));
+    const contacts: DecisionMakerContact[] = [
+      ...linkedInProfiles.map(profile => linkedinContact(profile, industry)),
+      ...extractWebsiteContactsFromText(pageTexts.join(" "), industry),
+    ];
     let emailSource: "firecrawl" | "hunter" | "both" | "none" = allEmails.length > 0 ? "firecrawl" : "none";
 
     if (enrichMode) {
@@ -567,7 +709,7 @@ Deno.serve(async (req) => {
         success: true,
         emails: allEmails,
         whatsapp: allWhatsApp,
-        contactPageFound: contactLinks.length > 0,
+        contactPageFound,
         linkedinUrl,
         socialLinks,
         contacts: mergeContacts(contacts),

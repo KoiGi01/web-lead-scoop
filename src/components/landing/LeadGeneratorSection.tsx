@@ -65,6 +65,17 @@ interface LeadResult extends Business {
   dbId?: string;
 }
 
+interface SearchDiagnostics {
+  discoveredCompanies: number;
+  scannedWebsites: number;
+  peopleFound: number;
+  emailsFound: number;
+  linkedinProfilesFound: number;
+  savedLeads: number;
+  rejectedNoPerson: number;
+  rejectedNoCompany: number;
+}
+
 type Depth = "simple" | "normal" | "deep";
 type LocationMode = "country" | "city";
 type Strictness = "broad" | "balanced" | "strict";
@@ -102,7 +113,7 @@ interface FreeSearchPlan {
   strictness: Strictness;
   requiredChannels: string[];
   queryVariants: string[];
-  maxResults: 20 | 40 | 60;
+  maxResults: number;
   summary: string;
 }
 
@@ -146,10 +157,10 @@ interface LeadGeneratorSectionProps {
   effectivePlan?: string;
 }
 
-const depthConfig: Record<Depth, { label: string; credits: number; maxResults: 20 | 40 | 60; shards: number; websiteLimit: number }> = {
-  simple: { label: "Simple", credits: 5, maxResults: 20, shards: 3, websiteLimit: 10 },
-  normal: { label: "Normal", credits: 10, maxResults: 40, shards: 8, websiteLimit: 20 },
-  deep: { label: "Deep", credits: 20, maxResults: 60, shards: 15, websiteLimit: 40 },
+const depthConfig: Record<Depth, { label: string; credits: number; maxResults: number; shards: number; websiteLimit: number; targetPeople: number }> = {
+  simple: { label: "Simple", credits: 5, maxResults: 40, shards: 4, websiteLimit: 18, targetPeople: 10 },
+  normal: { label: "Normal", credits: 10, maxResults: 90, shards: 10, websiteLimit: 45, targetPeople: 25 },
+  deep: { label: "Deep", credits: 20, maxResults: 150, shards: 15, websiteLimit: 80, targetPeople: 45 },
 };
 
 const countryCitySeeds: Record<string, string[]> = {
@@ -371,11 +382,41 @@ const getTopContact = (lead: LeadResult | { contacts?: DecisionMakerContact[] })
 
 const getSearchCost = (depth: Depth, enrich: boolean) => (depthConfig[depth] ?? depthConfig.normal).credits * (enrich ? 2 : 1);
 
+const hasPersonLinkedInSignal = (lead: LeadResult) =>
+  Boolean(lead.contacts?.some(contact => contact.linkedinUrl && /linkedin\.com\/in\//i.test(contact.linkedinUrl)));
+
 const hasLinkedInSignal = (lead: LeadResult) =>
-  Boolean(lead.linkedinUrl || lead.contacts?.some(contact => contact.linkedinUrl));
+  Boolean(lead.linkedinUrl || hasPersonLinkedInSignal(lead));
+
+const GENERIC_EMAIL_LOCAL_PARTS = new Set([
+  "admin",
+  "contact",
+  "contacto",
+  "hello",
+  "hola",
+  "info",
+  "mail",
+  "office",
+  "recepcion",
+  "reception",
+  "sales",
+  "soporte",
+  "support",
+  "ventas",
+]);
+
+const isLikelyPersonName = (value?: string) => {
+  const name = (value || "").trim();
+  if (!name || name.includes("@") || /\d/.test(name)) return false;
+  if (/(clinic|clinica|clínica|dental|dentist|dentista|office|contact|info|support|ventas|equipo|team|admin)/i.test(name)) return false;
+  const parts = name.split(/\s+/).filter(Boolean);
+  return parts.length >= 2 && parts.length <= 5 && parts.every(part => /^[A-Za-zÀ-ÖØ-öø-ÿ'.-]{2,}$/.test(part)) && !GENERIC_EMAIL_LOCAL_PARTS.has(name.toLowerCase());
+};
 
 const hasPersonName = (lead: LeadResult) =>
-  Boolean(lead.contacts?.some(contact => contact.fullName || contact.firstName || contact.lastName));
+  Boolean(lead.contacts?.some(contact => isLikelyPersonName(contact.fullName) || isLikelyPersonName([contact.firstName, contact.lastName].filter(Boolean).join(" "))));
+
+const hasQualifiedPersonLead = (lead: LeadResult) => Boolean(lead.name?.trim() && hasPersonName(lead));
 
 const getRequiredContactLabels = (required: RequiredContactFilters) => {
   const labels = [
@@ -509,12 +550,31 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
   };
 };
 
+const getPersonIntentTerms = (industry: string) => {
+  const lower = industry.toLowerCase();
+  const terms = ["owner", "founder", "director", "manager", "team", "leadership"];
+  if (/(dent|odont|clinic|cl[ií]nica|dental)/i.test(lower)) {
+    terms.unshift(
+      "dentista director",
+      "odontólogo fundador",
+      "odontologa fundadora",
+      "clínica dental doctores",
+      "equipo dental",
+      "especialistas dentales",
+      "cirujano dentista",
+    );
+  }
+  return terms;
+};
+
 const buildQueryVariants = (config: SearchConfig) => {
   const { industry, location, language, depth, locationMode } = config;
   const plannedVariants = (config.queryVariants || []).map(query => query.trim()).filter(Boolean);
   const key = location.trim().toLowerCase();
   const cities = (countryCitySeeds[key] || []).slice(0, depthConfig[depth].shards);
   const lang = language.trim();
+  const personIntentTerms = getPersonIntentTerms(industry);
+  const personQueries = personIntentTerms.slice(0, depth === "deep" ? 12 : depth === "normal" ? 9 : 5);
   if (locationMode === "city") {
     return [
       ...plannedVariants,
@@ -522,22 +582,31 @@ const buildQueryVariants = (config: SearchConfig) => {
       `${industry} near ${location}`,
       `${industry} ${location} contact`,
       `${industry} ${location} official website`,
+      `${industry} ${location} doctors team`,
+      `${industry} ${location} owner founder`,
+      ...personQueries.map(term => `${term} ${location}`),
       lang ? `${industry} ${location} ${lang}` : "",
-    ].filter(Boolean);
+    ].filter(Boolean).filter((query, index, all) => all.indexOf(query) === index);
   }
 
   const cityQueries = cities.flatMap(city => [
     `${industry} ${city} ${location}`,
     `${industry} ${city} contact`,
+    `${industry} ${city} doctors team`,
+    `${industry} ${city} owner founder`,
+    ...personQueries.slice(0, 4).map(term => `${term} ${city}`),
   ]);
   return [
     ...plannedVariants,
     `${industry} ${location}`,
     `${industry} ${location} contact`,
     `${industry} ${location} official website`,
+    `${industry} ${location} doctors team`,
+    `${industry} ${location} owner founder`,
+    ...personQueries.map(term => `${term} ${location}`),
     lang ? `${industry} ${location} ${lang}` : "",
     ...cityQueries,
-  ].filter(Boolean);
+  ].filter(Boolean).filter((query, index, all) => all.indexOf(query) === index);
 };
 
 const calculateLeadQuality = (lead: LeadResult) => {
@@ -600,25 +669,16 @@ const enrichLeadQuality = (lead: LeadResult): LeadResult => ({
   ...calculateLeadQuality(lead),
 });
 
-const passesRequiredContactFilters = (lead: LeadResult, required: RequiredContactFilters) => {
-  if (required.phone && !lead.phone) return false;
-  if (required.website && !lead.website) return false;
-  if (required.email && lead.emails.length === 0) return false;
-  if (required.linkedin && !hasLinkedInSignal(lead)) return false;
-  if (required.person && !hasPersonName(lead)) return false;
-  return true;
+const passesQualityGate = (lead: LeadResult, _config: SearchConfig) => {
+  return hasQualifiedPersonLead(lead);
 };
 
-const passesQualityGate = (lead: LeadResult, config: SearchConfig) => {
-  if (!passesRequiredContactFilters(lead, config.required)) return false;
-  if (config.strictness === "balanced") return Boolean(lead.phone || lead.website);
-  if (config.strictness === "strict") {
-    const hasPrimaryContact = Boolean(lead.phone && lead.website);
-    const hasSecondarySignal = lead.emails.length > 0 || hasLinkedInSignal(lead) || hasPersonName(lead) || lead.contactPageFound;
-    return hasPrimaryContact && hasSecondarySignal;
-  }
-  return true;
-};
+const getPreferredSignalScore = (lead: LeadResult, required: RequiredContactFilters) =>
+  (required.phone && lead.phone ? 12 : 0) +
+  (required.website && lead.website ? 10 : 0) +
+  (required.email && lead.emails.length > 0 ? 14 : 0) +
+  (required.linkedin && hasPersonLinkedInSignal(lead) ? 14 : 0) +
+  (required.person && hasPersonName(lead) ? 8 : 0);
 
 const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free" }: LeadGeneratorSectionProps) => {
   const { user, loading: authLoading } = useAuth();
@@ -648,6 +708,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [progress, setProgress] = useState(0);
   const [displayProgress, setDisplayProgress] = useState(0);
   const [results, setResults] = useState<LeadResult[] | null>(null);
+  const [searchDiagnostics, setSearchDiagnostics] = useState<SearchDiagnostics | null>(null);
   const [filterText, setFilterText] = useState("");
   const [emailsCopied, setEmailsCopied] = useState(false);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
@@ -683,10 +744,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setIndustry(customEvent.detail.keyword || "");
       setCountry(customEvent.detail.location || "");
       setResults(null);
+      setSearchDiagnostics(null);
     };
     const handleNewSearch = () => {
       setSearchMode(null);
       setResults(null);
+      setSearchDiagnostics(null);
       setFilterText("");
       setStage("idle");
       setProgress(0);
@@ -778,6 +841,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const sortedResults = useMemo(() => {
     if (!filteredResults) return null;
     return [...filteredResults].sort((a, b) => {
+      const preferenceDelta = getPreferredSignalScore(b, requiredContacts) - getPreferredSignalScore(a, requiredContacts);
+      if (preferenceDelta !== 0) return preferenceDelta;
       const qualityDelta = (b.leadQualityScore || 0) - (a.leadQualityScore || 0);
       if (qualityDelta !== 0) return qualityDelta;
       const aContact = getTopContact(a);
@@ -788,7 +853,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       if (!!a.website !== !!b.website) return a.website ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
-  }, [filteredResults, preferPublicEmail]);
+  }, [filteredResults, preferPublicEmail, requiredContacts]);
 
   const emailCount = sortedResults?.reduce((acc, lead) => acc + lead.emails.length, 0) ?? 0;
   const contactCount = sortedResults?.reduce((acc, lead) => acc + (lead.contacts?.length || 0), 0) ?? 0;
@@ -825,6 +890,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const handleDownload = () => {
     if (!sortedResults) return;
     const headers = [
+      "Person Name",
+      "Person Title",
       "Business Name",
       "Category",
       "Address",
@@ -837,8 +904,6 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       "Lead Quality",
       "Quality Score",
       "Quality Reason",
-      "Likely Decision Maker",
-      "Decision Maker Title",
       "Decision Maker Email",
       "Decision Maker LinkedIn",
       "Decision Maker Source",
@@ -846,6 +911,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     const rows = sortedResults.map(lead => {
       const contact = getTopContact(lead);
       return [
+        contact?.fullName || "",
+        contact?.title || "",
         lead.name,
         lead.category,
         lead.address,
@@ -858,8 +925,6 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         lead.leadQualityLabel || "",
         lead.leadQualityScore ?? "",
         lead.leadQualityReason || "",
-        contact?.fullName || "",
-        contact?.title || "",
         contact?.email || "",
         contact?.linkedinUrl || "",
         contact?.source || "",
@@ -1047,6 +1112,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
     setIsProcessing(true);
     setResults(null);
+    setSearchDiagnostics(null);
     setProgress(0);
     setStage("maps");
     setStatus("Searching trusted Maps businesses...");
@@ -1086,40 +1152,27 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         throw new Error(mapsData?.error || mapsError?.message || "Failed to search Google Maps");
       }
 
-      const businesses: Business[] = (mapsData.businesses || []).filter((business: Business) => {
-        if (!business.name) return false;
-        if (config.required.website && !business.website) return false;
-        if (config.required.phone && !business.phone) return false;
-        return true;
-      });
+      const businesses: Business[] = (mapsData.businesses || []).filter((business: Business) => Boolean(business.name));
+      const rejectedNoCompany = (mapsData.businesses || []).length - businesses.length;
 
       setProgress(25);
       setStage("scrape");
-      setStatus(`Found ${businesses.length} businesses. Scraping websites...`);
+      setStatus(`Found ${businesses.length} businesses. Searching for named contacts...`);
 
       const leads: LeadResult[] = [];
-      const websitesToScan = businesses.filter(business => business.website).slice(0, depthSettings.websiteLimit);
-      const websitePlaceIds = new Set(websitesToScan.map(business => business.placeId));
-
-      businesses
-        .filter(business => !websitePlaceIds.has(business.placeId))
-        .forEach(business => {
-          leads.push({
-            ...business,
-            emails: [],
-            whatsapp: [],
-            contactPageFound: false,
-            emailSource: "none",
-            contacts: [],
-            socialLinks: [],
-          });
-        });
+      let scannedWebsites = 0;
+      const websitesToScan = businesses
+        .filter(business => business.website)
+        .sort((a, b) => Number(Boolean(b.phone)) - Number(Boolean(a.phone)))
+        .slice(0, depthSettings.websiteLimit);
 
       for (let index = 0; index < websitesToScan.length; index++) {
+        if (leads.filter(hasQualifiedPersonLead).length >= depthSettings.targetPeople) break;
         const business = websitesToScan[index];
+        scannedWebsites += 1;
         const currentStage = config.enrichMode ? "enrich" : "scrape";
         setStage(currentStage);
-        setStatus(`${config.enrichMode ? "Enriching" : "Scraping"} ${index + 1}/${websitesToScan.length}: ${business.name}`);
+        setStatus(`${config.enrichMode ? "Enriching" : "Scraping"} ${index + 1}/${websitesToScan.length}: looking for a person at ${business.name}`);
         setProgress(25 + Math.round(((index + 1) / Math.max(1, websitesToScan.length)) * 60));
 
         try {
@@ -1173,7 +1226,19 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       });
 
       const qualityFiltered = deduped.filter(lead => passesQualityGate(lead, config));
+      const diagnostics: SearchDiagnostics = {
+        discoveredCompanies: businesses.length,
+        scannedWebsites,
+        peopleFound: deduped.filter(hasQualifiedPersonLead).length,
+        emailsFound: deduped.reduce((acc, lead) => acc + lead.emails.length, 0),
+        linkedinProfilesFound: deduped.reduce((acc, lead) => acc + (lead.contacts?.filter(contact => contact.linkedinUrl && /linkedin\.com\/in\//i.test(contact.linkedinUrl)).length || 0), 0),
+        savedLeads: qualityFiltered.length,
+        rejectedNoPerson: deduped.filter(lead => lead.name?.trim() && !hasPersonName(lead)).length,
+        rejectedNoCompany,
+      };
       const ranked = qualityFiltered.sort((a, b) => {
+        const preferenceDelta = getPreferredSignalScore(b, config.required) - getPreferredSignalScore(a, config.required);
+        if (preferenceDelta !== 0) return preferenceDelta;
         const qualityDelta = (b.leadQualityScore || 0) - (a.leadQualityScore || 0);
         if (qualityDelta !== 0) return qualityDelta;
         const contactDelta = (getTopContact(b)?.decisionMakerScore || 0) - (getTopContact(a)?.decisionMakerScore || 0);
@@ -1184,10 +1249,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       });
 
       setResults(ranked);
+      setSearchDiagnostics({ ...diagnostics, savedLeads: ranked.length });
       setStage("done");
       setStatus(`${ranked.length} leads ready`);
       setProgress(100);
-      toast({ title: "Search complete", description: `${ranked.length} trusted leads found.` });
+      toast({
+        title: "Search complete",
+        description: ranked.length
+          ? `${ranked.length} person-qualified leads found.`
+          : `Found ${businesses.length} companies, but no public person names yet.`,
+      });
       await saveSearch(ranked, searchSessionId, config, runChargedCredits);
       onSearchComplete?.();
     } catch (error) {
@@ -1343,7 +1414,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     setFreePlan(current => {
       if (!current) return current;
       const config = updater(current.config);
-      const maxResults: 20 | 40 | 60 = config.depth === "deep" ? 60 : config.depth === "simple" ? 20 : 40;
+      const maxResults = depthConfig[config.depth].maxResults;
       return {
         ...current,
         config,
@@ -1378,7 +1449,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       badge: "Precise",
       title: "Manual Search",
       description: "Use structured controls when you already know the niche, location, quality bar, and required contact channels.",
-      bullets: ["Industry and location controls", "Depth, enrich, and strictness", "Required email, phone, site, person"],
+      bullets: ["Industry and location controls", "Depth, enrich, and strictness", "Person-first lead output"],
       bestFor: "Repeatable prospecting",
       Icon: Search,
       featured: false,
@@ -1620,7 +1691,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         </div>
 
                         <div>
-                          <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Required contact info</p>
+                          <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
                           <div className="flex flex-wrap gap-1.5">
                             {requiredContactKeys.map(key => {
                               const active = freePlan.config.required[key];
@@ -1875,13 +1946,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     {sectionEyebrow("Filters", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">Trim and rank the results</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Required contact info</span> — leads missing the channels you select are hidden from the results.</p>
+                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Person + company</span> are mandatory for every saved lead.</p>
+                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Priority signals</span> rank leads higher without hiding useful people.</p>
                         <p><span className="text-[#EFEDE6]">Prefer public email</span> — leads with a public email rank higher in the list. Leads without one are still shown.</p>
                       </>
                     ))}
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                       <div>
-                        <p className="mb-2.5 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Required contact info</p>
+                        <p className="mb-2.5 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
                         <div className="flex flex-wrap gap-2">
                           {requiredOptions.map(({ key, label, Icon }) => {
                             const active = requiredContacts[key];
@@ -2018,6 +2090,25 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   ))}
                 </div>
 
+                {searchDiagnostics && (
+                  <div className="border border-[#F5FF3D]/25 bg-[#F5FF3D]/[0.06] p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Person-first search</p>
+                        <p className="mt-1 text-sm leading-6 text-[#A8A59C]">
+                          Found {searchDiagnostics.discoveredCompanies} companies, scanned {searchDiagnostics.scannedWebsites} websites, and saved {searchDiagnostics.savedLeads} leads with a real person name.
+                          {searchDiagnostics.rejectedNoPerson > 0 ? ` ${searchDiagnostics.rejectedNoPerson} company-only candidates were rejected.` : ""}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] sm:min-w-[360px]">
+                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.peopleFound}</b>People</span>
+                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.emailsFound}</b>Emails</span>
+                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.linkedinProfilesFound}</b>LinkedIn</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-3 border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="relative w-full lg:max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67645B]" />
@@ -2061,8 +2152,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                       <article key={lead.placeId || index} className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
-                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#EFEDE6]">{lead.name}</h3>
-                            <p className="mt-1 line-clamp-1 text-xs text-[#A8A59C]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
+                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#EFEDE6]">{contact?.fullName || "Named contact"}</h3>
+                            <p className="mt-1 line-clamp-1 text-sm font-semibold text-[#A8A59C]">{lead.name}</p>
+                            <p className="mt-1 line-clamp-1 text-xs text-[#67645B]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${qualityTone}`}>
                                 {lead.leadQualityLabel || "Needs work"} / {lead.leadQualityScore || 0}
