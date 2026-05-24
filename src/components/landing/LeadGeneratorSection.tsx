@@ -158,9 +158,9 @@ interface LeadGeneratorSectionProps {
 }
 
 const depthConfig: Record<Depth, { label: string; credits: number; maxResults: number; shards: number; websiteLimit: number; targetPeople: number }> = {
-  simple: { label: "Simple", credits: 5, maxResults: 40, shards: 4, websiteLimit: 18, targetPeople: 10 },
-  normal: { label: "Normal", credits: 10, maxResults: 90, shards: 10, websiteLimit: 45, targetPeople: 25 },
-  deep: { label: "Deep", credits: 20, maxResults: 150, shards: 15, websiteLimit: 80, targetPeople: 45 },
+  simple: { label: "Simple", credits: 5, maxResults: 30, shards: 4, websiteLimit: 10, targetPeople: 8 },
+  normal: { label: "Normal", credits: 10, maxResults: 70, shards: 10, websiteLimit: 24, targetPeople: 18 },
+  deep: { label: "Deep", credits: 20, maxResults: 120, shards: 15, websiteLimit: 40, targetPeople: 32 },
 };
 
 const countryCitySeeds: Record<string, string[]> = {

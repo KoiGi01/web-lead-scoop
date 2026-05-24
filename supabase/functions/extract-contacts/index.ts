@@ -58,6 +58,16 @@ async function isAuthorizedUser(req: Request, userId: unknown) {
   return !error && data.user?.id === userId;
 }
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort("timeout"), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function extractEmails(text: string): string[] {
   const emails = new Set<string>();
   for (const m of text.matchAll(MAILTO_REGEX)) emails.add(m[1].toLowerCase());
@@ -249,7 +259,7 @@ async function discoverPublicProfiles(apiKey: string, businessName: string, loca
 
   for (const query of queries) {
     try {
-      const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
+      const searchResp = await fetchWithTimeout("https://api.firecrawl.dev/v1/search", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -260,7 +270,7 @@ async function discoverPublicProfiles(apiKey: string, businessName: string, loca
           limit: 4,
           scrapeOptions: { formats: [] },
         }),
-      });
+      }, 5000);
       if (!searchResp.ok) continue;
       const searchData = await searchResp.json();
       const results: Array<{ url?: string; link?: string; sourceURL?: string; metadata?: { sourceURL?: string } }> = searchData.data || [];
@@ -475,7 +485,7 @@ Deno.serve(async (req) => {
       discoveredDebugLinks = discovered.debugLinks;
     }
 
-    const scrapeResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
+    const scrapeResp = await fetchWithTimeout("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${firecrawlApiKey}`,
@@ -486,7 +496,7 @@ Deno.serve(async (req) => {
         formats: ["html", "links"],
         onlyMainContent: false,
       }),
-    });
+    }, 9000);
     await logUsage({
       user_id: userId,
       search_session_id: searchSessionId,
@@ -541,27 +551,30 @@ Deno.serve(async (req) => {
     let socialLinks = [...new Set([...discoveredProfileLinks, ...extractSocialLinks(html, links, formattedUrl), ...extractProfessionalLinks(html, links)])].slice(0, 6);
     const pageTexts = [stripHtml(html)];
 
-    const contactPaths = ["/contact", "/about", "/team", "/people", "/leadership", "/staff", "/doctors", "/doctor", "/providers", "/kontakt", "/contacto", "/sobre", "/nosotros", "/equipo", "/doctores", "/especialistas"];
+    const contactPaths = ["/contact", "/contacto", "/about", "/nosotros", "/team", "/equipo", "/doctors", "/doctores", "/staff", "/especialistas"];
     const origin = new URL(formattedUrl).origin;
+    const discoveredContactLinks = links
+      .filter(link => contactPaths.some(path => link.toLowerCase().includes(path)))
+      .map(link => resolveUrl(link, formattedUrl))
+      .filter((link): link is string => Boolean(link));
+    const fallbackContactLinks = contactPaths.map(path => `${origin}${path}`);
+    const contactLinkLimit = depth === "deep" ? 4 : depth === "normal" ? 3 : 2;
     const contactLinks = [...new Set([
-      ...links
-        .filter(link => contactPaths.some(path => link.toLowerCase().includes(path)))
-        .map(link => resolveUrl(link, formattedUrl))
-        .filter((link): link is string => Boolean(link)),
-      ...contactPaths.map(path => `${origin}${path}`),
-    ])].slice(0, depth === "deep" ? 10 : depth === "normal" ? 8 : 5);
+      ...discoveredContactLinks,
+      ...fallbackContactLinks.slice(0, Math.max(0, contactLinkLimit - discoveredContactLinks.length)),
+    ])].slice(0, contactLinkLimit);
     let contactPageFound = false;
 
     for (const contactUrl of contactLinks) {
       try {
-        const contactResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        const contactResp = await fetchWithTimeout("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${firecrawlApiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ url: contactUrl, formats: ["html", "links"], onlyMainContent: false }),
-        });
+        }, 7000);
         await logUsage({
           user_id: userId,
           search_session_id: searchSessionId,
@@ -635,8 +648,10 @@ Deno.serve(async (req) => {
       }
       if (hunterApiKey && domain) {
         try {
-          const hunterResp = await fetch(
+          const hunterResp = await fetchWithTimeout(
             `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${hunterApiKey}`,
+            {},
+            7000,
           );
           let hunterCredits = 0;
           let hunterResultCount = 0;
