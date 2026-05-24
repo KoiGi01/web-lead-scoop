@@ -722,6 +722,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const { user, loading: authLoading } = useAuth();
   const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
   const plan = normalizePlan(effectivePlan);
+  const hasFullAppAccess = isAdmin || plan !== "free";
 
   const [searchMode, setSearchMode] = useState<SearchMode | null>(null);
   const [industry, setIndustry] = useState("");
@@ -827,6 +828,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     onBuyCredits?.();
   };
 
+  const requestWorkspaceUpgrade = () => {
+    toast({
+      title: "Upgrade to export leads",
+      description: "Starter and Growth unlock copy, export, and the full sales workspace.",
+    });
+    onBuyCredits?.();
+  };
+
   const canRunConfig = (config: SearchConfig) => canUseSearchQuality(plan, config.depth, config.enrichMode, isAdmin);
 
   const progressLabels: Record<ProgressStage, string> = {
@@ -922,6 +931,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const handleCopyEmails = () => {
     if (!sortedResults) return;
+    if (!hasFullAppAccess) {
+      requestWorkspaceUpgrade();
+      return;
+    }
     const emails = sortedResults.flatMap(lead => lead.emails).filter(Boolean);
     navigator.clipboard.writeText(emails.join("\n")).then(() => {
       setEmailsCopied(true);
@@ -932,6 +945,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const handleDownload = () => {
     if (!sortedResults) return;
+    if (!hasFullAppAccess) {
+      requestWorkspaceUpgrade();
+      return;
+    }
     const headers = [
       "Person Name",
       "Person Title",
@@ -1149,7 +1166,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       return;
     }
     if (!canRunConfig(config)) {
-      requestUpgrade("Paid plans unlock normal, deep, and enrichment searches.");
+      requestUpgrade("Starter and Growth unlock normal, deep, and enrichment searches.");
       return;
     }
 
@@ -1825,7 +1842,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           type="button"
                           onClick={() => {
                             if (gateSearchQuality && !canUseSearchQuality(plan, option as Depth, enrichMode, isAdmin)) {
-                              requestUpgrade("Paid plans unlock normal, deep, and enrichment searches.");
+                              requestUpgrade("Starter and Growth unlock normal, deep, and enrichment searches.");
                               return;
                             }
                             onSelect(option);
@@ -1973,7 +1990,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           type="button"
                           onClick={() => {
                             if (!enrichMode && !canUseSearchQuality(plan, depth, true, isAdmin)) {
-                              requestUpgrade("Paid plans unlock enrichment searches.");
+                              requestUpgrade("Starter and Growth unlock enrichment searches.");
                               return;
                             }
                             setEnrichMode(!enrichMode);
@@ -2196,11 +2213,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30">
-                      {emailsCopied ? "Copied emails" : "Copy emails"}
+                      {!hasFullAppAccess ? "Upgrade to copy" : emailsCopied ? "Copied emails" : "Copy emails"}
                     </button>
                     <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]">
                       <Download className="h-3.5 w-3.5" />
-                      Export XLSX
+                      {!hasFullAppAccess ? "Upgrade to export" : "Export XLSX"}
                     </button>
                   </div>
                 </div>

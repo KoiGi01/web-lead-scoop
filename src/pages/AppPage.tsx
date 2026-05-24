@@ -49,6 +49,7 @@ const devMode = import.meta.env.DEV;
 type AppTheme = "light" | "dark";
 type AppViewMode = AppSidebarView;
 type CheckoutConfirmationStatus = "idle" | "confirming" | "success" | "pending" | "error";
+const PAID_WORKSPACE_VIEWS = new Set<AppSidebarView>(["lead-inbox", "pipeline", "follow-ups", "saved-searches"]);
 
 interface CheckoutConfirmationState {
   open: boolean;
@@ -70,6 +71,7 @@ const AppPage = () => {
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [workspaceUpgradeOpen, setWorkspaceUpgradeOpen] = useState(false);
   const [viewMode, setViewMode] = useState<AppViewMode>("search");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
@@ -242,6 +244,10 @@ const AppPage = () => {
     }
     if (view === "admin") {
       handleViewAdmin();
+      return;
+    }
+    if (PAID_WORKSPACE_VIEWS.has(view) && !entitlements.workflowFeatures) {
+      setWorkspaceUpgradeOpen(true);
       return;
     }
     setViewMode(view);
@@ -452,10 +458,8 @@ const AppPage = () => {
                 plan={entitlements.effectivePlan}
                 organizationName={entitlements.organizationName}
                 organizationId={entitlements.organizationId}
-                canCreateOrganization={entitlements.canCreateOrganization}
                 onBuyCredits={() => setCreditsOpen(true)}
                 onSignOut={signOut}
-                onOrganizationCreated={() => entitlements.refetch()}
               />
             ) : (
               <AdminDashboard
@@ -471,6 +475,48 @@ const AppPage = () => {
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <Dialog open={workspaceUpgradeOpen} onOpenChange={setWorkspaceUpgradeOpen}>
+        <DialogContent className="border-[#EFEDE6]/15 bg-black text-[#EFEDE6] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-black">
+              Unlock the sales workspace
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+              Lead Inbox, Pipeline, Follow-ups, and Saved Searches are available on Starter and Growth.
+              Upgrade to organize leads, track outreach, and close more deals.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="border border-[#F5FF3D]/30 bg-[#F5FF3D]/10 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">
+              Starter and Growth unlock all current app capabilities
+            </p>
+            <p className="mt-2 text-sm text-[#EFEDE6]">
+              Full search quality, lead inbox, pipeline, follow-ups, saved searches, and exports.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setWorkspaceUpgradeOpen(false)}
+              className="h-10 border border-[#EFEDE6]/10 px-4 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#EFEDE6]/30 hover:text-[#EFEDE6]"
+            >
+              Not now
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWorkspaceUpgradeOpen(false);
+                setCreditsOpen(true);
+              }}
+              className="h-10 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black hover:bg-[#FFFE7A]"
+            >
+              Upgrade now
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={checkoutConfirmation.open}
         onOpenChange={open => setCheckoutConfirmation(current => ({ ...current, open }))}

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,9 +11,9 @@ interface CreditsModalProps {
 }
 
 const PLANS = [
-  { key: "starter", name: "Starter", price: 19, founderPrice: 9.5, credits: 150, searches: 15, founderEligible: true },
-  { key: "growth", name: "Growth", price: 49, founderPrice: 24.5, credits: 500, searches: 50, popular: true, founderEligible: true },
-  { key: "pro", name: "Pro", price: 99, credits: 1500, searches: 150, note: "Teams + priority" },
+  { key: "starter", name: "Starter", price: 19, founderPrice: 9.5, credits: 150, searches: 15, note: "Full app access", founderEligible: true },
+  { key: "growth", name: "Growth", price: 49, founderPrice: 24.5, credits: 500, searches: 50, note: "Full app access", popular: true, founderEligible: true },
+  { key: "pro", name: "Pro", price: 99, credits: 1500, searches: 150, note: "Team seats coming soon", comingSoon: true },
 ] as const;
 
 const TOPUPS = [
@@ -51,9 +51,9 @@ const CreditsModal = ({ open, onClose, onSelectBundle, loading }: CreditsModalPr
             <DialogTitle className="text-center font-heading text-xl font-bold text-[#EFEDE6]">
               Upgrade or add <span className="text-[#F5FF3D]">Credits</span>
             </DialogTitle>
-            <p className="mt-1 text-center text-sm text-[#A8A59C]">
-              Paid plans unlock full search quality. Top-ups add extra credits when you need more.
-            </p>
+            <DialogDescription className="mt-1 text-center text-sm text-[#A8A59C]">
+              Starter and Growth unlock the full app workspace. Top-ups add extra credits when you need more.
+            </DialogDescription>
             {founderSpots?.enabled && (
               <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">
                 Founder deal: {founderSpots.remaining} of {founderSpots.total} spots left - 50% off Starter and Growth for 3 months
@@ -65,12 +65,15 @@ const CreditsModal = ({ open, onClose, onSelectBundle, loading }: CreditsModalPr
           <div className="grid gap-3 sm:grid-cols-3">
             {PLANS.map((plan) => {
               const showFounder = founderSpots?.enabled && "founderEligible" in plan && plan.founderEligible;
+              const comingSoon = "comingSoon" in plan && plan.comingSoon;
 
               return (
                 <button
                   key={plan.key}
-                  disabled={loading}
-                  onClick={() => onSelectBundle(plan.key, "subscription")}
+                  disabled={loading || comingSoon}
+                  onClick={() => {
+                    if (!comingSoon) onSelectBundle(plan.key, "subscription");
+                  }}
                   className={`relative flex min-h-[190px] flex-col items-center border p-4 transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                     plan.popular
                       ? "border-[#F5FF3D] bg-[#F5FF3D]/5 hover:bg-[#F5FF3D]/10"
@@ -96,6 +99,11 @@ const CreditsModal = ({ open, onClose, onSelectBundle, loading }: CreditsModalPr
                   <span className="mt-1 font-mono text-[10px] text-[#67645B]">{plan.searches} searches</span>
                   {"note" in plan && plan.note && (
                     <span className="mt-1 text-center font-mono text-[9px] uppercase tracking-widest text-[#A8A59C]">{plan.note}</span>
+                  )}
+                  {comingSoon && (
+                    <span className="mt-3 border border-[#F5FF3D]/50 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">
+                      Coming Soon
+                    </span>
                   )}
                   {loading && <Loader2 className="mt-2 h-3 w-3 animate-spin text-[#A8A59C]" />}
                 </button>

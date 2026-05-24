@@ -44,9 +44,9 @@ export const getPlanEntitlements = (plan?: string | null, isAdmin = false) => {
     label: PLAN_LABELS[normalized],
     includedCredits: PLAN_CREDITS[normalized],
     fullSearchQuality: isAdmin || paid,
-    canCreateOrganization: isAdmin || normalized === "pro",
+    canCreateOrganization: isAdmin,
     earlyAccess: isAdmin || normalized === "pro",
     prioritySupport: isAdmin || normalized === "pro",
-    workflowFeatures: isAdmin || normalized === "growth" || normalized === "pro",
+    workflowFeatures: isAdmin || paid,
   };
 };

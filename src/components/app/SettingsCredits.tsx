@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { Building2, CreditCard, Loader2, LogOut, Mail, Zap } from "lucide-react";
+import { Building2, CreditCard, LogOut, Mail, Zap } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { PLAN_LABELS, type PlanKey } from "@/lib/entitlements";
 
 interface SettingsCreditsProps {
@@ -14,10 +11,8 @@ interface SettingsCreditsProps {
   plan: PlanKey;
   organizationName: string | null;
   organizationId: string | null;
-  canCreateOrganization: boolean;
   onBuyCredits: () => void;
   onSignOut: () => void;
-  onOrganizationCreated: () => void;
 }
 
 const SettingsCredits = ({
@@ -28,36 +23,9 @@ const SettingsCredits = ({
   plan,
   organizationName,
   organizationId,
-  canCreateOrganization,
   onBuyCredits,
   onSignOut,
-  onOrganizationCreated,
 }: SettingsCreditsProps) => {
-  const [orgName, setOrgName] = useState("");
-  const [creatingOrg, setCreatingOrg] = useState(false);
-
-  const handleCreateOrganization = async () => {
-    if (!orgName.trim()) return;
-    setCreatingOrg(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("admin-users", {
-        body: { action: "create_organization", name: orgName.trim() },
-      });
-      if (error || data?.error) throw new Error(error?.message || data?.error || "Could not create organization");
-      toast({ title: "Organization created", description: `${orgName.trim()} is ready.` });
-      setOrgName("");
-      onOrganizationCreated();
-    } catch (error) {
-      toast({
-        title: "Organization error",
-        description: error instanceof Error ? error.message : "Could not create organization.",
-        variant: "destructive",
-      });
-    } finally {
-      setCreatingOrg(false);
-    }
-  };
-
   return (
     <section className="flex flex-1 flex-col overflow-hidden bg-black text-[#EFEDE6]">
       <div className="flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
@@ -105,25 +73,13 @@ const SettingsCredits = ({
                   <p className="font-display text-lg font-bold text-[#EFEDE6]">{organizationName || "Organization"}</p>
                   <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{organizationId}</p>
                 </div>
-              ) : canCreateOrganization ? (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    value={orgName}
-                    onChange={(event) => setOrgName(event.target.value)}
-                    placeholder="Company or team name"
-                    className="h-10 flex-1 border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]"
-                  />
-                  <button
-                    onClick={handleCreateOrganization}
-                    disabled={creatingOrg || !orgName.trim()}
-                    className="inline-flex h-10 items-center justify-center gap-2 border border-[#F5FF3D] px-4 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D] disabled:opacity-40"
-                  >
-                    {creatingOrg && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    Create org
-                  </button>
-                </div>
               ) : (
-                <p className="text-sm text-[#A8A59C]">Upgrade to Pro to create an organization.</p>
+                <div className="border border-[#EFEDE6]/10 bg-[#050505] p-3">
+                  <p className="font-display text-base font-bold text-[#EFEDE6]">Team seats coming soon</p>
+                  <p className="mt-1 text-sm leading-6 text-[#A8A59C]">
+                    Pro will add organization seats so multiple people can use the CRM together. This is not available yet.
+                  </p>
+                </div>
               )}
             </div>
 
