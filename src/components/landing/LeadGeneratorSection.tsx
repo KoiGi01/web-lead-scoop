@@ -1917,7 +1917,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               const selectedSignalLabels = getRequiredContactLabels(requiredContacts);
               const previewLeads = sortedResults ?? [];
               const manualPreview = (
-                <aside className="flex max-h-[calc(100vh-9.25rem)] min-h-0 flex-col border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
+                <aside className="flex h-full min-h-0 flex-col border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div>
                       <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Search preview</p>
@@ -2050,19 +2050,19 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               );
 
               return (
-              <div className="mx-auto flex h-full w-full max-w-[1440px] flex-col px-4 py-3 sm:px-6">
-                <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
+              <div className="mx-auto flex h-full w-full max-w-[1440px] flex-col px-4 py-2 sm:px-6">
+                <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
                   <button onClick={() => setSearchMode(null)} className="inline-flex h-8 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
                     <ArrowLeft className="h-3.5 w-3.5" /> Options
                   </button>
                   <span className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#F5FF3D]">Manual search</span>
                 </div>
 
-                <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="min-w-0">
-                    <div className="mb-4">
-                      <h1 className="font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your search.</h1>
-                      <p className="mt-2 max-w-xl text-sm leading-6 text-[#A8A59C]">Pick the target, the strategy, and the filters that matter.</p>
+                <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="min-h-0 min-w-0 overflow-y-auto pr-1">
+                    <div className="mb-3">
+                      <h1 className="font-display text-2xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your search.</h1>
+                      <p className="mt-1 max-w-xl text-sm leading-5 text-[#A8A59C]">Pick the target, the strategy, and the filters that matter.</p>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -2252,7 +2252,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   </section>
                 </div>
 
-                <div className="hidden">
+                <div className="hidden" aria-hidden="true">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-widest text-[#67645B]">
                     {industry.trim()
                       ? <span className="text-[#EFEDE6]">{industry.trim()}</span>
