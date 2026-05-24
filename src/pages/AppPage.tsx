@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CreditCard, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
+import { CheckCheck, CreditCard, Loader2, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,12 +34,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
 
 type AppTheme = "light" | "dark";
 type AppViewMode = AppSidebarView;
+type CheckoutConfirmationStatus = "idle" | "confirming" | "success" | "pending" | "error";
+
+interface CheckoutConfirmationState {
+  open: boolean;
+  status: CheckoutConfirmationStatus;
+  checkoutType: "subscription" | "topup";
+  sessionId: string | null;
+  title: string;
+  description: string;
+}
 
 const AppPage = () => {
   const { user, loading, signOut } = useAuth();
@@ -56,6 +74,14 @@ const AppPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutConfirmation, setCheckoutConfirmation] = useState<CheckoutConfirmationState>({
+    open: false,
+    status: "idle",
+    checkoutType: "topup",
+    sessionId: null,
+    title: "",
+    description: "",
+  });
   const [theme, setTheme] = useState<AppTheme>(() => {
     if (typeof window === "undefined") return "light";
     return window.localStorage.getItem("globaleads-app-theme") === "dark" ? "dark" : "light";
@@ -83,16 +109,13 @@ const AppPage = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const checkoutParam = params.get("checkout");
 
-    if (params.get('checkout') === 'success' || params.get('checkout') === 'subscription_success') {
-      toast({
-        title: params.get('checkout') === 'subscription_success' ? "Plan activated!" : "Credits added!",
-        description: params.get('checkout') === 'subscription_success'
-          ? "Your plan and credits have been updated."
-          : "Your credits have been added to your account.",
-      });
-      refetchCredits();
-      entitlements.refetch();
+    if (checkoutParam === "success" || checkoutParam === "subscription_success") {
+      void confirmCheckoutReturn(
+        checkoutParam === "subscription_success" ? "subscription" : "topup",
+        params.get("session_id"),
+      );
       window.history.replaceState({}, '', window.location.pathname);
     }
 
@@ -104,6 +127,77 @@ const AppPage = () => {
       window.history.replaceState({}, '', newUrl.pathname);
     }
   }, [user]);
+
+  async function confirmCheckoutReturn(checkoutType: "subscription" | "topup", sessionId: string | null) {
+    if (!user?.id) return;
+
+    setCheckoutConfirmation({
+      open: true,
+      status: "confirming",
+      checkoutType,
+      sessionId,
+      title: "Confirming payment...",
+      description: "Stripe accepted the payment. We are waiting for your account to update.",
+    });
+
+    const attempts = sessionId ? 12 : 4;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      await Promise.all([refetchCredits(), entitlements.refetch()]);
+
+      const [{ data: creditsRow }, { data: paymentRow }] = await Promise.all([
+        supabase
+          .from("user_credits")
+          .select("balance, plan, subscription_status")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        sessionId
+          ? supabase
+              .from("stripe_payments")
+              .select("id, credits_granted, bundle_key, metadata")
+              .eq("user_id", user.id)
+              .eq("checkout_session_id", sessionId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      const subscriptionActive =
+        checkoutType === "subscription" &&
+        creditsRow?.plan &&
+        creditsRow.plan !== "free" &&
+        ["active", "trialing"].includes(String(creditsRow.subscription_status || ""));
+      const topupRecorded = checkoutType === "topup" && Boolean(paymentRow);
+      const sessionRecorded = sessionId ? Boolean(paymentRow) : Boolean(subscriptionActive || creditsRow);
+
+      if ((checkoutType === "subscription" && subscriptionActive && sessionRecorded) || topupRecorded) {
+        const title = checkoutType === "subscription" ? "Plan activated" : "Credits added";
+        const description = checkoutType === "subscription"
+          ? `Your ${String(creditsRow?.plan || "paid")} plan is active and credits are ready.`
+          : `${paymentRow?.credits_granted || "Your"} credits were added to your account.`;
+
+        setCheckoutConfirmation({
+          open: true,
+          status: "success",
+          checkoutType,
+          sessionId,
+          title,
+          description,
+        });
+        toast({ title, description });
+        return;
+      }
+
+      await new Promise(resolve => window.setTimeout(resolve, 2500));
+    }
+
+    setCheckoutConfirmation({
+      open: true,
+      status: "pending",
+      checkoutType,
+      sessionId,
+      title: "Payment received, activation pending",
+      description: "Stripe received the payment, but the account update has not arrived yet. Try refreshing in a moment.",
+    });
+  }
 
   const handleSearchComplete = async () => {
     await Promise.all([refetchCredits(), refetchHistory()]);
@@ -377,6 +471,47 @@ const AppPage = () => {
       </div>
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <Dialog
+        open={checkoutConfirmation.open}
+        onOpenChange={open => setCheckoutConfirmation(current => ({ ...current, open }))}
+      >
+        <DialogContent className="border-[#EFEDE6]/15 bg-black text-[#EFEDE6] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 font-display text-xl font-black">
+              {checkoutConfirmation.status === "confirming" ? (
+                <Loader2 className="h-5 w-5 animate-spin text-[#F5FF3D]" />
+              ) : checkoutConfirmation.status === "success" ? (
+                <CheckCheck className="h-5 w-5 text-[#F5FF3D]" />
+              ) : (
+                <CreditCard className="h-5 w-5 text-[#F5FF3D]" />
+              )}
+              {checkoutConfirmation.title}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+              {checkoutConfirmation.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="border border-[#EFEDE6]/10 bg-[#0A0A0A] p-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+            <p>Type: <span className="text-[#EFEDE6]">{checkoutConfirmation.checkoutType}</span></p>
+            {checkoutConfirmation.sessionId && (
+              <p className="mt-1 truncate">Session: <span className="text-[#EFEDE6]">{checkoutConfirmation.sessionId}</span></p>
+            )}
+          </div>
+
+          {checkoutConfirmation.status === "pending" && (
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => void confirmCheckoutReturn(checkoutConfirmation.checkoutType, checkoutConfirmation.sessionId)}
+                className="h-10 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black"
+              >
+                Check again
+              </button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
       <CreditsModal
         open={creditsOpen}
         onClose={() => setCreditsOpen(false)}

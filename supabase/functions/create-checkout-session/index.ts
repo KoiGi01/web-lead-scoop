@@ -163,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
           quantity: 1,
         },
       ],
-      success_url: `https://app.globaleads22.com/?checkout=${isSubscription ? "subscription_success" : "success"}`,
+      success_url: `https://app.globaleads22.com/?checkout=${isSubscription ? "subscription_success" : "success"}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: "https://globaleads22.com/#pricing",
       metadata: {
         user_id: userId,
