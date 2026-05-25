@@ -3,18 +3,24 @@ import { z } from "zod";
 import {
   ArrowRight,
   ArrowLeft,
+  BarChart3,
   Bot,
   CheckCheck,
   Copy,
   Download,
   ExternalLink,
+  Filter,
   Globe,
   Linkedin,
   Loader2,
   Mail,
+  Paperclip,
   Phone,
   Search,
+  Send,
+  SlidersHorizontal,
   Sparkles,
+  Target,
   UserRound,
 } from "lucide-react";
 import XLSX from "xlsx-js-style";
@@ -281,17 +287,20 @@ const ClarificationPanel = ({
   };
 
   return (
-    <div className="mt-3 w-full max-w-[720px] border border-[#1d9bf0]/70 bg-[#061827] shadow-[0_18px_48px_rgba(0,0,0,0.38)]">
-      <div className="border-b border-[#1d9bf0]/35 px-4 py-3">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">Search details</p>
-        <p className="mt-1 text-sm font-semibold text-[#EFEDE6]">Answer what applies. I’ll use this to tune the lead profile.</p>
+    <div className="mt-4 w-full rounded-md border border-[#EFEDE6]/15 bg-[#11110E]/95 p-4 shadow-[0_18px_48px_rgba(245,255,61,0.08)]">
+      <div className="flex items-start gap-3 border-b border-[#EFEDE6]/10 pb-3">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#F5FF3D]" />
+        <div>
+          <p className="font-display text-sm font-black text-[#F5FF3D]">Quick clarification</p>
+          <p className="mt-1 text-xs leading-5 text-[#A8A59C]">This helps me tune the search and return better leads.</p>
       </div>
-      <div className="grid gap-4 p-4">
+      </div>
+      <div className="grid gap-4 py-4">
         {questions.map(question => (
           <div key={question.id}>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">{question.header}</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{question.header}</p>
             <p className="mt-1 text-sm font-semibold text-[#EFEDE6]">{question.question}</p>
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {[...question.options, "Write my own answer"].map(option => {
                 const value = option === "Write my own answer" ? "__custom" : option;
                 const active = answers[question.id] === value;
@@ -301,14 +310,14 @@ const ClarificationPanel = ({
                     type="button"
                     onClick={() => setAnswers(prev => ({ ...prev, [question.id]: value }))}
                     disabled={disabled}
-                    className={`flex items-start gap-3 border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`flex min-h-10 items-center gap-2 rounded border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
-                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#EFEDE6]"
-                        : "border-[#EFEDE6]/10 bg-[#0A0A0A] text-[#A8A59C] hover:border-[#1d9bf0]/70 hover:text-[#EFEDE6]"
+                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
+                        : "border-[#EFEDE6]/10 bg-black/50 text-[#A8A59C] hover:border-[#F5FF3D]/70 hover:text-[#EFEDE6]"
                     }`}
                   >
-                    <span className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border ${active ? "border-[#F5FF3D] bg-[#F5FF3D]" : "border-[#A8A59C]/50"}`} />
-                    <span className="text-sm leading-5">{option}</span>
+                    <span className={`h-3.5 w-3.5 shrink-0 rounded-full border ${active ? "border-[#F5FF3D] bg-[#F5FF3D]" : "border-[#A8A59C]/50"}`} />
+                    <span className="text-xs font-semibold leading-5">{option}</span>
                   </button>
                 );
               })}
@@ -325,15 +334,16 @@ const ClarificationPanel = ({
           </div>
         ))}
       </div>
-      <div className="border-t border-[#EFEDE6]/10 p-4">
+      <div className="flex flex-wrap items-center gap-3 border-t border-[#EFEDE6]/10 pt-4">
         <button
           type="button"
           onClick={() => onSubmit(buildAnswer())}
           disabled={disabled || !canSubmit}
-          className="h-10 w-full border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
+          className="h-10 rounded border border-[#F5FF3D] bg-[#F5FF3D] px-5 font-display text-sm font-bold text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
         >
           Submit answers
         </button>
+        <span className="text-xs text-[#67645B]">You can skip and I will use default settings.</span>
       </div>
     </div>
   );
@@ -353,10 +363,19 @@ const AssistantChatMessage = ({
   const handleTypingDone = useCallback(() => setTypingDone(true), []);
 
   return (
-    <div className="max-w-[92%]">
-      <div className="border border-[#EFEDE6]/10 bg-[#0A0A0A] px-3 py-2 text-sm leading-6 text-[#A8A59C]">
-        <TypewriterText text={message.text} onDone={handleTypingDone} />
+    <div className="flex max-w-[84%] gap-3">
+      <div className="relative mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#EFEDE6]/20 bg-[#101010] text-[#EFEDE6]">
+        <Bot className="h-5 w-5" />
+        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-emerald-400" />
       </div>
+      <div className="min-w-0 flex-1 rounded-md border border-[#EFEDE6]/12 bg-[#0E0E0D] px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.28)]">
+        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest">
+          <span className="font-bold text-[#EFEDE6]">AI Assistant</span>
+          <span className="text-[#67645B]">Now</span>
+        </div>
+        <div className="whitespace-pre-line text-sm leading-6 text-[#D9D6CC]">
+          <TypewriterText text={message.text} onDone={handleTypingDone} />
+        </div>
       {hasClarification && typingDone && (
         <ClarificationPanel
           questions={message.clarificationQuestions || []}
@@ -364,6 +383,7 @@ const AssistantChatMessage = ({
           disabled={disabled}
         />
       )}
+      </div>
     </div>
   );
 };
@@ -1567,7 +1587,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   ];
 
   return (
-    <section id="tool" className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" ? "overflow-hidden" : "overflow-auto"}`}>
+    <section id="tool" className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" || searchMode === "free" ? "overflow-hidden" : "overflow-auto"}`}>
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6">
         {authLoading && (
           <div className="flex min-h-[360px] items-center justify-center">
@@ -1661,17 +1681,17 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
             )}
 
             {searchMode === "free" && (
-              <div className="flex h-[calc(100vh-9rem)] min-h-[560px] flex-col overflow-hidden border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
-                <div className="flex items-center justify-between gap-3 border-b border-[#EFEDE6]/10 px-3 py-2">
-                  <button onClick={() => setSearchMode(null)} className="inline-flex h-8 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
+              <div className="flex h-[calc(100vh-8.25rem)] min-h-[560px] flex-col overflow-hidden bg-black">
+                <div className="flex items-center justify-between gap-3 border-b border-[#EFEDE6]/10 px-3 py-3">
+                  <button onClick={() => setSearchMode(null)} className="inline-flex h-10 items-center gap-2 rounded border border-[#EFEDE6]/10 px-4 font-mono text-[10px] uppercase tracking-[0.24em] text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
                     <ArrowLeft className="h-3.5 w-3.5" /> Options
                   </button>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">AI search · beta</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#8D897E]">AI search - beta</span>
                 </div>
 
-                <div className="grid min-h-0 flex-1 gap-4 overflow-hidden p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="flex min-h-[520px] flex-col border border-[#EFEDE6]/10 bg-black lg:min-h-0">
-                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                <div className="grid min-h-0 flex-1 gap-5 overflow-hidden px-3 py-4 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
+                  <div className="flex min-h-0 flex-col overflow-hidden border-r border-[#EFEDE6]/10 pr-3">
+                    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-4 pt-1">
                       {freeMessages.map((message, index) => (
                         message.role === "assistant" ? (
                           <AssistantChatMessage
@@ -1681,19 +1701,32 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             disabled={isPlanningFreeSearch || isProcessing || index !== freeMessages.length - 1}
                           />
                         ) : (
-                          <div key={`${message.role}-${index}`} className="ml-auto max-w-[84%] border border-[#F5FF3D]/30 bg-[#F5FF3D]/10 px-3 py-2 text-sm leading-6 text-[#EFEDE6]">
-                            {message.text}
+                          <div key={`${message.role}-${index}`} className="ml-auto max-w-[62%]">
+                            <div className="mb-1 flex items-center justify-end gap-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                              <span>You</span>
+                              <span className="text-[#67645B]">Now</span>
+                            </div>
+                            <div className="rounded-md bg-[#F5FF3D] px-4 py-3 text-sm font-medium leading-6 text-black shadow-[0_10px_34px_rgba(245,255,61,0.12)]">
+                              {message.text}
+                              <CheckCheck className="ml-2 inline h-3.5 w-3.5" />
+                            </div>
                           </div>
                         )
                       ))}
                       {isPlanningFreeSearch && (
-                        <div className="inline-flex items-center gap-2 border border-[#EFEDE6]/10 bg-[#0A0A0A] px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Planning
+                        <div className="flex max-w-[84%] gap-3">
+                          <div className="relative mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#EFEDE6]/20 bg-[#101010] text-[#EFEDE6]">
+                            <Bot className="h-5 w-5" />
+                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-emerald-400" />
+                          </div>
+                          <div className="inline-flex items-center gap-2 rounded-md border border-[#EFEDE6]/12 bg-[#0E0E0D] px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#F5FF3D]" /> Planning search
+                          </div>
                         </div>
                       )}
                     </div>
-                    <div className="border-t border-[#EFEDE6]/10 p-3">
-                      <div className="flex gap-2">
+                    <div className="border-t border-[#EFEDE6]/10 px-3 pt-4">
+                      <div className="flex items-center gap-3 rounded-md border border-[#EFEDE6]/12 bg-[#050505] px-4 py-3 shadow-[0_16px_44px_rgba(0,0,0,0.35)]">
                         <input
                           value={freeInput}
                           onChange={event => setFreeInput(event.target.value)}
@@ -1704,142 +1737,101 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             }
                           }}
                           disabled={isPlanningFreeSearch || isProcessing}
-                          placeholder="Find dental clinics in Lisbon with emails and managers..."
-                          className="h-10 min-w-0 flex-1 border border-[#EFEDE6]/10 bg-black px-3 text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                          placeholder="Ask anything about your lead search..."
+                          className="h-12 min-w-0 flex-1 bg-transparent text-base text-[#EFEDE6] outline-none placeholder:text-[#67645B] disabled:opacity-50"
                         />
-                        <button onClick={() => void handleFreeSearchSubmit()} disabled={!freeInput.trim() || isPlanningFreeSearch || isProcessing} className="h-10 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black disabled:opacity-40">
-                          Send
+                        <button type="button" className="grid h-10 w-10 place-items-center rounded border border-transparent text-[#A8A59C] hover:border-[#EFEDE6]/10 hover:text-[#EFEDE6]" aria-label="Attach context">
+                          <Paperclip className="h-5 w-5" />
+                        </button>
+                        <button type="button" className="grid h-10 w-10 place-items-center rounded border border-transparent text-[#A8A59C] hover:border-[#EFEDE6]/10 hover:text-[#EFEDE6]" aria-label="Search settings">
+                          <SlidersHorizontal className="h-5 w-5" />
+                        </button>
+                        <button onClick={() => void handleFreeSearchSubmit()} disabled={!freeInput.trim() || isPlanningFreeSearch || isProcessing} className="inline-flex h-12 items-center gap-2 rounded border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black shadow-[0_0_28px_rgba(245,255,61,0.2)] disabled:cursor-not-allowed disabled:opacity-40">
+                          <Send className="h-4 w-4" /> Send
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  <aside className="flex min-h-[280px] flex-col border border-[#EFEDE6]/10 bg-black p-4 lg:min-h-0">
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Lead profile</p>
+                  <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#DFFF00]/80 bg-[#0A0A0A] p-6 shadow-[0_0_42px_rgba(245,255,61,0.16)]">
+                    <div className="flex items-start gap-3 border-b border-[#EFEDE6]/10 pb-5">
+                      <div className="grid h-9 w-9 place-items-center rounded border border-[#F5FF3D]/35 bg-[#F5FF3D]/10 text-[#F5FF3D]">
+                        <Target className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-[#F5FF3D]">Lead profile</p>
+                        <p className="mt-2 text-sm text-[#8D897E]">Preview of your AI search plan.</p>
+                      </div>
+                    </div>
+
                     {freePlan ? (
-                      <div className="mt-4 flex flex-1 flex-col gap-4">
-                        <p className="text-sm leading-6 text-[#A8A59C]">{freePlan.plan.summary}</p>
-
-                        <div className="grid gap-3">
-                          <label className="grid gap-1.5">
-                            <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Industry / niche</span>
-                            <input
-                              value={freePlan.config.industry}
-                              onChange={event => updateFreePlanConfig(config => ({ ...config, industry: event.target.value }))}
-                              disabled={isProcessing}
-                              className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                            />
-                          </label>
-
-                          <label className="grid gap-1.5">
-                            <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Location</span>
-                            <input
-                              value={freePlan.config.location}
-                              onChange={event => updateFreePlanConfig(config => ({ ...config, location: event.target.value }))}
-                              disabled={isProcessing}
-                              className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 text-sm text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                            />
-                          </label>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <label className="grid gap-1.5">
-                              <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Location type</span>
-                              <select
-                                value={freePlan.config.locationMode}
-                                onChange={event => updateFreePlanConfig(config => ({ ...config, locationMode: event.target.value as LocationMode }))}
-                                disabled={isProcessing}
-                                className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                              >
-                                <option value="country">Country</option>
-                                <option value="city">City / area</option>
-                              </select>
-                            </label>
-
-                            <label className="grid gap-1.5">
-                              <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Depth</span>
-                              <select
-                                value={freePlan.config.depth}
-                                onChange={event => updateFreePlanConfig(config => ({ ...config, depth: event.target.value as Depth }))}
-                                disabled={isProcessing}
-                                className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                              >
-                                <option value="simple">Simple</option>
-                                <option value="normal" disabled={!canUseSearchQuality(plan, "normal", freePlan.config.enrichMode, isAdmin)}>Normal</option>
-                                <option value="deep" disabled={!canUseSearchQuality(plan, "deep", freePlan.config.enrichMode, isAdmin)}>Deep</option>
-                              </select>
-                            </label>
+                      <div className="min-h-0 flex-1 overflow-y-auto py-5">
+                        <div className="grid gap-5">
+                          <div className="border-b border-[#EFEDE6]/10 pb-4">
+                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><Target className="h-3.5 w-3.5" /> Target</div>
+                            <div className="grid gap-3 text-sm">
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Industry / Niche</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.industry || "Not set"}</span></div>
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Location</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.location || "Not set"} ({freePlan.config.locationMode})</span></div>
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Language</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.language || "Optional"}</span></div>
+                            </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <label className="grid gap-1.5">
-                              <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Mode</span>
-                              <select
-                                value={freePlan.config.enrichMode ? "enrich" : "normal"}
-                                onChange={event => updateFreePlanConfig(config => ({ ...config, enrichMode: event.target.value === "enrich" }))}
-                                disabled={isProcessing}
-                                className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                              >
-                                <option value="normal">Normal</option>
-                                <option value="enrich" disabled={!canUseSearchQuality(plan, freePlan.config.depth, true, isAdmin)}>Enrich</option>
-                              </select>
-                            </label>
+                          <div className="border-b border-[#EFEDE6]/10 pb-4">
+                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><BarChart3 className="h-3.5 w-3.5" /> Strategy</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Depth</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.depth}</p></div>
+                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Mode</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.enrichMode ? "Enrich" : "Normal"}</p></div>
+                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Quality</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.strictness}</p></div>
+                            </div>
+                          </div>
 
-                            <label className="grid gap-1.5">
-                              <span className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Strictness</span>
-                              <select
-                                value={freePlan.config.strictness}
-                                onChange={event => updateFreePlanConfig(config => ({ ...config, strictness: event.target.value as Strictness }))}
-                                disabled={isProcessing}
-                                className="h-9 border border-[#EFEDE6]/15 bg-[#0A0A0A] px-2.5 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6] outline-none focus:border-[#F5FF3D]/70 disabled:opacity-50"
-                              >
-                                <option value="broad">Broad</option>
-                                <option value="balanced">Balanced</option>
-                                <option value="strict">Strict</option>
-                              </select>
-                            </label>
+                          <div className="border-b border-[#EFEDE6]/10 pb-4">
+                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><Filter className="h-3.5 w-3.5" /> Filters</div>
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                              <span className="text-[#A8A59C]">Priority Signals</span>
+                              <div className="flex gap-1.5">
+                                {requiredContactKeys.map(key => (
+                                  <span key={key} className={`grid h-7 w-7 place-items-center rounded border ${freePlan.config.required[key] ? "border-[#F5FF3D] bg-[#F5FF3D] text-black" : "border-[#EFEDE6]/10 text-[#A8A59C]"}`} title={channelLabels[key]}>
+                                    {key === "phone" && <Phone className="h-3.5 w-3.5" />}
+                                    {key === "website" && <Globe className="h-3.5 w-3.5" />}
+                                    {key === "email" && <Mail className="h-3.5 w-3.5" />}
+                                    {key === "linkedin" && <Linkedin className="h-3.5 w-3.5" />}
+                                    {key === "person" && <UserRound className="h-3.5 w-3.5" />}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="mt-3 flex justify-between gap-4 text-sm"><span className="text-[#A8A59C]">Prefer public email in ranking</span><span className="font-mono uppercase text-[#F5FF3D]">{freePlan.config.preferPublicEmail ? "On" : "Off"}</span></div>
+                          </div>
+
+                          <div>
+                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><BarChart3 className="h-3.5 w-3.5" /> Estimates</div>
+                            <div className="grid gap-3 text-sm">
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Est. results</span><span className="font-mono text-[#EFEDE6]">{Math.max(8, Math.round(freePlan.plan.maxResults * 0.35))} - {freePlan.plan.maxResults} leads</span></div>
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Confidence</span><span className="font-mono text-emerald-400">High</span></div>
+                            </div>
                           </div>
                         </div>
-
-                        <div>
-                          <p className="mb-2 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {requiredContactKeys.map(key => {
-                              const active = freePlan.config.required[key];
-                              return (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  onClick={() => updateFreePlanConfig(config => ({ ...config, required: { ...config.required, [key]: !active } }))}
-                                  disabled={isProcessing}
-                                  className={`h-8 border px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors disabled:opacity-50 ${
-                                    active
-                                      ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
-                                      : "border-[#EFEDE6]/15 bg-[#0A0A0A] text-[#A8A59C] hover:border-[#F5FF3D]/60 hover:text-[#EFEDE6]"
-                                  }`}
-                                >
-                                  {channelLabels[key]}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-[#EFEDE6]/10 pt-3 font-mono text-[10px] uppercase tracking-widest">
-                          <span className="text-[#67645B]">Cost <span className="text-[#F5FF3D]">{isAdmin ? "admin" : `${getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)} credits`}</span></span>
-                        </div>
-
-                        <button onClick={startFreeSearch} disabled={isProcessing} className="mt-auto h-11 w-full border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black disabled:opacity-40">
-                          Start search
-                        </button>
                       </div>
                     ) : (
-                      <p className="mt-4 text-sm leading-6 text-[#A8A59C]">The search plan appears here after the assistant has the business type and location.</p>
+                      <div className="flex min-h-0 flex-1 items-center justify-center py-8 text-center text-sm leading-6 text-[#8D897E]">
+                        Tell the assistant what you need. The search plan appears here before you run it.
+                      </div>
                     )}
+
+                    <div className="mt-auto border-t border-[#EFEDE6]/10 pt-5">
+                      <div className="mb-4 flex items-end justify-between gap-4">
+                        <div><p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Credits</p><p className="mt-1 font-display text-3xl font-black text-[#EFEDE6]">{creditsBalance}</p></div>
+                        <div className="text-right"><p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Cost</p><p className="mt-1 font-display text-3xl font-black text-[#F5FF3D]">{freePlan ? (isAdmin ? "Admin" : getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)) : "-"}</p></div>
+                      </div>
+                      <button onClick={startFreeSearch} disabled={!freePlan || isProcessing} className="h-12 w-full rounded border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black shadow-[0_0_28px_rgba(245,255,61,0.18)] disabled:cursor-not-allowed disabled:opacity-40">
+                        {isProcessing ? "Searching..." : isAdmin ? "Find leads - admin" : `Find leads${freePlan ? ` - ${getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)} credits` : ""}`}
+                      </button>
+                    </div>
                   </aside>
                 </div>
               </div>
             )}
-
             {searchMode === "manual" && (() => {
               const depthOrder: Depth[] = ["simple", "normal", "deep"];
               const strictnessOrder: Strictness[] = ["broad", "balanced", "strict"];
