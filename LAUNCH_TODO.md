@@ -19,11 +19,11 @@ Goal: get the first paid users while keeping credit accounting, provider spend, 
 
 ## Launch Blockers
 
-- [ ] Run a Stripe checkout smoke test.
+- [x] Run a Stripe checkout smoke test.
   - Acceptance: checkout opens, payment succeeds, user returns to app, credits increase.
   - Verify rows in `stripe_payments` and `credit_transactions`.
 
-- [ ] Run a zero-credit purchase test.
+- [x] Run a zero-credit purchase test.
   - Acceptance: user with 0 credits clicks `Find leads`, buy credits modal opens, selected pack redirects to Stripe.
 
 - [ ] Run a Normal Simple customer search.
@@ -32,7 +32,7 @@ Goal: get the first paid users while keeping credit accounting, provider spend, 
 - [ ] Run a Search + Enrich Simple customer search.
   - Acceptance: credits deduct, enrichment completes or clearly reports no named contacts.
 
-- [ ] Run an admin search.
+- //[ ] Run an admin search.
   - Acceptance: no customer credits are deducted, provider usage/cost rows are still logged.
 
 - [ ] Confirm provider budget alerts are set.

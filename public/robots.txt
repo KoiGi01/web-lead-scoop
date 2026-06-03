@@ -1,4 +1,4 @@
-# Allow all major search engines
+# Allow major search engines to crawl public marketing and legal pages
 User-agent: Googlebot
 Allow: /
 Disallow: /app
@@ -7,44 +7,56 @@ User-agent: Bingbot
 Allow: /
 Disallow: /app
 
-# Allow AI search crawlers explicitly
+# Allow AI search crawlers to read public product context
 User-agent: GPTBot
 Allow: /
+Disallow: /app
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /app
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /app
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /app
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /app
 
 User-agent: anthropic-ai
 Allow: /
+Disallow: /app
 
 User-agent: YouBot
 Allow: /
+Disallow: /app
 
 User-agent: cohere-ai
 Allow: /
+Disallow: /app
 
 User-agent: Amazonbot
 Allow: /
+Disallow: /app
 
 User-agent: Applebot
 Allow: /
+Disallow: /app
 
 User-agent: Twitterbot
 Allow: /
+Disallow: /app
 
 User-agent: facebookexternalhit
 Allow: /
+Disallow: /app
 
-# Default — allow everything except the app workspace
+# Default - public site crawlable, authenticated app workspace excluded
 User-agent: *
 Allow: /
 Disallow: /app

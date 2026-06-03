@@ -443,6 +443,7 @@ export type Database = {
           location: string
           depth: string | null
           enrich_mode: boolean
+          selected_service: string | null
           usage_type: string
           status: string
           lead_count: number
@@ -459,6 +460,7 @@ export type Database = {
           location: string
           depth?: string | null
           enrich_mode?: boolean
+          selected_service?: string | null
           usage_type?: string
           status?: string
           lead_count?: number
@@ -475,6 +477,7 @@ export type Database = {
           location?: string
           depth?: string | null
           enrich_mode?: boolean
+          selected_service?: string | null
           usage_type?: string
           status?: string
           lead_count?: number
@@ -495,6 +498,7 @@ export type Database = {
           phone: string | null
           website: string | null
           category: string | null
+          selected_service: string | null
           emails: Json | null
           whatsapp: Json | null
           contacts: Json
@@ -519,6 +523,7 @@ export type Database = {
           phone?: string | null
           website?: string | null
           category?: string | null
+          selected_service?: string | null
           emails?: Json | null
           whatsapp?: Json | null
           contacts?: Json
@@ -543,6 +548,7 @@ export type Database = {
           phone?: string | null
           website?: string | null
           category?: string | null
+          selected_service?: string | null
           emails?: Json | null
           whatsapp?: Json | null
           contacts?: Json

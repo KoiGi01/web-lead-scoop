@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Mail } from "lucide-react";
 
 interface AuthModalProps {
@@ -94,28 +94,36 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-cream-100/10 bg-petrol-800">
-                <div className="h-1.5 w-full bg-gradient-to-r from-wine-700 to-wine-500" />
+            <DialogContent className="overflow-hidden border border-[#F5FF3D]/35 bg-[#030303] p-0 text-[#EFEDE6] shadow-[0_0_90px_rgba(245,255,61,0.14)] sm:max-w-md sm:rounded-none [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-none [&>button]:text-[#EFEDE6]/55 [&>button]:ring-offset-black [&>button:hover]:text-[#F5FF3D]">
+                <div className="h-1 w-full bg-[#F5FF3D]" />
 
-                <div className="p-6">
-                    <DialogHeader className="mb-6">
-                        <DialogTitle className="text-xl font-heading font-bold text-cream-100 text-center">
+                <div className="relative bg-[#030303] p-6">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(245,255,61,0.12),transparent_42%)]" />
+                    <div className="relative">
+                    <DialogHeader className="mb-6 items-center text-center">
+                        <div className="mb-4 flex items-center justify-center gap-3">
+                            <img src="/logo.png" alt="GlobaLeads22 logo" className="h-12 w-12 rounded-lg" />
+                            <div className="text-left font-heading text-2xl font-black leading-none tracking-[-0.05em] text-[#EFEDE6]">
+                                GlobaLeads<span className="align-super font-mono text-xs tracking-normal text-[#F5FF3D]">22</span>
+                            </div>
+                        </div>
+                        <DialogTitle className="text-center font-heading text-2xl font-black tracking-[-0.035em] text-[#EFEDE6]">
                             {mode === "signin" ? (
-                                <>Welcome <span className="text-wine-500">back</span></>
+                                <>Welcome <span className="text-[#F5FF3D]">back</span></>
                             ) : (
-                                <>Create your <span className="text-wine-500">account</span></>
+                                <>Create your <span className="text-[#F5FF3D]">account</span></>
                             )}
                         </DialogTitle>
-                        <p className="text-sm text-cream-300 text-center mt-1">
+                        <DialogDescription className="mt-2 max-w-xs text-center text-sm leading-6 text-[#A8A59C]">
                             {mode === "signin"
                                 ? "Sign in to generate and download leads"
                                 : "Free account - start generating leads instantly"}
-                        </p>
+                        </DialogDescription>
                     </DialogHeader>
 
                     <Button
                         variant="outline"
-                        className="w-full mb-4 gap-2 font-medium bg-cream-100/10 border-cream-100/20 text-cream-100 hover:bg-cream-100/20"
+                        className="mb-4 h-12 w-full gap-2 rounded-none border-[#EFEDE6]/15 bg-[#11110E] font-semibold text-[#EFEDE6] hover:border-[#F5FF3D]/50 hover:bg-[#181810] hover:text-[#F5FF3D]"
                         onClick={handleGoogle}
                         disabled={googleLoading || loading}
                     >
@@ -134,25 +142,25 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
                     <div className="relative mb-4">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-cream-100/10" />
+                            <span className="w-full border-t border-[#EFEDE6]/12" />
                         </div>
                         <div className="relative flex justify-center text-xs">
-                            <span className="bg-petrol-800 px-3 text-cream-300">or continue with email</span>
+                            <span className="bg-black px-3 font-mono uppercase tracking-[0.12em] text-[#67645B]">or continue with email</span>
                         </div>
                     </div>
 
                     <form onSubmit={handleEmail} className="space-y-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-email" className="text-sm text-cream-300 font-mono">Email</Label>
+                            <Label htmlFor="auth-email" className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-[#F5FF3D]">Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cream-300" />
+                                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A8A59C]" />
                                 <Input
                                     id="auth-email"
                                     type="email"
                                     placeholder="you@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-9 bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30"
+                                    className="h-12 rounded-none border-[#EFEDE6]/15 bg-[#050505] pl-9 text-[#EFEDE6] placeholder:text-[#67645B] focus-visible:border-[#F5FF3D] focus-visible:ring-[#F5FF3D]/25"
                                     required
                                     disabled={loading}
                                 />
@@ -160,14 +168,14 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="auth-password" className="text-sm text-cream-300 font-mono">Password</Label>
+                            <Label htmlFor="auth-password" className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-[#F5FF3D]">Password</Label>
                             <Input
                                 id="auth-password"
                                 type="password"
                                 placeholder={mode === "signup" ? "Min. 8 characters" : "Your password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="bg-petrol-900/60 border-b-2 border-cream-100/20 focus:border-wine-700/60 text-cream-100 placeholder:text-cream-100/30"
+                                className="h-12 rounded-none border-[#EFEDE6]/15 bg-[#050505] text-[#EFEDE6] placeholder:text-[#67645B] focus-visible:border-[#F5FF3D] focus-visible:ring-[#F5FF3D]/25"
                                 required
                                 disabled={loading}
                                 minLength={mode === "signup" ? 8 : undefined}
@@ -181,28 +189,29 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                             <p className="text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">{success}</p>
                         )}
 
-                        <Button variant="accent" className="w-full font-semibold" type="submit" disabled={loading || googleLoading}>
+                        <Button className="h-12 w-full rounded-none border border-[#F5FF3D] bg-[#F5FF3D] font-mono font-black uppercase tracking-[0.1em] text-black hover:bg-[#fffe72] hover:text-black" type="submit" disabled={loading || googleLoading}>
                             {loading ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait...</>
                             ) : mode === "signin" ? "Sign In" : "Create Account"}
                         </Button>
                     </form>
 
-                    <p className="mt-5 text-center text-sm text-cream-300">
+                    <p className="mt-5 text-center text-sm text-[#A8A59C]">
                         {mode === "signin" ? (
                             <>Don't have an account?{" "}
-                                <button onClick={() => switchMode("signup")} className="text-wine-500 font-medium hover:underline">
+                                <button onClick={() => switchMode("signup")} className="font-semibold text-[#F5FF3D] hover:underline">
                                     Sign up free
                                 </button>
                             </>
                         ) : (
                             <>Already have an account?{" "}
-                                <button onClick={() => switchMode("signin")} className="text-wine-500 font-medium hover:underline">
+                                <button onClick={() => switchMode("signin")} className="font-semibold text-[#F5FF3D] hover:underline">
                                     Sign in
                                 </button>
                             </>
                         )}
                     </p>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

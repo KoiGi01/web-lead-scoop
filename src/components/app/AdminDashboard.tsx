@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, Building2, RefreshCw, Save, Search, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, RefreshCw, Save, Search, ShieldCheck, Users } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -54,8 +54,31 @@ interface OrganizationRow {
   seat_limit: number;
 }
 
+interface ProviderAccountStatus {
+  provider: "google" | "firecrawl" | "hunter";
+  label: string;
+  status: "ok" | "warning" | "error" | "not_configured" | "unsupported";
+  remaining: number | null;
+  limit: number | null;
+  used: number | null;
+  reset_at: string | null;
+  balance_label: string;
+  note: string;
+  checked_at: string;
+  internal_usage: {
+    events_24h: number;
+    units_24h: number;
+    estimated_cost_24h_usd: number;
+    failures_24h: number;
+    events_30d: number;
+    units_30d: number;
+    estimated_cost_30d_usd: number;
+  };
+}
+
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit" });
+const compactNumber = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 const sum = <T,>(items: T[], getValue: (item: T) => number | null | undefined) =>
   items.reduce((acc, item) => acc + Number(getValue(item) || 0), 0);
@@ -73,6 +96,7 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
   const [stripePayments, setStripePayments] = useState<StripePayment[]>([]);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationRow[]>([]);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderAccountStatus[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -85,12 +109,13 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
     setLoading(true);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [usage, credits, sessions, payments, adminUsers] = await Promise.all([
+    const [usage, credits, sessions, payments, adminUsers, providerStatus] = await Promise.all([
       supabase.from("api_usage_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("credit_transactions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("search_sessions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.from("stripe_payments").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.functions.invoke("admin-users", { body: { action: "list_users" } }),
+      supabase.functions.invoke("admin-provider-status", { body: {} }),
     ]);
 
     if (!usage.error) setUsageEvents(usage.data || []);
@@ -103,6 +128,11 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
       setSelectedUserId(current => current || adminUsers.data.users?.[0]?.id || null);
     } else if (adminUsers.error) {
       toast({ title: "Admin users failed", description: adminUsers.error.message, variant: "destructive" });
+    }
+    if (!providerStatus.error && providerStatus.data) {
+      setProviderStatuses(providerStatus.data.providers || []);
+    } else if (providerStatus.error) {
+      toast({ title: "Provider status failed", description: providerStatus.error.message, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -269,6 +299,28 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
               <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{label}</p>
             </div>
           ))}
+        </div>
+
+        <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-lg font-bold">Provider balances</h2>
+              <p className="mt-1 text-sm text-[#A8A59C]">Live balances where available, plus internal request/cost accounting.</p>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+              Server-side admin only
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {providerStatuses.map(provider => (
+              <ProviderStatusCard key={provider.provider} provider={provider} />
+            ))}
+            {!providerStatuses.length && (
+              <div className="border border-[#EFEDE6]/10 bg-black p-4 text-sm text-[#A8A59C] md:col-span-3">
+                Provider balances have not loaded yet.
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -518,6 +570,59 @@ const Info = ({ label, value }: { label: string; value: string | number }) => (
   <div className="border border-[#EFEDE6]/10 bg-black p-3">
     <p className="font-mono text-lg font-black text-[#EFEDE6]">{value}</p>
     <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">{label}</p>
+  </div>
+);
+
+const providerStatusTone = (status: ProviderAccountStatus["status"]) => {
+  if (status === "ok") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
+  if (status === "warning") return "border-[#F5FF3D]/40 bg-[#F5FF3D]/10 text-[#F5FF3D]";
+  if (status === "error") return "border-red-400/40 bg-red-500/10 text-red-200";
+  return "border-[#EFEDE6]/10 bg-black text-[#A8A59C]";
+};
+
+const formatReset = (value: string | null) => {
+  if (!value) return "Unknown";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : dateFmt.format(date);
+};
+
+const ProviderStatusCard = ({ provider }: { provider: ProviderAccountStatus }) => (
+  <div className="border border-[#EFEDE6]/10 bg-black p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-display text-base font-black text-[#EFEDE6]">{provider.label}</p>
+        <span className={`mt-2 inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${providerStatusTone(provider.status)}`}>
+          {provider.status !== "ok" && <AlertTriangle className="h-3 w-3" />}
+          {provider.status.replace("_", " ")}
+        </span>
+      </div>
+      <div className="text-right">
+        <p className="font-mono text-xl font-black text-[#F5FF3D]">{provider.balance_label}</p>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Remaining</p>
+      </div>
+    </div>
+
+    <div className="mt-4 grid grid-cols-3 gap-2 border-y border-[#EFEDE6]/10 py-3">
+      <div>
+        <p className="font-mono text-sm font-bold text-[#EFEDE6]">{compactNumber.format(provider.internal_usage.units_24h)}</p>
+        <p className="mt-1 font-mono text-[8px] uppercase tracking-widest text-[#67645B]">Units 24h</p>
+      </div>
+      <div>
+        <p className="font-mono text-sm font-bold text-[#EFEDE6]">{currency.format(provider.internal_usage.estimated_cost_24h_usd)}</p>
+        <p className="mt-1 font-mono text-[8px] uppercase tracking-widest text-[#67645B]">Cost 24h</p>
+      </div>
+      <div>
+        <p className="font-mono text-sm font-bold text-[#EFEDE6]">{currency.format(provider.internal_usage.estimated_cost_30d_usd)}</p>
+        <p className="mt-1 font-mono text-[8px] uppercase tracking-widest text-[#67645B]">Cost 30d</p>
+      </div>
+    </div>
+
+    <div className="mt-3 space-y-1 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">
+      <p>Used: <span className="text-[#EFEDE6]">{provider.used === null ? "Unknown" : compactNumber.format(provider.used)}</span></p>
+      <p>Limit: <span className="text-[#EFEDE6]">{provider.limit === null ? "Unknown" : compactNumber.format(provider.limit)}</span></p>
+      <p>Reset: <span className="text-[#EFEDE6]">{formatReset(provider.reset_at)}</span></p>
+    </div>
+    <p className="mt-3 text-xs leading-5 text-[#A8A59C]">{provider.note}</p>
   </div>
 );
 

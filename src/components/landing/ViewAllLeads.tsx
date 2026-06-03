@@ -68,6 +68,7 @@ interface SavedLead {
   phone: string;
   website: string;
   category: string;
+  selected_service?: string | null;
   emails: string[];
   whatsapp: string[];
   contacts?: DecisionMakerContact[];
@@ -219,6 +220,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
     phone: lead.phone || "",
     website: lead.website || "",
     category: lead.category || "",
+    selected_service: lead.selected_service || null,
     emails: asArray<string>(lead.emails),
     whatsapp: asArray<string>(lead.whatsapp),
     contacts: asArray<DecisionMakerContact>(lead.contacts),
@@ -247,7 +249,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
       setLeads((data || []).map(mapLead));
     } catch (err) {
       console.error("Error fetching leads:", err);
-      toast({ title: "Error", description: "Failed to load leads", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to load opportunities", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -293,7 +295,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
     if (error) {
       console.error("Error updating lead CRM:", error);
       setLeads(previous);
-      toast({ title: "CRM update failed", description: "Could not save that lead update.", variant: "destructive" });
+      toast({ title: "CRM update failed", description: "Could not save that prospect update.", variant: "destructive" });
     }
   };
 
@@ -396,6 +398,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
       .join(" ");
     const haystack = [
       lead.name,
+      lead.selected_service,
       lead.address,
       lead.category,
       lead.phone,
@@ -472,7 +475,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
   const handleDownload = () => {
     const headers = [
-      "Business Name", "CRM Status", "Priority", "Next Follow-Up", "Last Contacted", "Notes",
+      "Business Name", "Service Sold", "CRM Status", "Priority", "Next Follow-Up", "Last Contacted", "Notes",
       "Category", "Address", "Phone", "Website", "Email", "WhatsApp", "LinkedIn",
       "Likely Decision Maker", "Decision Maker Title", "Decision Maker Email", "Decision Maker Source", "Contact Page",
     ];
@@ -480,6 +483,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
       const contact = getTopContact(lead);
       return [
         lead.name,
+        lead.selected_service || "",
         lead.crm_status,
         lead.crm_priority,
         lead.next_follow_up_at ? new Date(lead.next_follow_up_at).toLocaleDateString() : "",
@@ -504,8 +508,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
       wch: Math.min(Math.max(header.length, ...rows.map(row => String(row[index] || "").length)) + 2, 56),
     }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Lead CRM");
-    XLSX.writeFile(wb, "GlobaLeads22-Lead-CRM.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Opportunity CRM");
+    XLSX.writeFile(wb, "GlobaLeads22-Opportunity-CRM.xlsx");
   };
 
   const clearFilters = () => {
@@ -547,24 +551,24 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
   const pageMeta = {
     inbox: {
-      kicker: "Lead Inbox",
-      title: "Review leads",
-      empty: "No leads saved yet.",
-      emptyDescription: "Run a search and your inbox will start filling up.",
-      noMatch: "No leads match these filters.",
+      kicker: "Opportunity Inbox",
+      title: "Review opportunities",
+      empty: "No opportunities saved yet.",
+      emptyDescription: "Run a search and saved prospects will appear here with public contact evidence.",
+      noMatch: "No opportunities match these filters.",
     },
     pipeline: {
       kicker: "Pipeline",
       title: "Sales pipeline",
-      empty: "No pipeline leads yet.",
-      emptyDescription: "Run a search and saved leads will appear by CRM status.",
-      noMatch: "No pipeline leads match these filters.",
+      empty: "No pipeline opportunities yet.",
+      emptyDescription: "Run a search and saved prospects will appear by CRM status.",
+      noMatch: "No pipeline opportunities match these filters.",
     },
     "follow-ups": {
       kicker: "Follow-ups",
       title: "Due follow-ups",
       empty: "No follow-ups yet.",
-      emptyDescription: "Add follow-up dates to leads and they will appear here.",
+      emptyDescription: "Add follow-up dates to prospects and they will appear here.",
       noMatch: "No follow-ups are due for these filters.",
     },
   }[mode];
@@ -630,7 +634,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#67645B]" />
                   <input
                     type="text"
-                    placeholder="Search businesses, people, emails, notes..."
+                    placeholder="Search opportunities, businesses, people, emails, notes..."
                     value={filterText}
                     onChange={event => setFilterText(event.target.value)}
                     className="h-8 w-full border border-[#EFEDE6]/10 bg-black pl-8 pr-3 font-mono text-[11px] text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
@@ -781,7 +785,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
                           {column.leads.length === 0 ? (
                             <div className={`flex min-h-[120px] items-center justify-center rounded-md border border-dashed px-3 text-center transition-colors ${isDropTarget ? "border-black/25 bg-white/70" : "border-black/10 bg-white/35"}`}>
-                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">{isDropTarget ? "Drop to move here" : "No leads"}</p>
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">{isDropTarget ? "Drop to move here" : "No opportunities"}</p>
                             </div>
                           ) : (
                             column.leads.map(lead => {
@@ -806,6 +810,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                                   <button onClick={() => setSelectedLeadId(lead.id)} className="block w-full text-left">
                                     <p className="truncate font-display text-sm font-bold leading-snug text-slate-950">{personLabel}</p>
                                     <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-slate-500">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                    {lead.selected_service && <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-amber-600">{lead.selected_service}</p>}
                                     <p className="mt-2 truncate text-xs font-semibold text-slate-700">{lead.name || "No company name"}</p>
                                   </button>
 
@@ -847,6 +852,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                                 </span>
                               </div>
                               <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                              {lead.selected_service && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">{lead.selected_service}</p>}
                               <p className="mt-2 truncate text-xs text-[#A8A59C]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
                             </div>
                             <div className="flex shrink-0 flex-wrap gap-1.5">
@@ -870,7 +876,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     <div className="border-b border-[#EFEDE6]/10 p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Selected lead</p>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Selected opportunity</p>
                           <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#EFEDE6]">{selectedLead.name}</h3>
                           <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
                         </div>
@@ -971,11 +977,17 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                         <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Business</p>
                         <p className="text-sm text-[#A8A59C]">{selectedLead.address || "No address listed"}</p>
                         {selectedLead.intelligence?.positioning && <p className="text-sm leading-6 text-[#A8A59C]">{selectedLead.intelligence.positioning}</p>}
+                        {selectedLead.selected_service && (
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Service sold: {selectedLead.selected_service}</p>
+                        )}
                         {selectedLead.intelligence?.opportunityScore !== undefined && (
-                          <div className="flex items-center gap-3">
-                            <span className="font-mono text-xl font-black text-[#F5FF3D]">{selectedLead.intelligence.opportunityScore}</span>
-                            <div className="h-1.5 flex-1 bg-[#EFEDE6]/10">
-                              <div className="h-full bg-[#F5FF3D]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
+                          <div>
+                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Opportunity score</p>
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-xl font-black text-[#F5FF3D]">{selectedLead.intelligence.opportunityScore}</span>
+                              <div className="h-1.5 flex-1 bg-[#EFEDE6]/10">
+                                <div className="h-full bg-[#F5FF3D]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
+                              </div>
                             </div>
                           </div>
                         )}
@@ -985,8 +997,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                 ) : (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
                     <Archive className="mb-4 h-9 w-9 text-[#67645B]" />
-                    <p className="font-display text-xl font-bold text-[#EFEDE6]">Select a lead</p>
-                    <p className="mt-2 text-sm text-[#A8A59C]">Pick a lead from the list to review contact details.</p>
+                    <p className="font-display text-xl font-bold text-[#EFEDE6]">Select an opportunity</p>
+                    <p className="mt-2 text-sm text-[#A8A59C]">Pick a prospect from the list to review public contact data and next steps.</p>
                   </div>
                 )}
               </aside>
@@ -1002,7 +1014,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                   {emailsCopied ? "Copied emails" : "Copy visible emails"}
                 </button>
                 <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]">
-                  <Download className="h-3.5 w-3.5" /> Export visible
+                  <Download className="h-3.5 w-3.5" /> Export opportunities
                 </button>
               </div>
             </div>

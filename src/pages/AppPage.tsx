@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCheck, CreditCard, Loader2, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
+import { Bug, CheckCheck, CreditCard, Loader2, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,8 @@ import { useEntitlements } from "@/hooks/useEntitlements";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSearchHistory } from "@/hooks/useSearchHistory";
 import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
-import { getIncludedCredits } from "@/lib/entitlements";
+import { getIncludedCredits, isPaidPlan, PLAN_LABELS } from "@/lib/entitlements";
+import { isOpportunityModeEnabled } from "@/lib/opportunityMode";
 import { toast } from "@/hooks/use-toast";
 import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
@@ -45,6 +46,21 @@ import {
 
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
+const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const isDemoPreview = devMode && isLocalHost && new URLSearchParams(window.location.search).get("demo") === "1";
+const demoUser = {
+  id: "00000000-0000-4000-8000-000000000001",
+  email: "demo@globaleads22.local",
+  user_metadata: {
+    full_name: "Demo User",
+    name: "Demo User",
+  },
+} as any;
+const demoProfile = {
+  id: demoUser.id,
+  full_name: "Demo User",
+  company_name: "Demo Workspace",
+} as any;
 
 type AppTheme = "light" | "dark";
 type AppViewMode = AppSidebarView;
@@ -61,12 +77,29 @@ interface CheckoutConfirmationState {
 }
 
 const AppPage = () => {
-  const { user, loading, signOut } = useAuth();
-  const { profile, hasProfile, checked: profileChecked, refetch: refetchProfile } = useUserProfile(user?.id);
-  const { balance: creditsBalance, plan: creditsPlan, refetch: refetchCredits } = useCredits(user?.id);
-  const { isAdmin } = useAdmin(user?.id);
-  const entitlements = useEntitlements(user?.id, creditsPlan, isAdmin);
-  const { history: searchHistory, loading: searchHistoryLoading, refetch: refetchHistory } = useSearchHistory(user?.id);
+  const { user: authUser, loading: rawLoading, signOut: rawSignOut } = useAuth();
+  const dataUserId = isDemoPreview ? undefined : authUser?.id;
+  const { profile: fetchedProfile, hasProfile: fetchedHasProfile, checked: fetchedProfileChecked, refetch: refetchProfile } = useUserProfile(dataUserId);
+  const { balance: fetchedCreditsBalance, plan: fetchedCreditsPlan, refetch: refetchCredits } = useCredits(dataUserId);
+  const { isAdmin: fetchedIsAdmin } = useAdmin(dataUserId);
+  const entitlements = useEntitlements(dataUserId, isDemoPreview ? "growth" : fetchedCreditsPlan, fetchedIsAdmin);
+  const { history: fetchedSearchHistory, loading: fetchedSearchHistoryLoading, refetch: refetchHistory } = useSearchHistory(dataUserId);
+  const user = isDemoPreview ? demoUser : authUser;
+  const loading = isDemoPreview ? false : rawLoading;
+  const profile = isDemoPreview ? demoProfile : fetchedProfile;
+  const hasProfile = isDemoPreview ? true : fetchedHasProfile;
+  const profileChecked = isDemoPreview ? true : fetchedProfileChecked;
+  const creditsBalance = isDemoPreview ? 140 : fetchedCreditsBalance;
+  const creditsPlan = isDemoPreview ? "growth" : fetchedCreditsPlan;
+  const isAdmin = isDemoPreview ? false : fetchedIsAdmin;
+  const searchHistory = isDemoPreview ? [] : fetchedSearchHistory;
+  const searchHistoryLoading = isDemoPreview ? false : fetchedSearchHistoryLoading;
+  const signOut = isDemoPreview
+    ? async () => {
+        window.location.href = "/";
+      }
+    : rawSignOut;
+  const opportunityModeEnabled = isDemoPreview || isOpportunityModeEnabled();
   const [authOpen, setAuthOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -85,6 +118,7 @@ const AppPage = () => {
     description: "",
   });
   const [theme, setTheme] = useState<AppTheme>(() => {
+    if (isDemoPreview) return "dark";
     if (typeof window === "undefined") return "light";
     return window.localStorage.getItem("globaleads-app-theme") === "dark" ? "dark" : "light";
   });
@@ -259,6 +293,14 @@ const AppPage = () => {
   };
 
   const handleBuyCredits = async (bundleKey: string, checkoutType: "topup" | "subscription" = "topup") => {
+    if (isDemoPreview) {
+      toast({
+        title: "Demo preview",
+        description: "Checkout is disabled in the local demo.",
+      });
+      return;
+    }
+
     if (!user) {
       setAuthOpen(true);
       return;
@@ -305,6 +347,22 @@ const AppPage = () => {
     .slice(0, 2)
     .map(part => part[0]?.toUpperCase())
     .join("") || "GL";
+  const showPaidBadge = !isAdmin && isPaidPlan(entitlements.effectivePlan);
+  const paidBadgeLabel = PLAN_LABELS[entitlements.effectivePlan];
+  const bugReportHref = `mailto:contact@globaleads22.com?subject=${encodeURIComponent("GlobaLeads22 bug report")}&body=${encodeURIComponent([
+    "Bug report",
+    "",
+    `Account: ${user?.email || "Not signed in"}`,
+    `Plan: ${isAdmin ? "admin" : entitlements.effectivePlan}`,
+    `Page: ${typeof window !== "undefined" ? window.location.href : ""}`,
+    "",
+    "What happened?",
+    "",
+    "What did you expect to happen?",
+    "",
+    "Steps to reproduce:",
+    "1. ",
+  ].join("\n"))}`;
 
   return (
     <div className={`app-theme ${theme === "light" ? "app-light light" : "app-dark dark"} h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]`}>
@@ -313,19 +371,34 @@ const AppPage = () => {
         <div className="flex h-14 w-full items-center">
 
           <div
-            className="flex h-full flex-shrink-0 items-center border-r border-[#EFEDE6]/[0.10] px-3 transition-all duration-300 md:w-56"
+            className="flex h-full flex-shrink-0 items-center border-r border-[#EFEDE6]/[0.10] px-2 transition-all duration-300 sm:px-3 md:w-56"
           >
             <GlobaLeadsLogo
               size="md"
               theme={theme === "light" ? "light" : "dark"}
+              className="hidden sm:inline-flex"
+            />
+            <GlobaLeadsLogo
+              size="md"
+              theme={theme === "light" ? "light" : "dark"}
+              showText={false}
+              className="inline-flex sm:hidden"
             />
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-4 px-4 sm:px-6">
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 px-2 sm:gap-4 sm:px-6">
+            <a
+              href={bugReportHref}
+              className="inline-flex h-9 items-center gap-2 whitespace-nowrap border border-[#F5FF3D] bg-[#F5FF3D] px-2.5 font-mono text-[10px] font-black uppercase tracking-widest text-black shadow-[0_0_24px_rgba(245,255,61,0.22)] transition-colors hover:bg-[#FFFE7A] sm:px-3"
+            >
+              <Bug className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Report bug</span>
+              <span className="sm:hidden">Bug</span>
+            </a>
             <button
               type="button"
               onClick={() => setTheme(current => current === "light" ? "dark" : "light")}
-              className="inline-flex h-9 items-center gap-2 border border-[#EFEDE6]/10 px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D] hover:text-[#EFEDE6]"
+              className="inline-flex h-9 items-center gap-2 border border-[#EFEDE6]/10 px-2.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D] hover:text-[#EFEDE6] sm:px-3"
               aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
             >
               {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
@@ -333,6 +406,14 @@ const AppPage = () => {
             </button>
             {user ? (
               <>
+                {showPaidBadge && (
+                  <div className="hidden lg:flex items-center gap-2 border border-[#F5FF3D]/60 bg-[#F5FF3D]/10 px-3 py-1.5">
+                    <CheckCheck className="h-3.5 w-3.5 text-[#F5FF3D]" />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]">
+                      {paidBadgeLabel} member
+                    </span>
+                  </div>
+                )}
                 <div className="hidden md:flex items-center gap-2 border border-[#EFEDE6]/10 px-3 py-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
                   <span className="font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">
@@ -361,6 +442,12 @@ const AppPage = () => {
                     <DropdownMenuLabel className="px-3 py-2">
                       <p className="truncate text-sm font-semibold text-[#EFEDE6]">{displayName}</p>
                       <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{user.email}</p>
+                      {showPaidBadge && (
+                        <span className="mt-2 inline-flex items-center gap-1.5 border border-[#F5FF3D]/50 bg-[#F5FF3D]/10 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]">
+                          <CheckCheck className="h-3 w-3" />
+                          {paidBadgeLabel} member
+                        </span>
+                      )}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-[#EFEDE6]/10" />
                     <DropdownMenuItem
@@ -392,7 +479,7 @@ const AppPage = () => {
                 </DropdownMenu>
               </>
             ) : (
-              <Button variant="accent" size="sm" onClick={() => setAuthOpen(true)}>
+              <Button variant="accent" size="sm" className="whitespace-nowrap" onClick={() => setAuthOpen(true)}>
                 SIGN IN
               </Button>
             )}
@@ -426,6 +513,8 @@ const AppPage = () => {
                 viewMode="search"
                 isAdmin={isAdmin}
                 effectivePlan={entitlements.effectivePlan}
+                demoMode={isDemoPreview}
+                opportunityModeEnabled={opportunityModeEnabled}
               />
             ) : viewMode === "lead-inbox" ? (
               <ViewAllLeads

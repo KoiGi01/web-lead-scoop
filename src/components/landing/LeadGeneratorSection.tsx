@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { canUseSearchQuality, PLAN_LABELS, normalizePlan } from "@/lib/entitlements";
+import { isOpportunityModeEnabled } from "@/lib/opportunityMode";
 
 interface Business {
   placeId: string;
@@ -105,6 +106,7 @@ interface RequiredContactFilters {
 }
 
 interface SearchConfig {
+  selectedService: string;
   industry: string;
   location: string;
   language: string;
@@ -168,6 +170,8 @@ interface LeadGeneratorSectionProps {
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
   isAdmin?: boolean;
   effectivePlan?: string;
+  demoMode?: boolean;
+  opportunityModeEnabled?: boolean;
 }
 
 const depthConfig: Record<Depth, { label: string; credits: number; maxResults: number; shards: number; websiteLimit: number; targetPeople: number }> = {
@@ -389,6 +393,7 @@ const AssistantChatMessage = ({
 };
 
 const searchSchema = z.object({
+  selectedService: z.string().trim().min(2, "Choose what you sell"),
   industry: z.string().trim().min(2, "Enter an industry or niche"),
   country: z.string().trim().min(2, "Enter a country"),
   language: z.string().trim().optional(),
@@ -556,6 +561,97 @@ const inferBriefTarget = (brief: string, location: string) => {
   return text.length >= 3 ? text : "";
 };
 
+const demoLeadResults: LeadResult[] = [
+  {
+    placeId: "demo-1",
+    name: "BrightSmile Dental Clinic",
+    address: "Austin, TX",
+    phone: "(512) 555-0184",
+    website: "https://example.com/brightsmile",
+    category: "dental clinic",
+    emails: ["hello@brightsmile.example"],
+    whatsapp: [],
+    linkedinUrl: "https://linkedin.com/in/sofia-almeida-demo",
+    socialLinks: ["https://instagram.com/brightsmile-demo"],
+    contactPageFound: true,
+    emailSource: "both",
+    contacts: [{
+      fullName: "Dr. Sofia Almeida",
+      title: "Clinic Director",
+      source: "website",
+      decisionMakerScore: 94,
+      decisionMakerReason: "Team page lists clinic director.",
+      email: "sofia@brightsmile.example",
+      linkedinUrl: "https://linkedin.com/in/sofia-almeida-demo",
+    }],
+    leadQualityScore: 96,
+    leadQualityLabel: "Strong lead",
+    leadQualityReason: "person + website + email + phone + visible booking gap.",
+  },
+  {
+    placeId: "demo-2",
+    name: "Austin Cosmetic Dentistry",
+    address: "Austin, TX",
+    phone: "(512) 555-0138",
+    website: "https://example.com/austin-cosmetic",
+    category: "cosmetic dentist",
+    emails: ["contact@austincosmetic.example"],
+    whatsapp: [],
+    linkedinUrl: "https://linkedin.com/in/mark-collins-demo",
+    socialLinks: [],
+    contactPageFound: true,
+    emailSource: "firecrawl",
+    contacts: [{
+      fullName: "Mark Collins",
+      title: "Owner",
+      source: "website",
+      decisionMakerScore: 86,
+      decisionMakerReason: "Owner listed on about page.",
+      email: "mark@austincosmetic.example",
+    }],
+    leadQualityScore: 88,
+    leadQualityLabel: "Strong lead",
+    leadQualityReason: "owner + public email + weak consultation CTA.",
+  },
+  {
+    placeId: "demo-3",
+    name: "Westside Dental Studio",
+    address: "Austin, TX",
+    phone: "(512) 555-0172",
+    website: "https://example.com/westside-dental",
+    category: "dental studio",
+    emails: ["info@westside.example"],
+    whatsapp: [],
+    socialLinks: ["https://facebook.com/westside-demo"],
+    contactPageFound: true,
+    emailSource: "firecrawl",
+    contacts: [{
+      fullName: "Sarah Nguyen",
+      title: "Practice Manager",
+      source: "website",
+      decisionMakerScore: 78,
+      decisionMakerReason: "Practice manager listed on team page.",
+    }],
+    leadQualityScore: 81,
+    leadQualityLabel: "Good lead",
+    leadQualityReason: "person + phone + website + generic inbox.",
+  },
+];
+
+const inferBriefService = (brief: string) => {
+  const lower = brief.toLowerCase();
+  if (/web\s*design|website|site redesign|landing page|mobile ux|conversion/i.test(lower)) return "Web design";
+  if (/\bseo\b|rank|ranking|local visibility|google business|organic/i.test(lower)) return "SEO";
+  if (/ai automation|automation|automate|workflow|zapier|make\.com/i.test(lower)) return "AI automation";
+  if (/booking|appointment|schedule|scheduling/i.test(lower)) return "Booking automation";
+  if (/social media|instagram|tiktok|facebook|content/i.test(lower)) return "Social media marketing";
+  if (/reputation|reviews|review count|ratings/i.test(lower)) return "Reputation management";
+  if (/paid ads|google ads|facebook ads|meta ads|ppc/i.test(lower)) return "Paid ads";
+  if (/\bcrm\b|pipeline|hubspot|salesforce/i.test(lower)) return "CRM setup";
+  if (/lead gen|lead generation|prospecting|outreach/i.test(lower)) return "Lead generation";
+  return "General outreach";
+};
+
 const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig => {
   const lowerBrief = brief.toLowerCase();
   const requiredChannels = new Set(plan.requiredChannels.map(channel => channel.toLowerCase()));
@@ -564,6 +660,7 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
   const locationKey = plan.location.trim().toLowerCase();
 
   return {
+    selectedService: inferBriefService(brief),
     industry: plan.targetBusiness,
     location: plan.location,
     language: "",
@@ -696,6 +793,27 @@ const enrichLeadQuality = (lead: LeadResult): LeadResult => ({
   ...calculateLeadQuality(lead),
 });
 
+const getOpportunityLabel = (lead: LeadResult) => {
+  if (lead.leadQualityLabel === "Strong lead") return "Strong opportunity";
+  if (lead.leadQualityLabel === "Good lead") return "Good opportunity";
+  return "Needs more evidence";
+};
+
+const customServiceValue = "__custom__";
+
+const serviceOptions = [
+  { value: "Web design", label: "Web design" },
+  { value: "SEO", label: "SEO" },
+  { value: "AI automation", label: "AI automation" },
+  { value: "Booking automation", label: "Booking automation" },
+  { value: "Social media marketing", label: "Social media" },
+  { value: "Reputation management", label: "Reputation" },
+  { value: "Paid ads", label: "Paid ads" },
+  { value: "CRM setup", label: "CRM setup" },
+  { value: "Lead generation", label: "Lead generation" },
+  { value: customServiceValue, label: "Custom" },
+];
+
 const passesQualityGate = (lead: LeadResult, _config: SearchConfig) => {
   return hasQualifiedPersonLead(lead);
 };
@@ -770,17 +888,25 @@ const SegmentedCircularProgress = ({ value, label }: { value: number; label: str
   );
 };
 
-const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free" }: LeadGeneratorSectionProps) => {
-  const { user, loading: authLoading } = useAuth();
-  const { balance: creditsBalance, deduct: deductCredits } = useCredits(user?.id);
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free", demoMode = false, opportunityModeEnabled = false }: LeadGeneratorSectionProps) => {
+  const opportunityModeOn = demoMode || opportunityModeEnabled || isOpportunityModeEnabled();
+  const { user: authUser, loading: rawAuthLoading } = useAuth();
+  const demoUser = demoMode ? { id: "00000000-0000-4000-8000-000000000001", email: "demo@globaleads22.local" } : null;
+  const user = demoMode ? demoUser : authUser;
+  const authLoading = demoMode ? false : rawAuthLoading;
+  const { balance: fetchedCreditsBalance, deduct: fetchedDeductCredits } = useCredits(demoMode ? undefined : user?.id);
+  const creditsBalance = demoMode ? 140 : fetchedCreditsBalance;
+  const deductCredits = demoMode ? async (_amount: number) => undefined : fetchedDeductCredits;
   const plan = normalizePlan(effectivePlan);
   const hasFullAppAccess = isAdmin || plan !== "free";
 
-  const [searchMode, setSearchMode] = useState<SearchMode | null>(null);
-  const [industry, setIndustry] = useState("");
-  const [country, setCountry] = useState("");
-  const [language, setLanguage] = useState("");
-  const [locationMode, setLocationMode] = useState<LocationMode>("country");
+  const [searchMode, setSearchMode] = useState<SearchMode | null>(demoMode ? "manual" : null);
+  const [selectedService, setSelectedService] = useState(demoMode ? "Web design" : "");
+  const [customService, setCustomService] = useState("");
+  const [industry, setIndustry] = useState(demoMode ? "Dental clinics" : "");
+  const [country, setCountry] = useState(demoMode ? "Austin, Texas" : "");
+  const [language, setLanguage] = useState(demoMode ? "English" : "");
+  const [locationMode, setLocationMode] = useState<LocationMode>(demoMode ? "city" : "country");
   const [depth, setDepth] = useState<Depth>("normal");
   const [enrichMode, setEnrichMode] = useState(false);
   const [strictness, setStrictness] = useState<Strictness>("balanced");
@@ -811,7 +937,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [freeMessages, setFreeMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Tell me the leads you want. Include the business type, place, and any must-have contact info.",
+      text: "Tell me the prospects you want. Include what they sell, where they are, and any public contact signals you care about.",
       clarificationQuestions: [
         {
           id: "starter",
@@ -841,6 +967,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     };
     const handleNewSearch = () => {
       setSearchMode(null);
+      setSelectedService("");
+      setCustomService("");
       setResults(null);
       setSearchDiagnostics(null);
       setSearchStepStatus(null);
@@ -860,7 +988,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const searchCost = getSearchCost(depth, enrichMode);
   const usageType = isAdmin ? "internal" : "customer";
   const chargedCredits = isAdmin ? 0 : searchCost;
+  const selectedServiceValue = selectedService === customServiceValue ? customService.trim() : selectedService;
   const searchConfig: SearchConfig = {
+    selectedService: selectedServiceValue,
     industry: industry.trim(),
     location: country.trim(),
     language: language.trim(),
@@ -882,7 +1012,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const requestWorkspaceUpgrade = () => {
     toast({
-      title: "Upgrade to export leads",
+      title: "Upgrade to export opportunities",
       description: "Starter and Growth unlock copy, export, and the full sales workspace.",
     });
     onBuyCredits?.();
@@ -893,7 +1023,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const progressLabels: Record<ProgressStage, string> = {
     idle: "Preparing search...",
     maps: "Searching...",
-    scrape: "Scraping websites...",
+    scrape: "Scanning websites...",
     enrich: "Enriching contacts...",
     rank: "Finalizing...",
     done: "Search complete",
@@ -1004,6 +1134,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     const headers = [
       "Person Name",
       "Person Title",
+      "Service Sold",
       "Business Name",
       "Category",
       "Address",
@@ -1013,7 +1144,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       "WhatsApp",
       "Social Profiles",
       "LinkedIn",
-      "Lead Quality",
+      "Opportunity Fit",
       "Quality Score",
       "Quality Reason",
       "Decision Maker Email",
@@ -1025,6 +1156,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       return [
         contact?.fullName || "",
         contact?.title || "",
+        searchConfig.selectedService,
         lead.name,
         lead.category,
         lead.address,
@@ -1034,7 +1166,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         lead.whatsapp.join(", "),
         (lead.socialLinks || []).join(", "),
         lead.linkedinUrl || "",
-        lead.leadQualityLabel || "",
+        getOpportunityLabel(lead),
         lead.leadQualityScore ?? "",
         lead.leadQualityReason || "",
         contact?.email || "",
@@ -1047,12 +1179,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       wch: Math.min(Math.max(header.length, ...rows.map(row => String(row[index] || "").length)) + 2, 50),
     }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Leads");
-    XLSX.writeFile(wb, `GlobaLeads22-${industry || "leads"}-${country || "search"}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Opportunities");
+    XLSX.writeFile(wb, `GlobaLeads22-${industry || "opportunities"}-${country || "search"}.xlsx`);
   };
 
   const validateSearch = () => {
-    const parsed = searchSchema.safeParse({ industry, country, language });
+    const parsed = searchSchema.safeParse({ selectedService: selectedServiceValue, industry, country, language });
     if (parsed.success) {
       setFieldErrors({});
       return true;
@@ -1067,21 +1199,36 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   };
 
   const createSearchSession = async (config = searchConfig, creditsUsed = chargedCredits) => {
+    if (demoMode) return { id: "demo-search-session" };
     if (!user?.id) return null;
-    const { data, error } = await supabase
+    const sessionPayload = {
+      user_id: user.id,
+      keyword: config.industry,
+      location: config.location,
+      selected_service: config.selectedService || null,
+      depth: config.depth,
+      enrich_mode: config.enrichMode,
+      usage_type: usageType,
+      status: "running",
+      credits_used: creditsUsed,
+    };
+
+    let { data, error } = await supabase
       .from("search_sessions")
-      .insert({
-        user_id: user.id,
-        keyword: config.industry,
-        location: config.location,
-        depth: config.depth,
-        enrich_mode: config.enrichMode,
-        usage_type: usageType,
-        status: "running",
-        credits_used: creditsUsed,
-      })
+      .insert(sessionPayload)
       .select()
       .single();
+
+    if (error && /selected_service|schema cache/i.test(error.message)) {
+      const { selected_service: _selectedService, ...fallbackPayload } = sessionPayload;
+      const fallback = await supabase
+        .from("search_sessions")
+        .insert(fallbackPayload)
+        .select()
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       console.error("Error creating search session:", error);
@@ -1099,6 +1246,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     config = searchConfig,
     quotedCredits = searchCost,
   ) => {
+    if (demoMode) return;
     if (!user?.id) return;
     await supabase.from("credit_transactions").insert({
       user_id: user.id,
@@ -1113,6 +1261,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         enrichMode: config.enrichMode,
         strictness: config.strictness,
         locationMode: config.locationMode,
+        selectedService: config.selectedService,
         requiredContacts: config.required,
         quotedCredits,
       },
@@ -1120,6 +1269,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   };
 
   const saveSearch = async (leads: LeadResult[], searchSessionId: string | null, config = searchConfig, creditsUsed = chargedCredits) => {
+    if (demoMode) return;
     if (!user?.id) return;
     try {
       let sessionId = searchSessionId;
@@ -1151,6 +1301,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       const payload = leads.map(lead => ({
         user_id: user.id,
         session_id: sessionId,
+        selected_service: config.selectedService || null,
         name: lead.name,
         address: lead.address,
         phone: lead.phone,
@@ -1165,8 +1316,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       }));
 
       let { data: saved, error: saveError } = await supabase.from("saved_leads").insert(payload).select();
-      if (saveError && /linkedin_url|social_links|schema cache/i.test(saveError.message)) {
-        const fallbackPayload = payload.map(({ linkedin_url: _linkedinUrl, social_links: _socialLinks, ...lead }) => lead);
+      if (saveError && /selected_service|linkedin_url|social_links|schema cache/i.test(saveError.message)) {
+        const fallbackPayload = payload.map(({ selected_service: _selectedService, linkedin_url: _linkedinUrl, social_links: _socialLinks, ...lead }) => lead);
         const fallback = await supabase.from("saved_leads").insert(fallbackPayload).select();
         saved = fallback.data;
         saveError = fallback.error;
@@ -1181,6 +1332,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   };
 
   const refundCredits = async (searchSessionId?: string | null, creditsToRefund = searchCost, config = searchConfig) => {
+    if (demoMode) return;
     if (!user?.id) return;
     try {
       const { data: current } = await supabase
@@ -1203,7 +1355,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const handleGenerate = async (config = searchConfig) => {
     const runCost = getSearchCost(config.depth, config.enrichMode);
     const runChargedCredits = isAdmin ? 0 : runCost;
-    const parsed = searchSchema.safeParse({ industry: config.industry, country: config.location, language: config.language });
+    const parsed = searchSchema.safeParse({ selectedService: config.selectedService, industry: config.industry, country: config.location, language: config.language });
     if (!parsed.success) {
       if (config === searchConfig) validateSearch();
       else toast({ title: "Search needs more detail", description: "Add an industry and location before running.", variant: "destructive" });
@@ -1219,6 +1371,54 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     }
     if (!canRunConfig(config)) {
       requestUpgrade("Starter and Growth unlock normal, deep, and enrichment searches.");
+      return;
+    }
+
+    if (demoMode) {
+      setIsProcessing(true);
+      setResults(null);
+      setSearchDiagnostics(null);
+      setSearchStepStatus(null);
+      setProgress(0);
+      setStage("maps");
+      setStatus("Searching demo businesses...");
+
+      await new Promise(resolve => window.setTimeout(resolve, 450));
+      setProgress(26);
+      setStage("scrape");
+      setStatus("Scanning public websites...");
+      setSearchStepStatus({ current: 4, total: 12, peopleFound: 1, businessName: "BrightSmile Dental Clinic" });
+
+      await new Promise(resolve => window.setTimeout(resolve, 650));
+      setProgress(57);
+      setStage("enrich");
+      setStatus("Enriching contacts...");
+      setSearchStepStatus({ current: 9, total: 12, peopleFound: 3, businessName: "Austin Cosmetic Dentistry" });
+
+      await new Promise(resolve => window.setTimeout(resolve, 650));
+      setProgress(96);
+      setStage("rank");
+      setStatus("Scoring opportunities...");
+
+      await new Promise(resolve => window.setTimeout(resolve, 350));
+      const ranked = demoLeadResults.map(enrichLeadQuality);
+      setResults(ranked);
+      setSearchDiagnostics({
+        discoveredCompanies: 18,
+        scannedWebsites: 12,
+        peopleFound: 3,
+        emailsFound: 4,
+        linkedinProfilesFound: 2,
+        savedLeads: ranked.length,
+        rejectedNoPerson: 9,
+        rejectedNoCompany: 0,
+      });
+      setSearchStepStatus(null);
+      setStage("done");
+      setStatus(`${ranked.length} demo opportunities ready`);
+      setProgress(100);
+      setIsProcessing(false);
+      onSearchComplete?.();
       return;
     }
 
@@ -1241,7 +1441,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       } else {
         await deductCredits(runCost);
         creditsDeducted = true;
-        await recordCreditTransaction("spend", -runCost, searchSessionId, "Lead search", config, runCost);
+        await recordCreditTransaction("spend", -runCost, searchSessionId, "Opportunity search", config, runCost);
       }
 
       const depthSettings = depthConfig[config.depth];
@@ -1341,7 +1541,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       }
 
       setStage("rank");
-      setStatus("Finalizing person-qualified leads...");
+      setStatus("Finalizing person-qualified opportunities...");
       setProgress(96);
 
       const seen = new Set<string>();
@@ -1380,12 +1580,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setSearchDiagnostics({ ...diagnostics, savedLeads: ranked.length });
       setSearchStepStatus(null);
       setStage("done");
-      setStatus(`${ranked.length} leads ready`);
+      setStatus(`${ranked.length} opportunities ready`);
       setProgress(100);
       toast({
         title: "Search complete",
         description: ranked.length
-          ? `${ranked.length} person-qualified leads found.`
+          ? `${ranked.length} person-qualified opportunities found.`
           : `Found ${businesses.length} companies, but no public person names yet.`,
       });
       await saveSearch(ranked, searchSessionId, config, runChargedCredits);
@@ -1416,6 +1616,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   };
 
   const applySearchConfigToForm = (config: SearchConfig) => {
+    const matchingService = serviceOptions.find(option => option.value === config.selectedService);
+    setSelectedService(matchingService ? matchingService.value : customServiceValue);
+    setCustomService(matchingService ? "" : config.selectedService);
     setIndustry(config.industry);
     setCountry(config.location);
     setLanguage(config.language);
@@ -1512,7 +1715,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         requiredChannels: /email/i.test(nextBrief) ? ["email", "website"] : ["phone", "website"],
         queryVariants: [`${nextTarget} ${nextLocation}`, `${nextTarget} ${nextLocation} contact`, `${nextTarget} ${nextLocation} website`],
         maxResults: 40,
-        summary: `Search for ${nextTarget} in ${nextLocation}, prioritizing contact-ready leads.`,
+        summary: `Search for ${nextTarget} in ${nextLocation}, prioritizing contact-ready prospects.`,
       };
       const config = planToSearchConfig(fallbackPlan, nextBrief);
       setFreePlan({ plan: fallbackPlan, config, brief: nextBrief });
@@ -1568,8 +1771,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       mode: "free" as const,
       badge: "Beta",
       title: "AI Search",
-      description: "Describe the leads in plain language. The assistant asks follow-up questions and builds a search plan before credits are spent.",
-      bullets: ["Clarifies missing target details", "Builds a lead profile", "Waits for confirmation"],
+      description: "Describe the prospects you want. The assistant asks follow-up questions and builds an opportunity search plan before credits are spent.",
+      bullets: ["Clarifies target and location", "Builds an opportunity brief", "Waits for confirmation"],
       bestFor: "Guided prospecting",
       Icon: Bot,
       featured: true,
@@ -1578,8 +1781,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       mode: "manual" as const,
       badge: "Precise",
       title: "Manual Search",
-      description: "Use structured controls when you already know the niche, location, quality bar, and required contact channels.",
-      bullets: ["Industry and location controls", "Depth, enrich, and strictness", "Person-first lead output"],
+      description: "Use structured controls when you already know the niche, location, quality bar, and public contact signals that matter.",
+      bullets: ["Industry and location controls", "Depth, enrich, and strictness", "Person-first prospect output"],
       bestFor: "Repeatable prospecting",
       Icon: Search,
       featured: false,
@@ -1587,7 +1790,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   ];
 
   return (
-    <section id="tool" className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" || searchMode === "free" ? "overflow-hidden" : "overflow-auto"}`}>
+    <section
+      id="tool"
+      data-opportunity-mode={opportunityModeOn ? "on" : "off"}
+      className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" || searchMode === "free" ? "overflow-hidden" : "overflow-auto"}`}
+    >
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6">
         {authLoading && (
           <div className="flex min-h-[360px] items-center justify-center">
@@ -1597,13 +1804,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
         {!authLoading && !user && (
           <div className="mx-auto flex min-h-[420px] max-w-xl flex-col items-center justify-center text-center">
-            <h1 className="font-display text-4xl font-black tracking-[-0.04em] text-[#EFEDE6]">Find trusted leads from Maps.</h1>
-            <p className="mt-4 text-sm leading-6 text-[#A8A59C]">Sign in to search businesses, scrape public contacts, and enrich likely decision makers.</p>
+            <h1 className="font-display text-4xl font-black tracking-[-0.04em] text-[#EFEDE6]">Find prospects with a reason to buy.</h1>
+            <p className="mt-4 text-sm leading-6 text-[#A8A59C]">Sign in to discover businesses, public contact data, likely decision makers, and visible opportunity signals.</p>
             <button
               onClick={onOpenAuth}
               className="mt-6 border border-[#F5FF3D] bg-[#F5FF3D] px-5 py-3 font-display text-sm font-bold text-black hover:bg-[#FFFE7A]"
             >
-              Start searching
+              Start prospecting
             </button>
           </div>
         )}
@@ -1615,8 +1822,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 <div className="w-full max-w-6xl">
                   <div className="mb-8 text-center">
                     <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">New search</p>
-                    <h1 className="mt-3 font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6] sm:text-4xl">Choose how you want to find leads.</h1>
-                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#A8A59C]">Start guided with a prompt, or use precise manual controls for repeatable searches.</p>
+                    <h1 className="mt-3 font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6] sm:text-4xl">Choose how you want to find opportunities.</h1>
+                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#A8A59C]">Start guided with a prompt, or use precise manual controls for repeatable opportunity searches.</p>
                   </div>
                   <div className="grid gap-6 lg:grid-cols-2">
                     {searchModeCards.map(({ mode, badge, title, description, bullets, bestFor, Icon, featured }) => (
@@ -1737,7 +1944,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             }
                           }}
                           disabled={isPlanningFreeSearch || isProcessing}
-                          placeholder="Ask anything about your lead search..."
+                          placeholder="Ask anything about your opportunity search..."
                           className="h-12 min-w-0 flex-1 bg-transparent text-base text-[#EFEDE6] outline-none placeholder:text-[#67645B] disabled:opacity-50"
                         />
                         <button type="button" className="grid h-10 w-10 place-items-center rounded border border-transparent text-[#A8A59C] hover:border-[#EFEDE6]/10 hover:text-[#EFEDE6]" aria-label="Attach context">
@@ -1759,8 +1966,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <Target className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-[#F5FF3D]">Lead profile</p>
-                        <p className="mt-2 text-sm text-[#8D897E]">Preview of your AI search plan.</p>
+                        <p className="font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-[#F5FF3D]">Opportunity brief</p>
+                        <p className="mt-2 text-sm text-[#8D897E]">Preview of your AI prospecting plan.</p>
                       </div>
                     </div>
 
@@ -1770,6 +1977,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           <div className="border-b border-[#EFEDE6]/10 pb-4">
                             <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><Target className="h-3.5 w-3.5" /> Target</div>
                             <div className="grid gap-3 text-sm">
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Service sold</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.selectedService || "General outreach"}</span></div>
                               <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Industry / Niche</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.industry || "Not set"}</span></div>
                               <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Location</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.location || "Not set"} ({freePlan.config.locationMode})</span></div>
                               <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Language</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.language || "Optional"}</span></div>
@@ -1807,7 +2015,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           <div>
                             <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><BarChart3 className="h-3.5 w-3.5" /> Estimates</div>
                             <div className="grid gap-3 text-sm">
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Est. results</span><span className="font-mono text-[#EFEDE6]">{Math.max(8, Math.round(freePlan.plan.maxResults * 0.35))} - {freePlan.plan.maxResults} leads</span></div>
+                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Est. results</span><span className="font-mono text-[#EFEDE6]">{Math.max(8, Math.round(freePlan.plan.maxResults * 0.35))} - {freePlan.plan.maxResults} prospects</span></div>
                               <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Confidence</span><span className="font-mono text-emerald-400">High</span></div>
                             </div>
                           </div>
@@ -1815,7 +2023,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                       </div>
                     ) : (
                       <div className="flex min-h-0 flex-1 items-center justify-center py-8 text-center text-sm leading-6 text-[#8D897E]">
-                        Tell the assistant what you need. The search plan appears here before you run it.
+                        Tell the assistant what you sell, who you target, and where. The opportunity plan appears here before you run it.
                       </div>
                     )}
 
@@ -1825,7 +2033,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <div className="text-right"><p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Cost</p><p className="mt-1 font-display text-3xl font-black text-[#F5FF3D]">{freePlan ? (isAdmin ? "Admin" : getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)) : "-"}</p></div>
                       </div>
                       <button onClick={startFreeSearch} disabled={!freePlan || isProcessing} className="h-12 w-full rounded border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black shadow-[0_0_28px_rgba(245,255,61,0.18)] disabled:cursor-not-allowed disabled:opacity-40">
-                        {isProcessing ? "Searching..." : isAdmin ? "Find leads - admin" : `Find leads${freePlan ? ` - ${getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)} credits` : ""}`}
+                        {isProcessing ? "Searching..." : isAdmin ? "Find opportunities - admin" : `Find opportunities${freePlan ? ` - ${getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)} credits` : ""}`}
                       </button>
                     </div>
                   </aside>
@@ -1898,7 +2106,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     </div>
                     <p className="mt-1 text-sm text-[#A8A59C]">
                       {label === "Target"
-                        ? "Who are you looking for?"
+                        ? "What do you sell, and who should we target?"
                         : label === "Strategy"
                           ? "Define how broad or specific to search."
                           : "Choose the most important priority signals."}
@@ -1909,22 +2117,22 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               const selectedSignalLabels = getRequiredContactLabels(requiredContacts);
               const previewLeads = sortedResults ?? [];
               const manualPreview = (
-                <aside className="flex h-full min-h-0 flex-col border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
-                  <div className="mb-5 flex items-center justify-between gap-3">
+                <aside className="flex h-full max-h-full min-h-0 flex-col overflow-hidden border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
+                  <div className="mb-5 flex shrink-0 items-center justify-between gap-3">
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Search preview</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Opportunity preview</p>
                       <p className="mt-1 text-sm text-[#A8A59C]">
-                        {isProcessing ? "Searching and enriching leads now." : results ? "Review the latest results." : "Review your current setup."}
+                        {isProcessing ? "Finding and enriching opportunities now." : results ? "Review the latest opportunities." : "Review your current opportunity setup."}
                       </p>
                     </div>
                     {isProcessing && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#F5FF3D]" />}
                   </div>
 
                   {results && !isProcessing ? (
-                    <div className="flex min-h-0 flex-1 flex-col">
-                      <div className="mb-4 border-b border-[#EFEDE6]/10 pb-4">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                      <div className="mb-4 shrink-0 border-b border-[#EFEDE6]/10 pb-4">
                         <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
-                          {previewLeads.length} person-qualified lead{previewLeads.length === 1 ? "" : "s"}
+                          {previewLeads.length} person-qualified opportunit{previewLeads.length === 1 ? "y" : "ies"}
                         </p>
                       </div>
                       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
@@ -1936,14 +2144,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                               <p className="mt-1 truncate text-xs text-[#A8A59C]">{lead.name}</p>
                               <p className="mt-1 truncate text-[11px] text-[#67645B]">{lead.category?.replace(/_/g, " ") || lead.address || "No category listed"}</p>
                               <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">
-                                {lead.leadQualityLabel || "Lead"} / {lead.leadQualityScore || 0}
+                                {getOpportunityLabel(lead)} / {lead.leadQualityScore || 0}
                               </p>
                             </article>
                           );
                         })}
                         {previewLeads.length === 0 && (
                           <div className="border border-[#EFEDE6]/10 bg-black/60 p-5 text-sm text-[#A8A59C]">
-                            No person-qualified leads were found. Try a deeper search or a more specific city.
+                            No person-qualified opportunities were found. Try a deeper search, a more specific city, or fewer required signals.
                           </div>
                         )}
                       </div>
@@ -1974,6 +2182,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           <div>
                             <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Target</p>
                             <div className="divide-y divide-[#EFEDE6]/10 border-y border-[#EFEDE6]/10">
+                              <div className="flex justify-between gap-4 py-2 text-sm">
+                                <span className="text-[#A8A59C]">Service sold</span>
+                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{searchConfig.selectedService || "Not set"}</span>
+                              </div>
                               <div className="flex justify-between gap-4 py-2 text-sm">
                                 <span className="text-[#A8A59C]">Industry / niche</span>
                                 <span className="text-right font-mono text-xs text-[#EFEDE6]">{industry.trim() || "Not set"}</span>
@@ -2033,7 +2245,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           disabled={isProcessing}
                           className="mt-4 h-12 w-full border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {isProcessing ? "Finding leads..." : isAdmin ? `Find leads - admin` : `Find leads - ${searchCost} credits`}
+                          {isProcessing ? "Finding opportunities..." : isAdmin ? `Find opportunities - admin` : `Find opportunities - ${searchCost} credits`}
                         </button>
                       </div>
                     </>
@@ -2050,11 +2262,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   <span className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#F5FF3D]">Manual search</span>
                 </div>
 
-                <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="grid min-h-0 flex-1 overflow-hidden gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
                   <div className="min-h-0 min-w-0 overflow-y-auto pr-1">
                     <div className="mb-3">
-                      <h1 className="font-display text-2xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your search.</h1>
-                      <p className="mt-1 max-w-xl text-sm leading-5 text-[#A8A59C]">Pick the target, the strategy, and the filters that matter.</p>
+                      <h1 className="font-display text-2xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your opportunity search.</h1>
+                      <p className="mt-1 max-w-xl text-sm leading-5 text-[#A8A59C]">Pick the target, the search effort, and the public signals that matter.</p>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -2062,9 +2274,43 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     {sectionEyebrow("Target", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">What to look for</p>
-                        <p><span className="text-[#EFEDE6]">Industry</span> is the niche or business type. <span className="text-[#EFEDE6]">Location</span> narrows results to a country or a specific city. <span className="text-[#EFEDE6]">Language</span> is optional and skews discovery toward businesses operating in that language.</p>
+                        <p><span className="text-[#EFEDE6]">Service</span> is what you sell. <span className="text-[#EFEDE6]">Industry</span> is the niche or business type to target. <span className="text-[#EFEDE6]">Location</span> narrows results to a country or city.</p>
                       </>
                     ))}
+                    <div className="mb-5">
+                      <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">What do you sell?</p>
+                      <div className="flex flex-wrap gap-2">
+                        {serviceOptions.map(option => {
+                          const active = selectedService === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setSelectedService(option.value)}
+                              disabled={isProcessing}
+                              aria-pressed={active}
+                              className={`h-9 rounded-md border px-3 font-mono text-[10px] uppercase tracking-widest transition-all ${
+                                active
+                                  ? "border-[#F5FF3D] bg-[#F5FF3D] text-black shadow-[0_0_18px_rgba(245,255,61,0.18)]"
+                                  : "border-[#EFEDE6]/15 bg-black text-[#A8A59C] hover:border-[#F5FF3D]/60 hover:text-[#EFEDE6]"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selectedService === customServiceValue && (
+                        <input
+                          value={customService}
+                          onChange={event => setCustomService(event.target.value)}
+                          placeholder="Describe your service"
+                          disabled={isProcessing}
+                          className={`mt-2 h-11 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.selectedService ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
+                        />
+                      )}
+                      {fieldErrors.selectedService && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
+                    </div>
                     <div className="grid gap-5 md:grid-cols-[1.25fr_1fr_0.9fr]">
                       <div>
                         <div className="mb-2 flex h-5 items-center">
@@ -2138,7 +2384,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     {sectionEyebrow("Strategy", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">How hard the search works</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Depth</span> — Simple pulls ~20 leads (5 cr), Normal ~40 (10 cr), Deep ~60 (20 cr).</p>
+                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Depth</span> — Simple pulls ~20 prospects (5 cr), Normal ~40 (10 cr), Deep ~60 (20 cr).</p>
                         <p className="mb-1.5"><span className="text-[#EFEDE6]">Contact mode</span> — Normal extracts public website contacts. Enrich also adds likely decision-maker contacts (doubles credit cost).</p>
                         <p><span className="text-[#EFEDE6]">Strictness</span> — how loosely we match your niche. Broad casts a wide net; Strict keeps only tight matches.</p>
                       </>
@@ -2189,9 +2435,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     {sectionEyebrow("Filters", (
                       <>
                         <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">Trim and rank the results</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Person + company</span> are mandatory for every saved lead.</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Priority signals</span> rank leads higher without hiding useful people.</p>
-                        <p><span className="text-[#EFEDE6]">Prefer public email</span> — leads with a public email rank higher in the list. Leads without one are still shown.</p>
+                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Person + company</span> are mandatory for every saved prospect.</p>
+                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Priority signals</span> rank prospects higher without hiding useful people.</p>
+                        <p><span className="text-[#EFEDE6]">Prefer public email</span> — prospects with a public email rank higher in the list. Prospects without one are still shown.</p>
                       </>
                     ))}
                     <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -2270,12 +2516,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     disabled={isProcessing}
                     className="h-12 border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {isProcessing ? "Finding leads..." : isAdmin ? `Find leads - admin` : `Find leads - ${searchCost} credits`}
+                    {isProcessing ? "Finding opportunities..." : isAdmin ? `Find opportunities - admin` : `Find opportunities - ${searchCost} credits`}
                   </button>
                 </div>
                   </div>
 
-                  {manualPreview}
+                  <div className="min-h-0 overflow-hidden">
+                    {manualPreview}
+                  </div>
                 </div>
               </div>
               );
@@ -2296,7 +2544,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           ? `Website ${searchStepStatus.current}/${searchStepStatus.total}`
                           : stage === "rank"
                             ? "Finalizing..."
-                            : "Building your lead list"}
+                            : "Building your opportunity list"}
                       </p>
                     </div>
                   </div>
@@ -2337,8 +2585,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-5">
                   {[
-                    ["Leads", sortedResults?.length ?? 0],
-                    ["Strong", strongLeadCount],
+                    ["Opportunities", sortedResults?.length ?? 0],
+                    ["Strong fits", strongLeadCount],
                     ["Websites", websiteCount],
                     ["Emails", emailCount],
                     ["Contacts", contactCount],
@@ -2356,7 +2604,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                       <div>
                         <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Person-first search</p>
                         <p className="mt-1 text-sm leading-6 text-[#A8A59C]">
-                          Found {searchDiagnostics.discoveredCompanies} companies, scanned {searchDiagnostics.scannedWebsites} websites, and saved {searchDiagnostics.savedLeads} leads with a real person name.
+                          Found {searchDiagnostics.discoveredCompanies} companies, scanned {searchDiagnostics.scannedWebsites} websites, and saved {searchDiagnostics.savedLeads} opportunities with a real person name.
                           {searchDiagnostics.rejectedNoPerson > 0 ? ` ${searchDiagnostics.rejectedNoPerson} company-only candidates were rejected.` : ""}
                         </p>
                       </div>
@@ -2374,7 +2622,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67645B]" />
                     <input
                       type="text"
-                      placeholder="Filter leads..."
+                      placeholder="Filter opportunities..."
                       value={filterText}
                       onChange={event => setFilterText(event.target.value)}
                       className="h-10 w-full border border-[#EFEDE6]/10 bg-black pl-9 pr-3 font-mono text-xs text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
@@ -2403,7 +2651,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     const badges = [
                       lead.website ? "Website" : "",
                       lead.emails.length ? "Email" : "No email",
-                      lead.emailSource === "hunter" || lead.emailSource === "both" ? "Hunter" : "",
+                      lead.emailSource === "hunter" || lead.emailSource === "both" ? "Enriched" : "",
                       lead.linkedinUrl || contact?.linkedinUrl ? "LinkedIn" : "",
                       lead.socialLinks?.length ? "Social" : "",
                     ].filter(Boolean);
@@ -2417,7 +2665,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             <p className="mt-1 line-clamp-1 text-xs text-[#67645B]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${qualityTone}`}>
-                                {lead.leadQualityLabel || "Needs work"} / {lead.leadQualityScore || 0}
+                                {getOpportunityLabel(lead)} / {lead.leadQualityScore || 0}
                               </span>
                               {lead.leadQualityReason && <span className="text-xs text-[#A8A59C]">{lead.leadQualityReason}</span>}
                             </div>
@@ -2428,6 +2676,21 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 {badge}
                               </span>
                             ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 border border-[#EFEDE6]/10 bg-black/60 p-3 sm:grid-cols-2">
+                          <div>
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">Why this prospect?</p>
+                            <p className="mt-1 text-xs leading-5 text-[#A8A59C]">
+                              {lead.leadQualityReason || "This result has usable public evidence for outreach."}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">Outreach angle</p>
+                            <p className="mt-1 text-xs leading-5 text-[#A8A59C]">
+                              Use the person/company context and public contact path to start a specific, practical conversation.
+                            </p>
                           </div>
                         </div>
 
@@ -2490,8 +2753,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
                 {sortedResults?.length === 0 && (
                   <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-8 text-center">
-                    <p className="font-display text-lg font-bold text-[#EFEDE6]">No leads match this filter.</p>
-                    <p className="mt-2 text-sm text-[#A8A59C]">Clear the filter or run a deeper search.</p>
+                    <p className="font-display text-lg font-bold text-[#EFEDE6]">No opportunities match this filter.</p>
+                    <p className="mt-2 text-sm text-[#A8A59C]">Clear the filter or run a deeper search to find more usable evidence.</p>
                   </div>
                 )}
               </div>

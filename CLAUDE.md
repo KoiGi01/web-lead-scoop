@@ -4,15 +4,29 @@ This file gives coding agents the current operating context for GlobaLeads22.
 
 ## Project Overview
 
-GlobaLeads22 is a lead research SaaS with:
+GlobaLeads22 is being reworked from a lead research SaaS into an opportunity-based AI prospecting agent. The target product helps users find prospects with visible reasons to buy.
+
+Current product surface:
 
 - Public marketing site at `https://www.globaleads22.com`.
 - Authenticated app at `https://app.globaleads22.com`.
-- Maps-first lead discovery.
+- Maps-first business discovery.
 - Public website contact extraction.
 - Optional decision-maker enrichment.
+- Saved leads, pipeline, follow-ups, exports, and CRM-style organization.
 - Credit-based billing.
 - Admin usage and cost accounting.
+
+Target opportunity workflow:
+
+1. User selects the service they sell.
+2. User selects a target market.
+3. User selects a location.
+4. The app discovers businesses.
+5. The app analyzes available public business and website data.
+6. The app detects visible opportunity signals.
+7. The app scores each prospect by relevance to the user's service.
+8. The app generates an evidence-based outreach angle.
 
 The app should stay user-friendly. Product copy should avoid exposing provider/tooling names unless the context is technical documentation, legal policy, or internal admin/cost work.
 
@@ -62,6 +76,8 @@ Do not break `app.globaleads22.com`; it must always render `AppPage`.
 
 Main UI: `src/components/landing/LeadGeneratorSection.tsx`.
 
+The current implementation is lead-oriented. It discovers businesses, extracts public contact data, ranks leads, and saves/export results. The planned rework is opportunity-oriented: service selection, opportunity signals, evidence, AI opportunity scoring, and outreach angles should be added in phases without breaking the current search, credits, save, export, and CRM flows.
+
 User fields:
 
 - Industry / niche, required.
@@ -99,6 +115,40 @@ Important behavior:
 
 ---
 
+## Target Rework Direction
+
+New positioning:
+
+> GlobaLeads22 helps users find prospects with visible reasons to buy.
+
+The product should evolve toward an opportunity-based prospecting agent for freelancers, consultants, small agencies, web designers, SEO freelancers, AI automation agencies, and B2B service providers.
+
+Planned user workflow:
+
+1. Choose what service the user sells, such as web design, SEO, AI automation, appointment booking automation, social media marketing, reputation management, paid ads, CRM setup, or lead generation.
+2. Choose the target market, such as dentists, med spas, real estate agencies, roofing companies, restaurants, clinics, law firms, gyms, or salons.
+3. Choose the location.
+4. Discover businesses.
+5. Analyze public business data, websites, contact pages, team/about pages, social links, and visible conversion paths.
+6. Detect opportunity signals, such as outdated website, no online booking, weak local visibility, low review count, no clear CTA, no contact form, no WhatsApp link, slow or broken site, no social links, weak branding, or missing business info.
+7. Score prospects based on service relevance and evidence strength.
+8. Generate a short explanation, outreach angle, and optional first-message idea.
+9. Display results as opportunities, not just raw leads.
+
+Implementation should be phased:
+
+- Phase 1: Reframe UI language.
+- Phase 2: Add service selection.
+- Phase 3: Add opportunity signal selection.
+- Phase 4: Add rule-based signal detection.
+- Phase 5: Redesign result cards around opportunity signals.
+- Phase 6: Add AI opportunity scoring and outreach angles.
+- Phase 7: Update exports.
+- Phase 8: Add cost controls and caching.
+- Phase 9: Make the workflow feel like an agent.
+
+---
+
 ## Decision-Maker Contacts
 
 Contact shape:
@@ -118,6 +168,8 @@ Contact shape:
 
 Ranking rules are deterministic and industry-aware. Default highest priority is CEO/owner/founder, then industry-specific roles.
 
+Decision-maker data is only one part of the target opportunity score. A strong opportunity should combine company identity, person/contact evidence when available, public contact data, visible opportunity signals, service relevance, and evidence-backed reasoning.
+
 ---
 
 ## Credits, Admin, And Cost Accounting
@@ -128,7 +180,7 @@ Admin support:
 
 - Admin users are listed in `admin_users`.
 - `useAdmin` checks whether the current user is admin.
-- Admin searches display `Find leads - admin`.
+- Admin searches display `Find opportunities - admin`.
 - Admin searches do not deduct customer credits.
 - Admin searches still create usage/cost rows.
 
@@ -183,7 +235,7 @@ Legacy or currently inactive in main flow:
 
 - `web-search-leads`: keep in repo, but do not call from Normal/Search + Enrich.
 - `plan-lead-search`: keep in repo, but keep advanced planning out of default UI.
-- `analyze-lead`: legacy intelligence flow; do not assume it is part of the current simplified search UX.
+- `analyze-lead`: currently not part of the simplified default search UX, but it is a candidate for reuse/refactor into opportunity scoring because it already contains intelligence, opportunity-score, and domain-caching concepts.
 
 ---
 
@@ -233,6 +285,28 @@ Optional cost estimate env vars:
 - `public/og-image.png`: older PNG preview kept for compatibility.
 
 Root and landing metadata should use friendly product wording, not provider/tool names.
+
+Public copy should avoid:
+
+- scraper
+- scraping
+- harvesting
+- guaranteed emails
+- guaranteed decision makers
+- private data
+- hidden data extraction
+- spam tool
+
+Preferred public wording:
+
+- opportunity signals
+- public contact data
+- ranked prospects
+- likely decision maker
+- outreach angle
+- prospecting workspace
+- visible reasons to buy
+- evidence-based lead research
 
 ---
 
