@@ -19,7 +19,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.admin-provider-status]
-verify_jwt = true
+verify_jwt = false
 
 [functions.founder-offer]
 verify_jwt = false
