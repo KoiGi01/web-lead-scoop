@@ -531,3 +531,9 @@
   .delay-700 { animation-delay: 700ms; }
   .delay-800 { animation-delay: 800ms; }
 }
+
+/* Dark-app native dropdowns: keep <select> option lists readable everywhere */
+select option {
+  background-color: #14171d;
+  color: #f3f5f8;
+}

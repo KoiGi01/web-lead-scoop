@@ -950,50 +950,51 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                         </div>
                       </div>
 
-                      <div className="mt-5 grid gap-2">
-                        <button
-                          onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
-                          disabled={!selectedLead.phone}
-                          className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
-                        >
-                          {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
-                        </button>
-                        <div className="grid grid-cols-3 gap-2">
-                          <button
-                            onClick={() => selectedLead.emails[0] && handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0], "Email copied")}
-                            disabled={!selectedLead.emails[0]}
-                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52] disabled:opacity-30"
-                          >
-                            <Mail className="h-3.5 w-3.5" /> Email
-                          </button>
-                          <a
-                            href={selectedLead.website || undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
-                          >
-                            <Globe className="h-3.5 w-3.5" /> Site
-                          </a>
-                          <a
-                            href={selectedLead.linkedinUrl || undefined}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#9aa3b2] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
-                          >
-                            <Linkedin className="h-3.5 w-3.5" /> LinkedIn
-                          </a>
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
+                        disabled={!selectedLead.phone}
+                        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
+                      >
+                        {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
+                      </button>
                     </div>
 
                     <div className="space-y-4 p-5">
-                      {selectedContact?.email && (
-                        <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Decision-maker email</p>
-                          <p className="mt-1 truncate font-mono text-[12px] text-[#e8fb52]">{selectedContact.email}</p>
+                      <div className="overflow-hidden rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black">
+                        <p className="border-b border-[#f3f5f8]/[0.06] px-3.5 pb-2 pt-3 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Contact</p>
+                        <div className="divide-y divide-[#f3f5f8]/[0.06]">
+                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <Mail className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                              <span className="truncate font-mono text-[12px] text-[#f3f5f8]">{selectedLead.emails[0] || selectedContact?.email || "No email"}</span>
+                            </div>
+                            {(selectedLead.emails[0] || selectedContact?.email) && (
+                              <button onClick={() => handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0] || selectedContact?.email || "", "Email copied")} aria-label="Copy email" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#e8fb52]">
+                                {copiedKeys.has(`${selectedLead.id}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <Globe className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                              <span className="truncate font-mono text-[12px] text-[#9aa3b2]">{selectedLead.website ? selectedLead.website.replace(/^https?:\/\//, "").replace(/\/$/, "") : "No website"}</span>
+                            </div>
+                            {selectedLead.website && (
+                              <a href={selectedLead.website} target="_blank" rel="noopener noreferrer" aria-label="Open website" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#e8fb52]"><ExternalLink className="h-3.5 w-3.5" /></a>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <Linkedin className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                              <span className="truncate font-mono text-[12px] text-[#9aa3b2]">{selectedLead.linkedinUrl ? "LinkedIn profile" : "No LinkedIn"}</span>
+                            </div>
+                            {selectedLead.linkedinUrl && (
+                              <a href={selectedLead.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="Open LinkedIn" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#4A9BE8]"><ExternalLink className="h-3.5 w-3.5" /></a>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </div>
 
                       {(selectedLead.intelligence?.positioning || !!selectedLead.intelligence?.detectedIssues?.length) && (
                         <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
@@ -1013,14 +1014,14 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                         <div className="grid grid-cols-2 gap-3">
                           <label>
                             <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Status</span>
-                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${statusTone[selectedLead.crm_status]}`}>
-                              {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                              {statusOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{option.label}</option>)}
                             </select>
                           </label>
                           <label>
                             <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Priority</span>
-                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${priorityTone[selectedLead.crm_priority]}`}>
-                              {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                              {priorityOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{option.label}</option>)}
                             </select>
                           </label>
                         </div>
