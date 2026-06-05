@@ -41,6 +41,7 @@ import {
   getServiceRecommendedSignalKeys,
   inferOpportunitySignalsFromText,
 } from "@/lib/opportunitySignals";
+import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 
 interface Business {
   placeId: string;
@@ -142,6 +143,9 @@ interface FreeSearchPlan {
   queryVariants: string[];
   maxResults: number;
   summary: string;
+  service?: string;
+  strategy?: string;
+  scanTargets?: ScanTarget[];
 }
 
 interface ChatMessage {
@@ -671,6 +675,10 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
   const depth: Depth = plan.maxResults >= 60 ? "deep" : plan.maxResults <= 20 ? "simple" : "normal";
   const locationKey = plan.location.trim().toLowerCase();
   const selectedService = inferBriefService(brief);
+  const intelligence = synthesizeScanPlanIntelligence(plan.service || selectedService, {
+    signals: plan.opportunitySignals,
+    queryVariants: plan.queryVariants,
+  });
 
   return {
     selectedService,
@@ -682,7 +690,7 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
     enrichMode: typeof plan.enrichMode === "boolean" ? plan.enrichMode : wantsPerson || requiredChannels.has("linkedin"),
     strictness: plan.strictness || (requiredChannels.size >= 2 || lowerBrief.includes("only") ? "strict" : "balanced"),
     required: { ...channelsToRequiredContacts(plan.requiredChannels), person: channelsToRequiredContacts(plan.requiredChannels).person || wantsPerson },
-    opportunitySignals: plan.opportunitySignals || inferOpportunitySignalsFromText(`${brief} ${plan.summary}`, selectedService),
+    opportunitySignals: plan.opportunitySignals?.length ? plan.opportunitySignals : intelligence.opportunitySignals,
     preferPublicEmail: true,
     queryVariants: plan.queryVariants,
   };
@@ -1694,12 +1702,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     setIsPlanningFreeSearch(true);
 
     try {
+      const inferredService = (selectedServiceValue || inferBriefService(nextBrief)).trim();
       const { data, error } = await supabase.functions.invoke("plan-lead-search", {
         body: {
           brief: nextBrief,
           messages: nextMessages,
           currentKeyword: nextTarget,
           currentLocation: nextLocation,
+          service: inferredService,
         },
       });
       const planner = data as FreeSearchPlannerResponse | null;
@@ -1727,7 +1737,18 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       nextLocation = config.location;
       setFreeTarget(nextTarget);
       setFreeLocation(nextLocation);
-      setFreePlan({ plan, config, brief: nextBrief });
+      const enriched = synthesizeScanPlanIntelligence(plan.service || config.selectedService, {
+        signals: plan.opportunitySignals,
+        queryVariants: plan.queryVariants,
+      });
+      const normalizedPlan = {
+        ...plan,
+        service: plan.service || config.selectedService,
+        strategy: plan.strategy || enriched.strategy,
+        scanTargets: plan.scanTargets?.length ? plan.scanTargets : enriched.scanTargets,
+        opportunitySignals: plan.opportunitySignals?.length ? plan.opportunitySignals : enriched.opportunitySignals,
+      };
+      setFreePlan({ plan: normalizedPlan, config, brief: nextBrief });
       setFreeMessages(current => [...current, makeAssistantMessage("Search plan ready. I built a profile from your request. Review or edit it, then start the search when it looks right.")]);
     } catch (error) {
       nextLocation = nextLocation || inferBriefLocation(nextBrief);
@@ -1762,7 +1783,18 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         summary: `Search for ${nextTarget} in ${nextLocation}, prioritizing contact-ready prospects.`,
       };
       const config = planToSearchConfig(fallbackPlan, nextBrief);
-      setFreePlan({ plan: fallbackPlan, config, brief: nextBrief });
+      const fallbackEnriched = synthesizeScanPlanIntelligence(fallbackPlan.service || config.selectedService, {
+        signals: fallbackPlan.opportunitySignals,
+        queryVariants: fallbackPlan.queryVariants,
+      });
+      const normalizedFallback: FreeSearchPlan = {
+        ...fallbackPlan,
+        service: fallbackPlan.service || config.selectedService,
+        strategy: fallbackPlan.strategy || fallbackEnriched.strategy,
+        scanTargets: fallbackPlan.scanTargets?.length ? fallbackPlan.scanTargets : fallbackEnriched.scanTargets,
+        opportunitySignals: fallbackPlan.opportunitySignals?.length ? fallbackPlan.opportunitySignals : fallbackEnriched.opportunitySignals,
+      };
+      setFreePlan({ plan: normalizedFallback, config, brief: nextBrief });
       setFreeMessages(current => [...current, makeAssistantMessage("I made a fallback search plan. Review the profile below before starting.")]);
       console.error("Free search planning failed:", error);
     } finally {
