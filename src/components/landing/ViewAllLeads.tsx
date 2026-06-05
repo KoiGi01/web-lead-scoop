@@ -761,7 +761,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               )}
             </div>
 
-            <div className={`grid min-h-0 flex-1 gap-4 ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
+            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
               <div className={`min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] ${mode === "pipeline" ? "bg-[#0b0d11]" : "bg-[#0b0d11]"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
@@ -794,7 +794,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                           event.preventDefault();
                           handlePipelineDrop(column.value);
                         }}
-                        className={`flex min-w-[286px] max-w-[320px] flex-1 overflow-hidden rounded-lg border shadow-sm transition-all ${tone.shell} ${isDropTarget ? "scale-[1.01] ring-2 ring-black/20" : ""}`}
+                        className={`flex min-w-[286px] max-w-[320px] flex-1 overflow-hidden rounded-[12px] border transition-all ${tone.shell} ${isDropTarget ? "ring-1 ring-[#e8fb52]/40" : ""}`}
                       >
                         <div className="flex min-h-0 w-full flex-col">
                           <div className={`sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3 py-2.5 ${tone.header} ${tone.accent}`}>
@@ -804,10 +804,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                                 {column.label}
                               </span>
                               <span className="font-mono text-xs font-bold tabular-nums opacity-70">{column.leads.length}</span>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-70">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <Plus className="h-4 w-4" />
                             </div>
                           </div>
 
@@ -925,7 +921,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                 )}
               </div>
 
-              {mode !== "pipeline" && (
               <aside className="min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319]">
                 {selectedLead ? (
                   <div className="flex min-h-full flex-col">
@@ -1065,7 +1060,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                   </div>
                 )}
               </aside>
-              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
