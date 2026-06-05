@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
       .map(message => `${message.role === "assistant" ? "Assistant" : "User"}: ${message.text}`)
       .join("\n");
 
+    const service = String(body.service || "").trim();
+
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
       method: "POST",
       headers: {
@@ -61,15 +63,18 @@ Deno.serve(async (req) => {
             role: "user",
             parts: [
               {
-                text: `You are planning a B2B lead search. Return only JSON that follows the schema.
+                text: `You are a prospecting analyst for a service provider. The user SELLS a service and wants local businesses worth pitching. Return only JSON that follows the schema.
+
+What the user sells: ${service || "(infer it from the brief)"}
 
 Your job:
-- Ask concise follow-up questions until the plan is complete.
-- If more than one important detail is missing, include all missing fields in missingFields so the UI can ask them together.
-- A complete plan needs target business/niche, location, location mode, quality strictness, depth, enrich mode, required channels, query variants, and summary.
-- Do not spend credits or start the search.
-- Do not mention provider names.
-- Prefer practical contact-ready lead quality.
+- Identify the user's service, the target market/niche, and the location.
+- Design search queries likely to surface businesses in that niche + location that plausibly have the weaknesses this service fixes. Always include the location in each query.
+- Choose the opportunity signals to look for, tied to the service (e.g. web design -> weak_website, no_booking, no_clear_cta).
+- Choose which pages to read (scanTargets) for evidence.
+- Write a 1-2 sentence strategy explaining why these prospects are good for this service.
+- Ask a concise clarification (state=needs_clarification) only when target business, location, or service is missing. Put every missing field in missingFields.
+- Do not start the search. Do not mention provider/tool names.
 
 Allowed values:
 - state: needs_clarification | ready
@@ -77,12 +82,12 @@ Allowed values:
 - depth: simple | normal | deep
 - strictness: broad | balanced | strict
 - requiredChannels: phone | website | email | linkedin | person
+- opportunitySignals: weak_website | no_booking | no_clear_cta | generic_inbox | low_reviews | no_social_links | no_contact_form | weak_local_presence
+- scanTargets: homepage | contact | about | team | booking | services | pricing | social
 
 Guidance:
-- Use strict only when the user asks for must-have channels or very qualified leads.
-- Use enrichMode true when the user asks for owners, founders, managers, decision makers, LinkedIn, or likely people.
-- Use normal depth by default, simple for quick/small searches, deep for thorough/larger searches.
-- Query variants should be search-friendly and include the location.
+- Use normal depth by default, simple for quick/small, deep for thorough/large.
+- enrichMode is always effectively on; set it true.
 
 Accumulated brief:
 ${brief}
@@ -92,7 +97,6 @@ ${conversation}
 
 Current keyword: ${body.currentKeyword || ""}
 Current location: ${body.currentLocation || ""}
-User service: ${body.userProfile?.service_type || ""}
 User price tier: ${body.userProfile?.pricing_tier || ""}`,
               },
             ],
@@ -128,6 +132,10 @@ User price tier: ${body.userProfile?.pricing_tier || ""}`,
                   queryVariants: { type: "array", items: { type: "string" } },
                   maxResults: { type: "integer", enum: [20, 40, 60] },
                   summary: { type: "string" },
+                  service: { type: "string" },
+                  strategy: { type: "string" },
+                  opportunitySignals: { type: "array", items: { type: "string", enum: ["weak_website","no_booking","no_clear_cta","generic_inbox","low_reviews","no_social_links","no_contact_form","weak_local_presence"] } },
+                  scanTargets: { type: "array", items: { type: "string", enum: ["homepage","contact","about","team","booking","services","pricing","social"] } },
                 },
               },
             },
