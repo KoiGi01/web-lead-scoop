@@ -28,6 +28,7 @@ export type Database = {
           role_title: string | null
           company_website: string | null
           phone: string | null
+          pipeline_stage_prefs: Json | null
           created_at: string
         }
         Insert: {
@@ -43,6 +44,7 @@ export type Database = {
           role_title?: string | null
           company_website?: string | null
           phone?: string | null
+          pipeline_stage_prefs?: Json | null
           created_at?: string
         }
         Update: {
@@ -58,6 +60,7 @@ export type Database = {
           role_title?: string | null
           company_website?: string | null
           phone?: string | null
+          pipeline_stage_prefs?: Json | null
           created_at?: string
         }
       }
