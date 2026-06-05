@@ -39,7 +39,6 @@ import {
   opportunitySignalOptions,
   opportunitySignalLabels,
   getServiceRecommendedSignalKeys,
-  inferOpportunitySignalsFromText,
 } from "@/lib/opportunitySignals";
 import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 
@@ -1741,7 +1740,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         signals: plan.opportunitySignals,
         queryVariants: plan.queryVariants,
       });
-      const normalizedPlan = {
+      const normalizedPlan: FreeSearchPlan = {
         ...plan,
         service: plan.service || config.selectedService,
         strategy: plan.strategy || enriched.strategy,
