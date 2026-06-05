@@ -254,6 +254,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const [stageOrder, setStageOrder] = useState<CrmStatus[]>(NON_NEW_STAGES);
   const [editingStages, setEditingStages] = useState(false);
   const stagePrefsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadedStagesForUserRef = useRef<string | null>(null);
 
   const getTopContact = (lead: SavedLead) =>
     [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
@@ -385,8 +386,11 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
 
   // Load stage prefs: from the user's profile row for real users, from
   // localStorage for demo/offline. parseStagePrefs guarantees a complete order.
+  // The DB load applies once per user (when the profile first resolves) so a
+  // later profile refetch can't clobber the user's in-progress stage edits.
   useEffect(() => {
     if (demoMode || !userId) {
+      loadedStagesForUserRef.current = null;
       try {
         const raw = localStorage.getItem(STAGE_PREFS_KEY);
         const prefs = parseStagePrefs(raw ? JSON.parse(raw) : null);
@@ -397,9 +401,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
       }
       return;
     }
-    // userProfile may be null until useUserProfile resolves; this effect re-runs
-    // when it loads. parseStagePrefs(undefined/null) safely yields defaults.
-    const prefs = parseStagePrefs(userProfile?.pipeline_stage_prefs);
+    if (loadedStagesForUserRef.current === userId) return;
+    if (!userProfile) return; // wait for useUserProfile to resolve
+    loadedStagesForUserRef.current = userId;
+    const prefs = parseStagePrefs(userProfile.pipeline_stage_prefs);
     setStageOrder(prefs.order);
     setStageLabels(prefs.labels);
   }, [demoMode, userId, userProfile]);
