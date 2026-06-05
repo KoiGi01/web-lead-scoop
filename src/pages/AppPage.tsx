@@ -518,16 +518,19 @@ const AppPage = () => {
               <ViewAllLeads
                 userId={user?.id}
                 mode="inbox"
+                demoMode={isDemoPreview}
               />
             ) : viewMode === "pipeline" ? (
               <ViewAllLeads
                 userId={user?.id}
                 mode="pipeline"
+                demoMode={isDemoPreview}
               />
             ) : viewMode === "follow-ups" ? (
               <ViewAllLeads
                 userId={user?.id}
                 mode="follow-ups"
+                demoMode={isDemoPreview}
               />
             ) : viewMode === "saved-searches" ? (
               <SavedSearches

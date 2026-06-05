@@ -95,6 +95,7 @@ interface ViewAllLeadsProps {
   userId: string | undefined;
   onBackToSearch?: () => void;
   mode?: LeadWorkspaceMode;
+  demoMode?: boolean;
 }
 
 const statusOptions: { value: CrmStatus; label: string }[] = [
@@ -113,57 +114,27 @@ const priorityOptions: { value: CrmPriority; label: string }[] = [
 ];
 
 const statusTone: Record<CrmStatus, string> = {
-  new: "border-slate-300 bg-slate-100 text-slate-700",
-  contacted: "border-sky-300 bg-sky-100 text-sky-800",
-  qualified: "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]",
-  proposal: "border-violet-300 bg-violet-100 text-violet-800",
-  won: "border-emerald-300 bg-emerald-100 text-emerald-800",
-  lost: "border-red-300 bg-red-100 text-red-800",
+  new: "border-[#f3f5f8]/15 bg-[#f3f5f8]/[0.05] text-[#98a0af]",
+  contacted: "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]",
+  qualified: "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]",
+  proposal: "border-[#ffb23e]/30 bg-[#ffb23e]/10 text-[#ffb23e]",
+  won: "border-[#5fe3a1]/30 bg-[#5fe3a1]/10 text-[#5fe3a1]",
+  lost: "border-[#ff5c49]/25 bg-[#ff5c49]/[0.08] text-[#ff7a68]",
 };
 
 const priorityTone: Record<CrmPriority, string> = {
-  low: "border-slate-300 bg-slate-100 text-slate-700",
-  normal: "border-cyan-200 bg-cyan-50 text-cyan-800",
-  high: "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]",
+  low: "border-[#f3f5f8]/15 bg-[#f3f5f8]/[0.05] text-[#98a0af]",
+  normal: "border-[#57b9ff]/25 bg-[#57b9ff]/[0.08] text-[#7cc5ff]",
+  high: "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]",
 };
 
 const boardColumnTone: Record<CrmStatus, { shell: string; header: string; badge: string; accent: string }> = {
-  new: {
-    shell: "border-violet-200 bg-violet-50/90",
-    header: "bg-violet-100/90 text-violet-900",
-    badge: "bg-violet-600 text-white",
-    accent: "border-violet-300",
-  },
-  contacted: {
-    shell: "border-sky-200 bg-sky-50/90",
-    header: "bg-sky-100/90 text-sky-900",
-    badge: "bg-sky-600 text-white",
-    accent: "border-sky-300",
-  },
-  qualified: {
-    shell: "border-amber-200 bg-amber-50/90",
-    header: "bg-amber-100/90 text-amber-950",
-    badge: "bg-amber-500 text-black",
-    accent: "border-amber-300",
-  },
-  proposal: {
-    shell: "border-fuchsia-200 bg-fuchsia-50/90",
-    header: "bg-fuchsia-100/90 text-fuchsia-950",
-    badge: "bg-fuchsia-600 text-white",
-    accent: "border-fuchsia-300",
-  },
-  won: {
-    shell: "border-emerald-200 bg-emerald-50/90",
-    header: "bg-emerald-100/90 text-emerald-950",
-    badge: "bg-emerald-600 text-white",
-    accent: "border-emerald-300",
-  },
-  lost: {
-    shell: "border-slate-200 bg-slate-50/90",
-    header: "bg-slate-100/90 text-slate-700",
-    badge: "bg-slate-500 text-white",
-    accent: "border-slate-300",
-  },
+  new: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#98a0af]", badge: "bg-[#1c2029] text-[#cbd2dc]", accent: "border-[#f3f5f8]/30" },
+  contacted: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#57b9ff]", badge: "bg-[#57b9ff]/15 text-[#57b9ff]", accent: "border-[#57b9ff]/45" },
+  qualified: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#e8fb52]", badge: "bg-[#e8fb52]/15 text-[#e8fb52]", accent: "border-[#e8fb52]/45" },
+  proposal: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#ffb23e]", badge: "bg-[#ffb23e]/15 text-[#ffb23e]", accent: "border-[#ffb23e]/45" },
+  won: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#5fe3a1]", badge: "bg-[#5fe3a1]/15 text-[#5fe3a1]", accent: "border-[#5fe3a1]/45" },
+  lost: { shell: "border-[#f3f5f8]/[0.08] bg-[#0f1115]", header: "text-[#ff7a68]", badge: "bg-[#ff5c49]/15 text-[#ff7a68]", accent: "border-[#ff5c49]/35" },
 };
 
 const contactedStatuses: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
@@ -174,7 +145,78 @@ const normalizeCrmStatus = (value: unknown): CrmStatus =>
 const normalizeCrmPriority = (value: unknown): CrmPriority =>
   priorityOptions.some(option => option.value === value) ? value as CrmPriority : "normal";
 
-const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsProps) => {
+const demoContact = (fullName: string, title: string, email: string, score: number, linkedinUrl?: string): DecisionMakerContact => ({
+  fullName, title, email, linkedinUrl, source: "website", decisionMakerScore: score, decisionMakerReason: `${title} listed on team/about page.`,
+});
+
+const DEMO_LEADS: SavedLead[] = [
+  {
+    id: "demo-1", name: "BrightSmile Dental Clinic", address: "Austin, TX", phone: "(512) 555-0184",
+    website: "https://brightsmile.example", category: "dental clinic", selected_service: "Web design",
+    emails: ["hello@brightsmile.example"], whatsapp: [], contacts: [demoContact("Dr. Sofia Almeida", "Clinic Director", "sofia@brightsmile.example", 94, "https://linkedin.com/in/sofia-demo")],
+    linkedinUrl: "https://linkedin.com/in/sofia-demo", socialLinks: ["https://instagram.com/brightsmile"], contact_page_found: true,
+    intelligence: { opportunityScore: 92, positioning: "Established practice on an outdated one-page site with no online booking.", detectedIssues: ["Outdated website", "No online booking"] },
+    crm_status: "new", crm_priority: "high", crm_notes: "", next_follow_up_at: null, last_contacted_at: null, crm_updated_at: null, created_at: "2026-05-28T10:00:00Z",
+  },
+  {
+    id: "demo-2", name: "Austin Cosmetic Dentistry", address: "Austin, TX", phone: "(512) 555-0138",
+    website: "https://austincosmetic.example", category: "cosmetic dentist", selected_service: "Web design",
+    emails: ["contact@austincosmetic.example"], whatsapp: [], contacts: [demoContact("Mark Collins", "Owner", "mark@austincosmetic.example", 86)],
+    linkedinUrl: "", socialLinks: [], contact_page_found: true,
+    intelligence: { opportunityScore: 81, positioning: "No clear consultation CTA above the fold." },
+    crm_status: "new", crm_priority: "normal", crm_notes: "", next_follow_up_at: null, last_contacted_at: null, crm_updated_at: null, created_at: "2026-05-27T10:00:00Z",
+  },
+  {
+    id: "demo-3", name: "Westside Dental Studio", address: "Austin, TX", phone: "(512) 555-0172",
+    website: "https://westside.example", category: "dental studio", selected_service: "SEO",
+    emails: ["info@westside.example"], whatsapp: [], contacts: [demoContact("Sarah Nguyen", "Practice Manager", "", 78)],
+    linkedinUrl: "", socialLinks: ["https://facebook.com/westside"], contact_page_found: true,
+    intelligence: { opportunityScore: 74, positioning: "Weak local visibility and low review count." },
+    crm_status: "new", crm_priority: "normal", crm_notes: "", next_follow_up_at: null, last_contacted_at: null, crm_updated_at: null, created_at: "2026-05-26T10:00:00Z",
+  },
+  {
+    id: "demo-4", name: "Lakeline Family Dental", address: "Cedar Park, TX", phone: "(512) 555-0119",
+    website: "https://lakelinefamily.example", category: "family dentist", selected_service: "Web design",
+    emails: ["frontdesk@lakelinefamily.example"], whatsapp: [], contacts: [demoContact("Dr. Priya Patel", "Founder", "priya@lakelinefamily.example", 90, "https://linkedin.com/in/priya-demo")],
+    linkedinUrl: "https://linkedin.com/in/priya-demo", socialLinks: [], contact_page_found: true,
+    intelligence: { opportunityScore: 85, positioning: "Strong reputation but slow, non-mobile site." },
+    crm_status: "contacted", crm_priority: "high", crm_notes: "Sent intro email, waiting on reply.", next_follow_up_at: "2026-06-05T09:00:00Z", last_contacted_at: "2026-06-02T15:00:00Z", crm_updated_at: "2026-06-02T15:00:00Z", created_at: "2026-05-24T10:00:00Z",
+  },
+  {
+    id: "demo-5", name: "Hill Country Orthodontics", address: "Austin, TX", phone: "(512) 555-0156",
+    website: "https://hillcountryortho.example", category: "orthodontist", selected_service: "Paid ads",
+    emails: ["team@hillcountryortho.example"], whatsapp: [], contacts: [demoContact("Dr. James Reed", "Orthodontist", "james@hillcountryortho.example", 83)],
+    linkedinUrl: "", socialLinks: ["https://instagram.com/hillcountryortho"], contact_page_found: true,
+    intelligence: { opportunityScore: 79, positioning: "Running no paid acquisition; strong margins." },
+    crm_status: "contacted", crm_priority: "normal", crm_notes: "", next_follow_up_at: "2026-06-08T09:00:00Z", last_contacted_at: "2026-06-01T12:00:00Z", crm_updated_at: "2026-06-01T12:00:00Z", created_at: "2026-05-22T10:00:00Z",
+  },
+  {
+    id: "demo-6", name: "Zilker Dental Co", address: "Austin, TX", phone: "(512) 555-0143",
+    website: "https://zilkerdental.example", category: "dental clinic", selected_service: "Web design",
+    emails: ["hello@zilkerdental.example"], whatsapp: [], contacts: [demoContact("Dr. Elena Cruz", "Owner", "elena@zilkerdental.example", 91, "https://linkedin.com/in/elena-demo")],
+    linkedinUrl: "https://linkedin.com/in/elena-demo", socialLinks: ["https://instagram.com/zilkerdental"], contact_page_found: true,
+    intelligence: { opportunityScore: 88, positioning: "Booking buried; clear redesign opportunity." },
+    crm_status: "qualified", crm_priority: "high", crm_notes: "Interested — scheduling a call.", next_follow_up_at: "2026-06-05T09:00:00Z", last_contacted_at: "2026-06-03T11:00:00Z", crm_updated_at: "2026-06-03T11:00:00Z", created_at: "2026-05-20T10:00:00Z",
+  },
+  {
+    id: "demo-7", name: "Mueller Dental Group", address: "Austin, TX", phone: "(512) 555-0167",
+    website: "https://muellerdental.example", category: "dental group", selected_service: "Web design",
+    emails: ["office@muellerdental.example"], whatsapp: [], contacts: [demoContact("Dr. Aaron Webb", "Managing Partner", "aaron@muellerdental.example", 93, "https://linkedin.com/in/aaron-demo")],
+    linkedinUrl: "https://linkedin.com/in/aaron-demo", socialLinks: [], contact_page_found: true,
+    intelligence: { opportunityScore: 90, positioning: "Proposal sent for full site + booking flow." },
+    crm_status: "proposal", crm_priority: "high", crm_notes: "Proposal sent — $6k site rebuild.", next_follow_up_at: "2026-06-09T09:00:00Z", last_contacted_at: "2026-06-04T10:00:00Z", crm_updated_at: "2026-06-04T10:00:00Z", created_at: "2026-05-18T10:00:00Z",
+  },
+  {
+    id: "demo-8", name: "South Congress Smiles", address: "Austin, TX", phone: "(512) 555-0190",
+    website: "https://socosmiles.example", category: "dental clinic", selected_service: "Web design",
+    emails: ["hello@socosmiles.example"], whatsapp: [], contacts: [demoContact("Dr. Maya Brooks", "Owner", "maya@socosmiles.example", 89)],
+    linkedinUrl: "", socialLinks: ["https://instagram.com/socosmiles"], contact_page_found: true,
+    intelligence: { opportunityScore: 87, positioning: "Closed — new site live." },
+    crm_status: "won", crm_priority: "normal", crm_notes: "Won — project kicked off.", next_follow_up_at: null, last_contacted_at: "2026-05-30T10:00:00Z", crm_updated_at: "2026-05-30T10:00:00Z", created_at: "2026-05-12T10:00:00Z",
+  },
+];
+
+const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false }: ViewAllLeadsProps) => {
   const { user } = useAuth();
   const { profile: userProfile } = useUserProfile(user?.id);
   const [leads, setLeads] = useState<SavedLead[]>([]);
@@ -256,10 +298,15 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
   };
 
   useEffect(() => {
+    if (demoMode) {
+      setLeads(DEMO_LEADS);
+      setLoading(false);
+      return;
+    }
     if (userId) fetchAllLeads();
     // Archive refreshes when the authenticated archive owner changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, demoMode]);
 
   useEffect(() => {
     setArchiveViewMode(mode === "pipeline" ? "board" : "list");
@@ -540,7 +587,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
   const chipClass = (active: boolean) =>
     `inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest ${
-      active ? "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]" : "border-slate-300 bg-slate-100 text-slate-500"
+      active ? "border-[#e8fb52] bg-[#e8fb52] text-black" : "border-[#f3f5f8]/15 bg-[#f3f5f8]/[0.04] text-[#9aa3b2] hover:text-[#f3f5f8]"
     }`;
 
   const renderFilterToggle = (key: string, label: string, Icon: ComponentType<{ className?: string }>, active: boolean, toggle: () => void) => (
@@ -733,7 +780,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
             </div>
 
             <div className={`grid min-h-0 flex-1 gap-4 ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
-              <div className={`min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] ${mode === "pipeline" ? "bg-[#F6F3EA]" : "bg-black"}`}>
+              <div className={`min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] ${mode === "pipeline" ? "bg-[#0b0d11]" : "bg-black"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
                     <Search className="mb-4 h-9 w-9 text-[#5d6675]" />
@@ -784,8 +831,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
                           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
                           {column.leads.length === 0 ? (
-                            <div className={`flex min-h-[120px] items-center justify-center rounded-md border border-dashed px-3 text-center transition-colors ${isDropTarget ? "border-black/25 bg-white/70" : "border-black/10 bg-white/35"}`}>
-                              <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">{isDropTarget ? "Drop to move here" : "No opportunities"}</p>
+                            <div className={`flex min-h-[120px] items-center justify-center rounded-[10px] border border-dashed px-3 text-center transition-colors ${isDropTarget ? "border-[#e8fb52]/40 bg-[#e8fb52]/[0.06]" : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.02]"}`}>
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{isDropTarget ? "Drop to move here" : "No opportunities"}</p>
                             </div>
                           ) : (
                             column.leads.map(lead => {
@@ -805,18 +852,30 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                                     setDraggedLeadId(null);
                                     setDragOverStatus(null);
                                   }}
-                                  className={`rounded-md border bg-white p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] ${selected ? `${tone.accent} ring-2 ring-black/10` : "border-slate-200"} ${isDragging ? "scale-[0.98] cursor-grabbing opacity-45" : "cursor-grab"}`}
+                                  className={`rounded-[10px] border bg-[#14171d] p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#f3f5f8]/20 ${selected ? `${tone.accent} ring-1 ring-[#e8fb52]/20` : "border-[#f3f5f8]/[0.08]"} ${isDragging ? "scale-[0.98] cursor-grabbing opacity-45" : "cursor-grab"}`}
                                 >
                                   <button onClick={() => setSelectedLeadId(lead.id)} className="block w-full text-left">
-                                    <p className="truncate font-display text-sm font-bold leading-snug text-slate-950">{personLabel}</p>
-                                    <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-slate-500">{lead.category.replace(/_/g, " ") || "No industry"}</p>
-                                    {lead.selected_service && <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-amber-600">{lead.selected_service}</p>}
-                                    <p className="mt-2 truncate text-xs font-semibold text-slate-700">{lead.name || "No company name"}</p>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className="truncate font-display text-sm font-semibold leading-snug text-[#f3f5f8]">{personLabel}</p>
+                                      {lead.intelligence?.opportunityScore !== undefined && (
+                                        <span className="shrink-0 rounded-[6px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums text-[#e8fb52]">{lead.intelligence.opportunityScore}</span>
+                                      )}
+                                    </div>
+                                    <p className="mt-1 truncate font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                                    <p className="mt-1.5 truncate text-xs font-medium text-[#9aa3b2]">{lead.name || "No company name"}</p>
+                                    <div className="mt-2.5 flex items-center gap-2">
+                                      {lead.selected_service && <span className="truncate font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">{lead.selected_service}</span>}
+                                      <span className="ml-auto flex shrink-0 items-center gap-1">
+                                        {!!lead.phone && <Phone className="h-3 w-3 text-[#5d6675]" />}
+                                        {lead.emails.length > 0 && <Mail className="h-3 w-3 text-[#5d6675]" />}
+                                        {!!lead.linkedinUrl && <Linkedin className="h-3 w-3 text-[#5d6675]" />}
+                                      </span>
+                                    </div>
                                   </button>
 
                                   {savingLeadIds.has(lead.id) && (
                                     <div className="mt-2 flex justify-end">
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#5d6675]" />
                                     </div>
                                   )}
                                 </article>
@@ -880,7 +939,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                           <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#f3f5f8]">{selectedLead.name}</h3>
                           <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
                         </div>
-                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-sky-300 bg-sky-100 text-sky-800" : "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]"}`}>
+                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]" : "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]"}`}>
                           {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
                         </span>
                       </div>
