@@ -2124,18 +2124,18 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                               <span className="text-xs text-[#5fe3a1]">Decision-maker contacts included</span>
                             </div>
 
-                            {freePlan.strategy && (
+                            {freePlan.plan.strategy && (
                               <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
                                 <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Strategy</div>
-                                <p className="mt-1.5 text-[12.5px] leading-[1.55] text-[#9aa3b2]">{freePlan.strategy}</p>
+                                <p className="mt-1.5 text-[12.5px] leading-[1.55] text-[#9aa3b2]">{freePlan.plan.strategy}</p>
                               </div>
                             )}
 
-                            {!!freePlan.queryVariants?.length && (
+                            {!!freePlan.plan.queryVariants?.length && (
                               <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
                                 <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Search queries</div>
                                 <ul className="mt-2 space-y-1">
-                                  {freePlan.queryVariants.slice(0, 6).map((q, i) => (
+                                  {freePlan.plan.queryVariants.slice(0, 6).map((q, i) => (
                                     <li key={`${q}-${i}`} className="truncate font-mono text-[11px] text-[#f3f5f8]/90">
                                       <span className="text-[#5d6675]">{String(i + 1).padStart(2, "0")}</span> {q}
                                     </li>
@@ -2144,16 +2144,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                               </div>
                             )}
 
-                            {(!!freePlan.opportunitySignals?.length || !!freePlan.scanTargets?.length) && (
+                            {(!!freePlan.plan.opportunitySignals?.length || !!freePlan.plan.scanTargets?.length) && (
                               <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
                                 <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">The agent will look for</div>
                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                  {(freePlan.opportunitySignals || []).map(sig => (
+                                  {(freePlan.plan.opportunitySignals || []).map(sig => (
                                     <span key={sig} className="rounded-[7px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#e8fb52]">
                                       {opportunitySignalLabels[sig] || sig}
                                     </span>
                                   ))}
-                                  {(freePlan.scanTargets || []).map(target => (
+                                  {(freePlan.plan.scanTargets || []).map(target => (
                                     <span key={target} className="rounded-[7px] border border-[#f3f5f8]/[0.13] bg-black px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#98a0af]">
                                       {target}
                                     </span>
