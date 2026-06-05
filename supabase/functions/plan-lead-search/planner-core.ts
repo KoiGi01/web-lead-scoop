@@ -129,7 +129,7 @@ function clampList<T extends string>(values: unknown, allowed: T[], limit: numbe
 export function normalizeChannel(channel: unknown): RequiredChannel | "" {
   const value = String(channel || "").trim().toLowerCase();
   if (value === "whatsapp") return "phone";
-  if (value === "linkedin" || value === "linkedin") return "linkedin";
+  if (value === "linkedin") return "linkedin";
   return allowedChannels.includes(value as RequiredChannel) ? value as RequiredChannel : "";
 }
 

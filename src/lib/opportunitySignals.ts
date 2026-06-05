@@ -82,18 +82,3 @@ export const getServiceRecommendedSignalKeys = (service = ""): OpportunitySignal
   if (/social|content|instagram|tiktok|facebook/i.test(service)) return ["no_social_links", "low_reviews", "weak_website"];
   return ["weak_website", "no_clear_cta", "generic_inbox"];
 };
-
-export const inferOpportunitySignalsFromText = (text: string, service: string): OpportunitySignalKey[] => {
-  const lower = text.toLowerCase();
-  const signals = new Set<OpportunitySignalKey>();
-  if (/weak|outdated|bad|poor|website|mobile|site/i.test(lower)) signals.add("weak_website");
-  if (/booking|appointment|reservation|schedule/i.test(lower)) signals.add("no_booking");
-  if (/cta|call to action|consultation|quote|lead capture|conversion/i.test(lower)) signals.add("no_clear_cta");
-  if (/generic|info@|contact@|sales@|email/i.test(lower)) signals.add("generic_inbox");
-  if (/review|rating|reputation/i.test(lower)) signals.add("low_reviews");
-  if (/social|instagram|facebook|linkedin|tiktok/i.test(lower)) signals.add("no_social_links");
-  if (/form|contact form|lead form/i.test(lower)) signals.add("no_contact_form");
-  if (/local visibility|local seo|maps|ranking|presence/i.test(lower)) signals.add("weak_local_presence");
-  if (!signals.size) getServiceRecommendedSignalKeys(service).slice(0, 3).forEach(signal => signals.add(signal));
-  return [...signals].slice(0, 5);
-};
