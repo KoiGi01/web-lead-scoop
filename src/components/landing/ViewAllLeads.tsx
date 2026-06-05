@@ -138,6 +138,9 @@ const boardColumnTone: Record<CrmStatus, { shell: string; header: string; badge:
 };
 
 const contactedStatuses: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
+// "new" is fixed (scans drop prospects here); the rest can be reordered/renamed.
+const NON_NEW_STAGES: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
+const STAGE_PREFS_KEY = "gl22-pipeline-stages";
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
 const toDateInputValue = (value: string | null) => (value ? value.slice(0, 10) : "");
 const normalizeCrmStatus = (value: unknown): CrmStatus =>
@@ -246,6 +249,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<CrmStatus | null>(null);
+  const [stageLabels, setStageLabels] = useState<Partial<Record<CrmStatus, string>>>({});
+  const [stageOrder, setStageOrder] = useState<CrmStatus[]>(NON_NEW_STAGES);
+  const [editingStages, setEditingStages] = useState(false);
 
   const getTopContact = (lead: SavedLead) =>
     [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
@@ -344,6 +350,35 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
       setLeads(previous);
       toast({ title: "CRM update failed", description: "Could not save that prospect update.", variant: "destructive" });
     }
+  };
+
+  const setLeadLocal = (leadId: string, patch: Partial<SavedLead>) =>
+    setLeads(current => current.map(lead => lead.id === leadId ? { ...lead, ...patch } : lead));
+
+  // Persist arbitrary editable prospect fields (state already updated optimistically by the caller).
+  const updateLead = async (leadId: string, patch: Partial<SavedLead>) => {
+    const crm_updated_at = new Date().toISOString();
+    setLeadLocal(leadId, { ...patch, crm_updated_at });
+    if (demoMode || !userId) return;
+
+    setSavingLeadIds(prev => new Set(prev).add(leadId));
+    const { linkedinUrl, socialLinks, ...rest } = patch as Record<string, unknown>;
+    const payload: Record<string, unknown> = { ...rest, crm_updated_at };
+    if (linkedinUrl !== undefined) payload.linkedin_url = linkedinUrl;
+
+    const { error } = await supabase.from("saved_leads").update(payload).eq("id", leadId).eq("user_id", userId);
+    setSavingLeadIds(prev => { const next = new Set(prev); next.delete(leadId); return next; });
+    if (error) {
+      console.error("Error updating lead:", error);
+      toast({ title: "Update failed", description: "Could not save that change.", variant: "destructive" });
+    }
+  };
+
+  const setContactField = (lead: SavedLead, field: "fullName" | "title" | "email", value: string): DecisionMakerContact[] => {
+    const contacts = [...(lead.contacts || [])];
+    const base: DecisionMakerContact = contacts[0] || { source: "website", decisionMakerScore: 0, decisionMakerReason: "" };
+    contacts[0] = { ...base, [field]: value };
+    return contacts;
   };
 
   const moveLeadToStatus = (leadId: string, crm_status: CrmStatus) => {
@@ -621,6 +656,136 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   }[mode];
   const effectiveArchiveViewMode = mode === "pipeline" ? "board" : archiveViewMode;
 
+  const stageLabel = (status: CrmStatus) => stageLabels[status] || statusOptions.find(option => option.value === status)?.label || status;
+  const fieldInput = "min-w-0 flex-1 bg-transparent font-mono text-[12px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675]";
+  const renderDetail = (lead: SavedLead) => {
+    const contact = getTopContact(lead);
+    const email = lead.emails[0] || contact?.email || "";
+    const setEmail = (value: string) => ({ emails: value ? [value, ...lead.emails.slice(1)] : lead.emails.slice(1) });
+    return (
+      <div className="flex min-h-full flex-col">
+        <div className="border-b border-[#f3f5f8]/[0.07] p-5">
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Selected opportunity</p>
+            <div className="flex shrink-0 items-center gap-2">
+              {lead.intelligence?.opportunityScore !== undefined && (
+                <span className="rounded-[7px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[13px] font-semibold tabular-nums text-[#e8fb52]">{lead.intelligence.opportunityScore}</span>
+              )}
+              <span className={`rounded-[6px] border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${isContactedLead(lead) ? "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]" : "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]"}`}>
+                {isContactedLead(lead) ? "Contacted" : "Not contacted"}
+              </span>
+            </div>
+          </div>
+          <input
+            value={contact?.fullName || ""}
+            onChange={e => setLeadLocal(lead.id, { contacts: setContactField(lead, "fullName", e.target.value) })}
+            onBlur={e => updateLead(lead.id, { contacts: setContactField(lead, "fullName", e.target.value) })}
+            placeholder="Decision-maker name"
+            className="mt-3 h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-display text-[18px] font-bold tracking-[-0.01em] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <input
+              value={contact?.title || ""}
+              onChange={e => setLeadLocal(lead.id, { contacts: setContactField(lead, "title", e.target.value) })}
+              onBlur={e => updateLead(lead.id, { contacts: setContactField(lead, "title", e.target.value) })}
+              placeholder="Title"
+              className="h-9 rounded-[8px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-2.5 text-[12px] text-[#9aa3b2] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+            />
+            <input
+              value={lead.name}
+              onChange={e => setLeadLocal(lead.id, { name: e.target.value })}
+              onBlur={e => updateLead(lead.id, { name: e.target.value })}
+              placeholder="Company"
+              className="h-9 rounded-[8px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-2.5 text-[12px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+            />
+          </div>
+          <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
+            {lead.category.replace(/_/g, " ") || "No industry"}
+            {lead.selected_service && <> · <span className="text-[#e8fb52]">{lead.selected_service}</span></>}
+          </p>
+        </div>
+
+        <div className="space-y-4 p-5">
+          <div className="overflow-hidden rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black">
+            <p className="border-b border-[#f3f5f8]/[0.06] px-3.5 pb-2 pt-3 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Contact · editable</p>
+            <div className="divide-y divide-[#f3f5f8]/[0.06]">
+              <div className="flex items-center gap-2 px-3.5 py-2">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                <input value={lead.phone} onChange={e => setLeadLocal(lead.id, { phone: e.target.value })} onBlur={e => updateLead(lead.id, { phone: e.target.value })} placeholder="Phone" className={fieldInput} />
+                {lead.phone && <button onClick={() => handleCopyField(`${lead.id}-phone`, lead.phone, "Phone copied")} aria-label="Copy phone" className="shrink-0 text-[#5d6675] hover:text-[#e8fb52]">{copiedKeys.has(`${lead.id}-phone`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}</button>}
+              </div>
+              <div className="flex items-center gap-2 px-3.5 py-2">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                <input value={email} onChange={e => setLeadLocal(lead.id, setEmail(e.target.value))} onBlur={e => updateLead(lead.id, setEmail(e.target.value))} placeholder="Email" className={fieldInput} />
+                {email && <button onClick={() => handleCopyField(`${lead.id}-email`, email, "Email copied")} aria-label="Copy email" className="shrink-0 text-[#5d6675] hover:text-[#e8fb52]">{copiedKeys.has(`${lead.id}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}</button>}
+              </div>
+              <div className="flex items-center gap-2 px-3.5 py-2">
+                <Globe className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                <input value={lead.website} onChange={e => setLeadLocal(lead.id, { website: e.target.value })} onBlur={e => updateLead(lead.id, { website: e.target.value })} placeholder="Website" className={fieldInput} />
+                {lead.website && <a href={lead.website} target="_blank" rel="noopener noreferrer" aria-label="Open website" className="shrink-0 text-[#5d6675] hover:text-[#e8fb52]"><ExternalLink className="h-3.5 w-3.5" /></a>}
+              </div>
+              <div className="flex items-center gap-2 px-3.5 py-2">
+                <Linkedin className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
+                <input value={lead.linkedinUrl || ""} onChange={e => setLeadLocal(lead.id, { linkedinUrl: e.target.value })} onBlur={e => updateLead(lead.id, { linkedinUrl: e.target.value })} placeholder="LinkedIn URL" className={fieldInput} />
+                {lead.linkedinUrl && <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="Open LinkedIn" className="shrink-0 text-[#5d6675] hover:text-[#4A9BE8]"><ExternalLink className="h-3.5 w-3.5" /></a>}
+              </div>
+            </div>
+          </div>
+
+          {(lead.intelligence?.positioning || !!lead.intelligence?.detectedIssues?.length) && (
+            <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Why this prospect</p>
+              {lead.intelligence?.positioning && <p className="mt-1.5 text-[13px] leading-[1.5] text-[#9aa3b2]">{lead.intelligence.positioning}</p>}
+              {!!lead.intelligence?.detectedIssues?.length && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {lead.intelligence.detectedIssues.map(issue => (
+                    <span key={issue} className="rounded-[6px] border border-[#ffb23e]/25 bg-[#ffb23e]/[0.08] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[#ffb23e]">{issue}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-3 rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Status</span>
+                <select value={lead.crm_status} onChange={e => patchLead(lead.id, { crm_status: e.target.value as CrmStatus })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                  {statusOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{stageLabel(option.value)}</option>)}
+                </select>
+              </label>
+              <label>
+                <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Priority</span>
+                <select value={lead.crm_priority} onChange={e => patchLead(lead.id, { crm_priority: e.target.value as CrmPriority })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                  {priorityOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{option.label}</option>)}
+                </select>
+              </label>
+            </div>
+            <label>
+              <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Follow-up</span>
+              <input type="date" value={toDateInputValue(lead.next_follow_up_at)} onChange={e => patchLead(lead.id, { next_follow_up_at: e.target.value ? new Date(`${e.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[11px] outline-none ${isDue(lead) ? "border-[#e8fb52] text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2]"}`} />
+            </label>
+            <button onClick={() => markContacted(lead)} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]">
+              <Send className="h-3.5 w-3.5" /> Mark contacted
+            </button>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Last contacted: {lead.last_contacted_at ? new Date(lead.last_contacted_at).toLocaleDateString() : "—"}</p>
+          </div>
+
+          <label className="block">
+            <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Notes</span>
+            <textarea
+              value={lead.crm_notes}
+              onChange={e => setLeadLocal(lead.id, { crm_notes: e.target.value })}
+              onBlur={e => patchLead(lead.id, { crm_notes: e.target.value })}
+              placeholder="Add next step, objection, pitch angle…"
+              className="h-28 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section id="tool" className="flex flex-1 flex-col overflow-hidden bg-black text-[#f3f5f8]">
       <div className="flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
@@ -761,7 +926,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               )}
             </div>
 
-            <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
+            <div className={`grid min-h-0 flex-1 gap-4 [grid-template-rows:minmax(0,1fr)] ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
               <div className={`min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] ${mode === "pipeline" ? "bg-[#0b0d11]" : "bg-[#0b0d11]"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
@@ -815,7 +980,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                           ) : (
                             column.leads.map(lead => {
                               const personLabel = getLeadPersonLabel(lead);
-                              const selected = lead.id === selectedLead?.id;
+                              const selected = lead.id === selectedLeadId;
                               const isDragging = draggedLeadId === lead.id;
                               return (
                                 <article
@@ -921,138 +1086,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                 )}
               </div>
 
+              {mode !== "pipeline" && (
               <aside className="min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319]">
-                {selectedLead ? (
-                  <div className="flex min-h-full flex-col">
-                    <div className="border-b border-[#f3f5f8]/[0.07] p-5">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Selected opportunity</p>
-                      <div className="mt-2 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="truncate font-display text-[22px] font-bold leading-tight tracking-[-0.02em] text-[#f3f5f8]">{selectedContact?.fullName || selectedLead.name || "Named contact pending"}</h3>
-                          <p className="mt-1 truncate text-[13px] text-[#9aa3b2]">{selectedContact?.title ? `${selectedContact.title} · ` : ""}{selectedLead.name || "No company"}</p>
-                          <p className="mt-1.5 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
-                            {selectedLead.category.replace(/_/g, " ") || "No industry"}
-                            {selectedLead.selected_service && <> · <span className="text-[#e8fb52]">{selectedLead.selected_service}</span></>}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-2">
-                          {selectedLead.intelligence?.opportunityScore !== undefined && (
-                            <span className="rounded-[7px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[13px] font-semibold tabular-nums text-[#e8fb52]">{selectedLead.intelligence.opportunityScore}</span>
-                          )}
-                          <span className={`rounded-[6px] border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]" : "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]"}`}>
-                            {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
-                        disabled={!selectedLead.phone}
-                        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
-                      >
-                        {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
-                      </button>
-                    </div>
-
-                    <div className="space-y-4 p-5">
-                      <div className="overflow-hidden rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black">
-                        <p className="border-b border-[#f3f5f8]/[0.06] px-3.5 pb-2 pt-3 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Contact</p>
-                        <div className="divide-y divide-[#f3f5f8]/[0.06]">
-                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                              <Mail className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
-                              <span className="truncate font-mono text-[12px] text-[#f3f5f8]">{selectedLead.emails[0] || selectedContact?.email || "No email"}</span>
-                            </div>
-                            {(selectedLead.emails[0] || selectedContact?.email) && (
-                              <button onClick={() => handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0] || selectedContact?.email || "", "Email copied")} aria-label="Copy email" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#e8fb52]">
-                                {copiedKeys.has(`${selectedLead.id}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                              <Globe className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
-                              <span className="truncate font-mono text-[12px] text-[#9aa3b2]">{selectedLead.website ? selectedLead.website.replace(/^https?:\/\//, "").replace(/\/$/, "") : "No website"}</span>
-                            </div>
-                            {selectedLead.website && (
-                              <a href={selectedLead.website} target="_blank" rel="noopener noreferrer" aria-label="Open website" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#e8fb52]"><ExternalLink className="h-3.5 w-3.5" /></a>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                              <Linkedin className="h-3.5 w-3.5 shrink-0 text-[#5d6675]" />
-                              <span className="truncate font-mono text-[12px] text-[#9aa3b2]">{selectedLead.linkedinUrl ? "LinkedIn profile" : "No LinkedIn"}</span>
-                            </div>
-                            {selectedLead.linkedinUrl && (
-                              <a href={selectedLead.linkedinUrl} target="_blank" rel="noopener noreferrer" aria-label="Open LinkedIn" className="shrink-0 text-[#5d6675] transition-colors hover:text-[#4A9BE8]"><ExternalLink className="h-3.5 w-3.5" /></a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {(selectedLead.intelligence?.positioning || !!selectedLead.intelligence?.detectedIssues?.length) && (
-                        <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Why this prospect</p>
-                          {selectedLead.intelligence?.positioning && <p className="mt-1.5 text-[13px] leading-[1.5] text-[#9aa3b2]">{selectedLead.intelligence.positioning}</p>}
-                          {!!selectedLead.intelligence?.detectedIssues?.length && (
-                            <div className="mt-2.5 flex flex-wrap gap-1.5">
-                              {selectedLead.intelligence.detectedIssues.map(issue => (
-                                <span key={issue} className="rounded-[6px] border border-[#ffb23e]/25 bg-[#ffb23e]/[0.08] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[#ffb23e]">{issue}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="space-y-3 rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
-                        <div className="grid grid-cols-2 gap-3">
-                          <label>
-                            <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Status</span>
-                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
-                              {statusOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{option.label}</option>)}
-                            </select>
-                          </label>
-                          <label>
-                            <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Priority</span>
-                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
-                              {priorityOptions.map(option => <option key={option.value} value={option.value} className="bg-[#14171d] text-[#f3f5f8]">{option.label}</option>)}
-                            </select>
-                          </label>
-                        </div>
-
-                        <label>
-                          <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Follow-up</span>
-                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#e8fb52] text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2]"}`} />
-                        </label>
-
-                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]">
-                          <Send className="h-3.5 w-3.5" /> Mark contacted
-                        </button>
-
-                        <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
-                          Last contacted: {selectedLead.last_contacted_at ? new Date(selectedLead.last_contacted_at).toLocaleDateString() : "—"}
-                        </p>
-                      </div>
-
-                      <label className="block">
-                        <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Notes</span>
-                        <textarea
-                          value={selectedLead.crm_notes}
-                          onChange={event => setLeads(current => current.map(item => item.id === selectedLead.id ? { ...item, crm_notes: event.target.value } : item))}
-                          onBlur={event => patchLead(selectedLead.id, { crm_notes: event.target.value })}
-                          placeholder="Add next step, objection, pitch angle…"
-                          className="h-28 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
-                        />
-                      </label>
-
-                      <div className="border-t border-[#f3f5f8]/[0.07] pt-4">
-                        <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Business</p>
-                        <p className="mt-1.5 text-[13px] text-[#9aa3b2]">{selectedLead.address || "No address listed"}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+                {selectedLead ? renderDetail(selectedLead) : (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
                     <Archive className="mb-4 h-9 w-9 text-[#5d6675]" />
                     <p className="font-display text-xl font-bold text-[#f3f5f8]">Select an opportunity</p>
@@ -1060,7 +1096,21 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                   </div>
                 )}
               </aside>
+              )}
             </div>
+
+            {mode === "pipeline" && selectedLeadId && selectedLead && (
+              <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-8" onClick={() => setSelectedLeadId(null)}>
+                <div className="relative my-auto w-full max-w-[460px] overflow-hidden rounded-[16px] border border-[#f3f5f8]/[0.13] bg-[#111319] shadow-[0_24px_70px_rgba(0,0,0,0.6)]" onClick={event => event.stopPropagation()}>
+                  <button onClick={() => setSelectedLeadId(null)} aria-label="Close" className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-[8px] border border-[#f3f5f8]/[0.13] bg-[#111319] text-[#9aa3b2] transition-colors hover:border-[#e8fb52]/50 hover:text-[#e8fb52]">
+                    <X className="h-4 w-4" />
+                  </button>
+                  <div className="max-h-[86vh] overflow-y-auto">
+                    {renderDetail(selectedLead)}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
