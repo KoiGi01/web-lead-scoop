@@ -699,17 +699,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                   ))}
                 </select>
 
-                {mode !== "pipeline" && (
-                  <div className="inline-flex shrink-0 rounded-[9px] border border-[#f3f5f8]/[0.13] p-0.5">
-                    <button onClick={() => setArchiveViewMode("list")} className={`inline-flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
-                      <List className="h-3 w-3" /> List
-                    </button>
-                    <button onClick={() => setArchiveViewMode("board")} className={`inline-flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
-                      <LayoutGrid className="h-3 w-3" /> Board
-                    </button>
-                  </div>
-                )}
-
                 <button onClick={() => setShowAdvancedFilters(value => !value)} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border px-3.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${showAdvancedFilters || activeFilterCount > 0 ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
                   <SlidersHorizontal className="h-3.5 w-3.5" /> Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
                 </button>
@@ -940,23 +929,32 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               <aside className="min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319]">
                 {selectedLead ? (
                   <div className="flex min-h-full flex-col">
-                    <div className="border-b border-[#f3f5f8]/10 p-5">
-                      <div className="flex items-start justify-between gap-4">
+                    <div className="border-b border-[#f3f5f8]/[0.07] p-5">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Selected opportunity</p>
+                      <div className="mt-2 flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Selected opportunity</p>
-                          <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#f3f5f8]">{selectedLead.name}</h3>
-                          <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
+                          <h3 className="truncate font-display text-[22px] font-bold leading-tight tracking-[-0.02em] text-[#f3f5f8]">{selectedContact?.fullName || selectedLead.name || "Named contact pending"}</h3>
+                          <p className="mt-1 truncate text-[13px] text-[#9aa3b2]">{selectedContact?.title ? `${selectedContact.title} · ` : ""}{selectedLead.name || "No company"}</p>
+                          <p className="mt-1.5 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
+                            {selectedLead.category.replace(/_/g, " ") || "No industry"}
+                            {selectedLead.selected_service && <> · <span className="text-[#e8fb52]">{selectedLead.selected_service}</span></>}
+                          </p>
                         </div>
-                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]" : "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]"}`}>
-                          {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          {selectedLead.intelligence?.opportunityScore !== undefined && (
+                            <span className="rounded-[7px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[13px] font-semibold tabular-nums text-[#e8fb52]">{selectedLead.intelligence.opportunityScore}</span>
+                          )}
+                          <span className={`rounded-[6px] border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-[#57b9ff]/30 bg-[#57b9ff]/10 text-[#57b9ff]" : "border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]"}`}>
+                            {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="mt-5 grid gap-2">
                         <button
                           onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
                           disabled={!selectedLead.phone}
-                          className="inline-flex h-12 items-center justify-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-[#f3ff8a] disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
+                          className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
                         >
                           {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                           {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
@@ -965,7 +963,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                           <button
                             onClick={() => selectedLead.emails[0] && handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0], "Email copied")}
                             disabled={!selectedLead.emails[0]}
-                            className="inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52] disabled:opacity-30"
+                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52] disabled:opacity-30"
                           >
                             <Mail className="h-3.5 w-3.5" /> Email
                           </button>
@@ -973,7 +971,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                             href={selectedLead.website || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
                           >
                             <Globe className="h-3.5 w-3.5" /> Site
                           </a>
@@ -981,7 +979,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                             href={selectedLead.linkedinUrl || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#9aa3b2] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#9aa3b2] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
                           >
                             <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                           </a>
@@ -989,76 +987,73 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                       </div>
                     </div>
 
-                    <div className="space-y-5 p-5">
-                      <section className="border border-[#f3f5f8]/10 bg-black p-4">
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Person</p>
-                        <p className="mt-2 text-sm font-semibold text-[#f3f5f8]">{selectedContact?.fullName || selectedContact?.email || "No person listed"}</p>
-                        {selectedContact?.title && <p className="mt-1 text-sm text-[#9aa3b2]">{selectedContact.title}</p>}
-                        {selectedContact?.email && <p className="mt-2 truncate font-mono text-[11px] text-[#e8fb52]">{selectedContact.email}</p>}
-                      </section>
+                    <div className="space-y-4 p-5">
+                      {selectedContact?.email && (
+                        <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Decision-maker email</p>
+                          <p className="mt-1 truncate font-mono text-[12px] text-[#e8fb52]">{selectedContact.email}</p>
+                        </div>
+                      )}
 
-                      <section className="space-y-3">
+                      {(selectedLead.intelligence?.positioning || !!selectedLead.intelligence?.detectedIssues?.length) && (
+                        <div className="rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Why this prospect</p>
+                          {selectedLead.intelligence?.positioning && <p className="mt-1.5 text-[13px] leading-[1.5] text-[#9aa3b2]">{selectedLead.intelligence.positioning}</p>}
+                          {!!selectedLead.intelligence?.detectedIssues?.length && (
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                              {selectedLead.intelligence.detectedIssues.map(issue => (
+                                <span key={issue} className="rounded-[6px] border border-[#ffb23e]/25 bg-[#ffb23e]/[0.08] px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-[#ffb23e]">{issue}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="space-y-3 rounded-[10px] border border-[#f3f5f8]/[0.08] bg-black p-3.5">
                         <div className="grid grid-cols-2 gap-3">
                           <label>
-                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Status</span>
-                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${statusTone[selectedLead.crm_status]}`}>
+                            <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Status</span>
+                            <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${statusTone[selectedLead.crm_status]}`}>
                               {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
                           </label>
                           <label>
-                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Priority</span>
-                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${priorityTone[selectedLead.crm_priority]}`}>
+                            <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Priority</span>
+                            <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${priorityTone[selectedLead.crm_priority]}`}>
                               {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
                           </label>
                         </div>
 
                         <label>
-                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Follow-up</span>
-                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full border bg-black px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#e8fb52] text-[#e8fb52]" : "border-[#f3f5f8]/10 text-[#9aa3b2]"}`} />
+                          <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Follow-up</span>
+                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full rounded-[9px] border bg-[#0b0d11] px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#e8fb52] text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2]"}`} />
                         </label>
 
-                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]">
+                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border border-[#f3f5f8]/[0.13] font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]">
                           <Send className="h-3.5 w-3.5" /> Mark contacted
                         </button>
 
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
-                          Last contacted: {selectedLead.last_contacted_at ? new Date(selectedLead.last_contacted_at).toLocaleDateString() : "-"}
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
+                          Last contacted: {selectedLead.last_contacted_at ? new Date(selectedLead.last_contacted_at).toLocaleDateString() : "—"}
                         </p>
-                      </section>
+                      </div>
 
-                      <section>
-                        <label>
-                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Notes</span>
-                          <textarea
-                            value={selectedLead.crm_notes}
-                            onChange={event => setLeads(current => current.map(item => item.id === selectedLead.id ? { ...item, crm_notes: event.target.value } : item))}
-                            onBlur={event => patchLead(selectedLead.id, { crm_notes: event.target.value })}
-                            placeholder="Add next step, objection, pitch angle..."
-                            className="h-32 w-full resize-none border border-[#f3f5f8]/10 bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/70"
-                          />
-                        </label>
-                      </section>
+                      <label className="block">
+                        <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Notes</span>
+                        <textarea
+                          value={selectedLead.crm_notes}
+                          onChange={event => setLeads(current => current.map(item => item.id === selectedLead.id ? { ...item, crm_notes: event.target.value } : item))}
+                          onBlur={event => patchLead(selectedLead.id, { crm_notes: event.target.value })}
+                          placeholder="Add next step, objection, pitch angle…"
+                          className="h-28 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+                        />
+                      </label>
 
-                      <section className="space-y-2 border-t border-[#f3f5f8]/10 pt-4">
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Business</p>
-                        <p className="text-sm text-[#9aa3b2]">{selectedLead.address || "No address listed"}</p>
-                        {selectedLead.intelligence?.positioning && <p className="text-sm leading-6 text-[#9aa3b2]">{selectedLead.intelligence.positioning}</p>}
-                        {selectedLead.selected_service && (
-                          <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Service sold: {selectedLead.selected_service}</p>
-                        )}
-                        {selectedLead.intelligence?.opportunityScore !== undefined && (
-                          <div>
-                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Opportunity score</p>
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono text-xl font-black text-[#e8fb52]">{selectedLead.intelligence.opportunityScore}</span>
-                              <div className="h-1.5 flex-1 bg-[#f3f5f8]/10">
-                                <div className="h-full bg-[#e8fb52]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </section>
+                      <div className="border-t border-[#f3f5f8]/[0.07] pt-4">
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Business</p>
+                        <p className="mt-1.5 text-[13px] text-[#9aa3b2]">{selectedLead.address || "No address listed"}</p>
+                      </div>
                     </div>
                   </div>
                 ) : (
