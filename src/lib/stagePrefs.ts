@@ -25,14 +25,15 @@ export function parseStagePrefs(raw: unknown): StagePrefs {
   const obj = raw as { order?: unknown; labels?: unknown };
 
   if (Array.isArray(obj.order)) {
-    const valid = obj.order.filter(isNonNewStage);
-    result.order = [...valid, ...NON_NEW_STAGES.filter(stage => !valid.includes(stage))];
+    const valid = [...new Set(obj.order.filter(isNonNewStage))];
+    const present = new Set(valid);
+    result.order = [...valid, ...NON_NEW_STAGES.filter(stage => !present.has(stage))];
   }
 
   if (obj.labels && typeof obj.labels === "object") {
     const labels: Partial<Record<CrmStatus, string>> = {};
     for (const [key, value] of Object.entries(obj.labels as Record<string, unknown>)) {
-      if (isNonNewStage(key) && typeof value === "string") labels[key] = value;
+      if (isNonNewStage(key) && typeof value === "string" && value.trim().length > 0) labels[key] = value;
     }
     result.labels = labels;
   }

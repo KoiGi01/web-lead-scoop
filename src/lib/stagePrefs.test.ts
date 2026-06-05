@@ -24,4 +24,14 @@ describe("parseStagePrefs", () => {
     });
     expect(result.labels).toEqual({ contacted: "Reached out" });
   });
+
+  it("dedupes repeated stages in custom order", () => {
+    const result = parseStagePrefs({ order: ["won", "won", "lost"] });
+    expect(result.order).toEqual(["won", "lost", "contacted", "qualified", "proposal"]);
+  });
+
+  it("drops empty / whitespace-only labels", () => {
+    const result = parseStagePrefs({ labels: { contacted: "  ", qualified: "Vetted" } });
+    expect(result.labels).toEqual({ qualified: "Vetted" });
+  });
 });
