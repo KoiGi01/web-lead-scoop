@@ -651,7 +651,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               ["Emails", emailCount],
               ["People", personNameCount],
             ].map(([label, value]) => (
-              <div key={String(label)} className="flex h-8 min-w-[86px] items-center justify-between gap-2 border border-[#f3f5f8]/[0.14] bg-[#111319] px-2.5">
+              <div key={String(label)} className="flex h-8 min-w-[86px] items-center justify-between gap-2 rounded-[8px] border border-[#f3f5f8]/[0.1] bg-[#111319] px-2.5">
                 <p className="font-mono text-sm font-black tabular-nums text-[#f3f5f8]">{value}</p>
                 <p className="font-mono text-[8px] uppercase tracking-widest text-[#5d6675]">{label}</p>
               </div>
@@ -666,7 +666,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
         )}
 
         {!loading && leads.length === 0 && (
-          <div className="flex flex-1 flex-col items-center justify-center border border-[#f3f5f8]/[0.14] bg-[#111319] py-20 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319] py-20 text-center">
             <Archive className="mb-4 h-10 w-10 text-[#5d6675]" />
             <p className="font-display text-2xl font-bold text-[#f3f5f8]">{pageMeta.empty}</p>
             <p className="mt-2 text-sm text-[#9aa3b2]">{pageMeta.emptyDescription}</p>
@@ -675,23 +675,23 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
 
         {!loading && leads.length > 0 && (
           <div className="flex min-h-0 flex-1 flex-col gap-3">
-            <div className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-2.5">
-              <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
-                <div className="relative min-w-[260px] flex-1">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5d6675]" />
+            <div className="rounded-[12px] border border-[#f3f5f8]/[0.1] bg-[#111319] p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5d6675]" />
                   <input
                     type="text"
-                    placeholder="Search opportunities, businesses, people, emails, notes..."
+                    placeholder="Search prospects, companies, people, emails…"
                     value={filterText}
                     onChange={event => setFilterText(event.target.value)}
-                    className="h-8 w-full border border-[#f3f5f8]/10 bg-black pl-8 pr-3 font-mono text-[11px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/70"
+                    className="h-9 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black pl-9 pr-3 text-[13px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
                   />
                 </div>
 
                 <select
                   value={filterCategory}
                   onChange={event => setFilterCategory(event.target.value)}
-                  className="h-8 min-w-[190px] border border-[#f3f5f8]/10 bg-black px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70"
+                  className="h-9 rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/60 sm:min-w-[160px]"
                 >
                   <option value="all">All industries</option>
                   {categoryOptions.map(category => (
@@ -699,36 +699,25 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                   ))}
                 </select>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {mode !== "pipeline" && (
-                    <div className="inline-grid grid-cols-2 border border-[#f3f5f8]/10">
-                      <button
-                        onClick={() => setArchiveViewMode("list")}
-                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#e8fb52] text-black" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}
-                      >
-                        <List className="h-3 w-3" /> List
-                      </button>
-                      <button
-                        onClick={() => setArchiveViewMode("board")}
-                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#e8fb52] text-black" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}
-                      >
-                        <LayoutGrid className="h-3 w-3" /> Board
-                      </button>
-                    </div>
-                  )}
-                  {renderFilterToggle("not-contacted", "Not contacted", Phone, filterContactState === "not_contacted", () => setFilterContactState(filterContactState === "not_contacted" ? "all" : "not_contacted"))}
-                  {renderFilterToggle("phone", "Phone", Phone, filterByPhone, () => setFilterByPhone(value => !value))}
-                  {renderFilterToggle("email", "Email", Mail, filterByEmail, () => setFilterByEmail(value => !value))}
-                  {renderFilterToggle("person", "Person", UserRound, filterByPersonName, () => setFilterByPersonName(value => !value))}
-                  <button onClick={() => setShowAdvancedFilters(value => !value)} className={filterButtonClass(showAdvancedFilters || activeFilterCount > 0)}>
-                    <SlidersHorizontal className="h-3.5 w-3.5" /> More {activeFilterCount > 0 ? activeFilterCount : ""}
-                  </button>
-                  {activeFilterCount > 0 && (
-                    <button onClick={clearFilters} className="inline-flex h-8 items-center gap-1.5 border border-red-400/30 px-2.5 font-mono text-[9px] uppercase tracking-widest text-red-300 hover:bg-red-400/10">
-                      <X className="h-3 w-3" /> Clear
+                {mode !== "pipeline" && (
+                  <div className="inline-flex shrink-0 rounded-[9px] border border-[#f3f5f8]/[0.13] p-0.5">
+                    <button onClick={() => setArchiveViewMode("list")} className={`inline-flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                      <List className="h-3 w-3" /> List
                     </button>
-                  )}
-                </div>
+                    <button onClick={() => setArchiveViewMode("board")} className={`inline-flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                      <LayoutGrid className="h-3 w-3" /> Board
+                    </button>
+                  </div>
+                )}
+
+                <button onClick={() => setShowAdvancedFilters(value => !value)} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border px-3.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${showAdvancedFilters || activeFilterCount > 0 ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+                </button>
+                {activeFilterCount > 0 && (
+                  <button onClick={clearFilters} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border border-[#ff5c49]/30 px-3 font-mono text-[10px] uppercase tracking-widest text-[#ff7a68] hover:bg-[#ff5c49]/10">
+                    <X className="h-3 w-3" /> Clear
+                  </button>
+                )}
               </div>
 
               {showAdvancedFilters && (
@@ -760,6 +749,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                     </>
                   )}
                   <div className="flex flex-wrap gap-2 lg:col-span-4">
+                    {renderFilterToggle("not-contacted", "Not contacted", Phone, filterContactState === "not_contacted", () => setFilterContactState(filterContactState === "not_contacted" ? "all" : "not_contacted"))}
+                    {renderFilterToggle("phone", "Phone", Phone, filterByPhone, () => setFilterByPhone(value => !value))}
+                    {renderFilterToggle("email", "Email", Mail, filterByEmail, () => setFilterByEmail(value => !value))}
+                    {renderFilterToggle("person", "Person", UserRound, filterByPersonName, () => setFilterByPersonName(value => !value))}
                     {renderFilterToggle("site", "Website", Globe, filterByWebsite, () => setFilterByWebsite(value => !value))}
                     {renderFilterToggle("linkedin", "LinkedIn", Linkedin, filterByLinkedIn, () => setFilterByLinkedIn(value => !value))}
                     {renderFilterToggle("due", "Follow-up due", CalendarClock, filterDueOnly, () => setFilterDueOnly(value => !value))}
@@ -780,7 +773,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
             </div>
 
             <div className={`grid min-h-0 flex-1 gap-4 ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
-              <div className={`min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] ${mode === "pipeline" ? "bg-[#0b0d11]" : "bg-black"}`}>
+              <div className={`min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] ${mode === "pipeline" ? "bg-[#0b0d11]" : "bg-[#0b0d11]"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
                     <Search className="mb-4 h-9 w-9 text-[#5d6675]" />
@@ -889,36 +882,51 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                     })}
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#f3f5f8]/10">
+                  <div className="divide-y divide-[#f3f5f8]/[0.06]">
                     {sortedResults.map(lead => {
                       const topContact = getTopContact(lead);
                       const selected = lead.id === selectedLead?.id;
+                      const person = topContact?.fullName || topContact?.email || "Named contact pending";
+                      const score = lead.intelligence?.opportunityScore;
                       return (
                         <button
                           key={lead.id}
                           onClick={() => setSelectedLeadId(lead.id)}
-                          className={`block w-full px-4 py-4 text-left transition-colors ${selected ? "bg-[#e8fb52]/[0.07]" : "hover:bg-[#f3f5f8]/[0.03]"}`}
+                          className={`group relative block w-full py-3.5 pl-5 pr-4 text-left transition-colors ${selected ? "bg-[#e8fb52]/[0.06]" : "hover:bg-[#f3f5f8]/[0.025]"}`}
                         >
-                          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate font-display text-base font-semibold text-[#f3f5f8]">{lead.name}</p>
-                                <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${statusTone[lead.crm_status]}`}>
+                          <span className={`absolute inset-y-0 left-0 w-[3px] transition-colors ${selected ? "bg-[#e8fb52]" : "bg-transparent group-hover:bg-[#f3f5f8]/15"}`} />
+                          <div className="flex items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate font-display text-[15px] font-semibold text-[#f3f5f8]">{person}</p>
+                                {topContact?.title && <span className="hidden shrink-0 truncate text-[11px] text-[#5d6675] sm:inline">· {topContact.title}</span>}
+                              </div>
+                              <p className="mt-0.5 truncate text-[13px] text-[#9aa3b2]">{lead.name || "No company name"}</p>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">
+                                <span className="truncate">{lead.category.replace(/_/g, " ") || "No industry"}</span>
+                                {lead.selected_service && (
+                                  <>
+                                    <span className="text-[#f3f5f8]/15">·</span>
+                                    <span className="text-[#e8fb52]">{lead.selected_service}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-2">
+                              <div className="flex items-center gap-2">
+                                {score !== undefined && (
+                                  <span className="rounded-[6px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-[#e8fb52]">{score}</span>
+                                )}
+                                <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${statusTone[lead.crm_status]}`}>
                                   {lead.crm_status}
                                 </span>
-                                <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${priorityTone[lead.crm_priority]}`}>
-                                  {lead.crm_priority}
-                                </span>
                               </div>
-                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
-                              {lead.selected_service && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">{lead.selected_service}</p>}
-                              <p className="mt-2 truncate text-xs text-[#9aa3b2]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
-                            </div>
-                            <div className="flex shrink-0 flex-wrap gap-1.5">
-                              <span className={chipClass(!!lead.phone)}><Phone className="h-3 w-3" /></span>
-                              <span className={chipClass(lead.emails.length > 0)}><Mail className="h-3 w-3" /></span>
-                              <span className={chipClass(!!lead.linkedinUrl)}><Linkedin className="h-3 w-3" /></span>
-                              <span className={chipClass(hasPersonName(lead))}><UserRound className="h-3 w-3" /></span>
+                              <div className="flex items-center gap-1.5">
+                                {!!lead.phone && <Phone className="h-3.5 w-3.5 text-[#5d6675]" />}
+                                {lead.emails.length > 0 && <Mail className="h-3.5 w-3.5 text-[#e8fb52]" />}
+                                {!!lead.linkedinUrl && <Linkedin className="h-3.5 w-3.5 text-[#5d6675]" />}
+                                {hasPersonName(lead) && <UserRound className="h-3.5 w-3.5 text-[#5d6675]" />}
+                              </div>
                             </div>
                           </div>
                         </button>
@@ -929,7 +937,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               </div>
 
               {mode !== "pipeline" && (
-              <aside className="min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] bg-[#111319]">
+              <aside className="min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319]">
                 {selectedLead ? (
                   <div className="flex min-h-full flex-col">
                     <div className="border-b border-[#f3f5f8]/10 p-5">
