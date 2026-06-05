@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   CalendarClock,
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Download,
   ExternalLink,
@@ -12,10 +14,10 @@ import {
   List,
   Linkedin,
   Loader2,
+  Lock,
   Mail,
-  MoreHorizontal,
+  Pencil,
   Phone,
-  Plus,
   Search,
   Send,
   SlidersHorizontal,
@@ -381,6 +383,38 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
     return contacts;
   };
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STAGE_PREFS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { order?: CrmStatus[]; labels?: Partial<Record<CrmStatus, string>> };
+      if (parsed.labels) setStageLabels(parsed.labels);
+      if (Array.isArray(parsed.order)) {
+        const valid = parsed.order.filter(stage => NON_NEW_STAGES.includes(stage));
+        setStageOrder([...valid, ...NON_NEW_STAGES.filter(stage => !valid.includes(stage))]);
+      }
+    } catch {
+      /* ignore malformed prefs */
+    }
+  }, []);
+
+  const persistStages = (order: CrmStatus[], labels: Partial<Record<CrmStatus, string>>) => {
+    try { localStorage.setItem(STAGE_PREFS_KEY, JSON.stringify({ order, labels })); } catch { /* ignore */ }
+  };
+  const renameStage = (status: CrmStatus, label: string) =>
+    setStageLabels(prev => { const next = { ...prev, [status]: label }; persistStages(stageOrder, next); return next; });
+  const moveStage = (status: CrmStatus, direction: -1 | 1) =>
+    setStageOrder(prev => {
+      const index = prev.indexOf(status);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      persistStages(next, stageLabels);
+      return next;
+    });
+  const stageLabel = (status: CrmStatus) => stageLabels[status] || statusOptions.find(option => option.value === status)?.label || status;
+
   const moveLeadToStatus = (leadId: string, crm_status: CrmStatus) => {
     const lead = leads.find(item => item.id === leadId);
     if (!lead || lead.crm_status === crm_status) return;
@@ -525,9 +559,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const personNameCount = sortedResults.filter(hasPersonName).length;
   const contactedCount = sortedResults.filter(isContactedLead).length;
   const notContactedCount = sortedResults.length - contactedCount;
-  const leadsByStatus = statusOptions.map(option => ({
-    ...option,
-    leads: sortedResults.filter(lead => lead.crm_status === option.value),
+  const leadsByStatus = (["new", ...stageOrder] as CrmStatus[]).map(value => ({
+    value,
+    label: stageLabel(value),
+    leads: sortedResults.filter(lead => lead.crm_status === value),
   }));
   const activeFilterCount = [
     filterText.trim() !== "",
@@ -656,7 +691,6 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   }[mode];
   const effectiveArchiveViewMode = mode === "pipeline" ? "board" : archiveViewMode;
 
-  const stageLabel = (status: CrmStatus) => stageLabels[status] || statusOptions.find(option => option.value === status)?.label || status;
   const fieldInput = "min-w-0 flex-1 bg-transparent font-mono text-[12px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675]";
   const renderDetail = (lead: SavedLead) => {
     const contact = getTopContact(lead);
@@ -872,6 +906,11 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                     <X className="h-3 w-3" /> Clear
                   </button>
                 )}
+                {mode === "pipeline" && (
+                  <button onClick={() => setEditingStages(value => !value)} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] border px-3.5 font-mono text-[10px] uppercase tracking-widest transition-colors ${editingStages ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]" : "border-[#f3f5f8]/[0.13] text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                    <Pencil className="h-3.5 w-3.5" /> {editingStages ? "Done" : "Edit stages"}
+                  </button>
+                )}
               </div>
 
               {showAdvancedFilters && (
@@ -963,13 +1002,31 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                       >
                         <div className="flex min-h-0 w-full flex-col">
                           <div className={`sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3 py-2.5 ${tone.header} ${tone.accent}`}>
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className={`inline-flex h-6 items-center gap-1 rounded-md px-2 font-display text-xs font-bold ${tone.badge}`}>
-                                <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
-                                {column.label}
-                              </span>
-                              <span className="font-mono text-xs font-bold tabular-nums opacity-70">{column.leads.length}</span>
-                            </div>
+                            {editingStages && column.value !== "new" ? (
+                              <div className="flex w-full items-center gap-1.5">
+                                <input
+                                  value={column.label}
+                                  onChange={event => renameStage(column.value, event.target.value)}
+                                  placeholder="Stage name"
+                                  className="h-7 min-w-0 flex-1 rounded-[6px] border border-current/30 bg-black/40 px-2 font-display text-xs font-bold text-current outline-none placeholder:text-current/40"
+                                />
+                                <button type="button" onClick={() => moveStage(column.value, -1)} aria-label="Move stage left" className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-current/30 hover:bg-current/10"><ChevronLeft className="h-3.5 w-3.5" /></button>
+                                <button type="button" onClick={() => moveStage(column.value, 1)} aria-label="Move stage right" className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border border-current/30 hover:bg-current/10"><ChevronRight className="h-3.5 w-3.5" /></button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className={`inline-flex h-6 items-center gap-1 rounded-md px-2 font-display text-xs font-bold ${tone.badge}`}>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                                    {column.label}
+                                  </span>
+                                  <span className="font-mono text-xs font-bold tabular-nums opacity-70">{column.leads.length}</span>
+                                </div>
+                                {editingStages && column.value === "new" && (
+                                  <span className="flex items-center gap-1 font-mono text-[8px] uppercase tracking-widest opacity-50"><Lock className="h-3 w-3" /> Locked</span>
+                                )}
+                              </>
+                            )}
                           </div>
 
                           <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
@@ -1068,7 +1125,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                                   <span className="rounded-[6px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-[#e8fb52]">{score}</span>
                                 )}
                                 <span className={`rounded-[5px] border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${statusTone[lead.crm_status]}`}>
-                                  {lead.crm_status}
+                                  {stageLabel(lead.crm_status)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5">
