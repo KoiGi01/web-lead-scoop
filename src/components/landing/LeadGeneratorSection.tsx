@@ -1260,6 +1260,15 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       usage_type: usageType,
       status: "running",
       credits_used: creditsUsed,
+      agent_plan: freePlan
+        ? {
+            service: freePlan.plan.service || null,
+            strategy: freePlan.plan.strategy || null,
+            queryVariants: freePlan.plan.queryVariants || [],
+            opportunitySignals: freePlan.plan.opportunitySignals || [],
+            scanTargets: freePlan.plan.scanTargets || [],
+          }
+        : null,
     };
 
     let { data, error } = await supabase
@@ -1268,8 +1277,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       .select()
       .single();
 
-    if (error && /selected_service|opportunity_signals|schema cache/i.test(error.message)) {
-      const { selected_service: _selectedService, opportunity_signals: _opportunitySignals, ...fallbackPayload } = sessionPayload;
+    if (error && /selected_service|opportunity_signals|agent_plan|schema cache/i.test(error.message)) {
+      const { selected_service: _selectedService, opportunity_signals: _opportunitySignals, agent_plan: _agentPlan, ...fallbackPayload } = sessionPayload;
       const fallback = await supabase
         .from("search_sessions")
         .insert(fallbackPayload)
