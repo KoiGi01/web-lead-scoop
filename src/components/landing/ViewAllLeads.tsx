@@ -1,4 +1,4 @@
-import { ComponentType, useEffect, useMemo, useState } from "react";
+import { ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArrowLeft,
@@ -30,8 +30,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
+import { type CrmStatus, NON_NEW_STAGES, parseStagePrefs } from "@/lib/stagePrefs";
 
-type CrmStatus = "new" | "contacted" | "qualified" | "proposal" | "won" | "lost";
 type CrmPriority = "low" | "normal" | "high";
 type SortKey = "name" | "emails" | "score" | "follow_up";
 type ArchiveViewMode = "list" | "board";
@@ -141,7 +141,6 @@ const boardColumnTone: Record<CrmStatus, { shell: string; header: string; badge:
 
 const contactedStatuses: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
 // "new" is fixed (scans drop prospects here); the rest can be reordered/renamed.
-const NON_NEW_STAGES: CrmStatus[] = ["contacted", "qualified", "proposal", "won", "lost"];
 const STAGE_PREFS_KEY = "gl22-pipeline-stages";
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
 const toDateInputValue = (value: string | null) => (value ? value.slice(0, 10) : "");
@@ -254,6 +253,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const [stageLabels, setStageLabels] = useState<Partial<Record<CrmStatus, string>>>({});
   const [stageOrder, setStageOrder] = useState<CrmStatus[]>(NON_NEW_STAGES);
   const [editingStages, setEditingStages] = useState(false);
+  const stagePrefsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getTopContact = (lead: SavedLead) =>
     [...(lead.contacts || [])].sort((a, b) => (b.decisionMakerScore || 0) - (a.decisionMakerScore || 0))[0];
@@ -383,23 +383,46 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
     return contacts;
   };
 
+  // Load stage prefs: from the user's profile row for real users, from
+  // localStorage for demo/offline. parseStagePrefs guarantees a complete order.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STAGE_PREFS_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { order?: CrmStatus[]; labels?: Partial<Record<CrmStatus, string>> };
-      if (parsed.labels) setStageLabels(parsed.labels);
-      if (Array.isArray(parsed.order)) {
-        const valid = parsed.order.filter(stage => NON_NEW_STAGES.includes(stage));
-        setStageOrder([...valid, ...NON_NEW_STAGES.filter(stage => !valid.includes(stage))]);
+    if (demoMode || !userId) {
+      try {
+        const raw = localStorage.getItem(STAGE_PREFS_KEY);
+        const prefs = parseStagePrefs(raw ? JSON.parse(raw) : null);
+        setStageOrder(prefs.order);
+        setStageLabels(prefs.labels);
+      } catch {
+        /* ignore malformed prefs */
       }
-    } catch {
-      /* ignore malformed prefs */
+      return;
     }
-  }, []);
+    // userProfile may be null until useUserProfile resolves; this effect re-runs
+    // when it loads. parseStagePrefs(undefined/null) safely yields defaults.
+    const prefs = parseStagePrefs(userProfile?.pipeline_stage_prefs);
+    setStageOrder(prefs.order);
+    setStageLabels(prefs.labels);
+  }, [demoMode, userId, userProfile]);
 
   const persistStages = (order: CrmStatus[], labels: Partial<Record<CrmStatus, string>>) => {
-    try { localStorage.setItem(STAGE_PREFS_KEY, JSON.stringify({ order, labels })); } catch { /* ignore */ }
+    if (demoMode || !userId) {
+      try { localStorage.setItem(STAGE_PREFS_KEY, JSON.stringify({ order, labels })); } catch { /* ignore */ }
+      return;
+    }
+    // Debounce so rapid renames/reorders coalesce into a single DB write.
+    if (stagePrefsTimer.current) clearTimeout(stagePrefsTimer.current);
+    stagePrefsTimer.current = setTimeout(async () => {
+      // .update (not .upsert): the profile row already exists post-onboarding, and
+      // update avoids violating user_profiles NOT NULL columns on a phantom insert.
+      const { error } = await supabase
+        .from("user_profiles")
+        .update({ pipeline_stage_prefs: { order, labels } })
+        .eq("id", userId);
+      if (error) {
+        console.error("Error saving pipeline stage prefs:", error);
+        toast({ title: "Couldn't save stages", description: "Your stage changes may not sync across devices.", variant: "destructive" });
+      }
+    }, 600);
   };
   const renameStage = (status: CrmStatus, label: string) =>
     setStageLabels(prev => { const next = { ...prev, [status]: label }; persistStages(stageOrder, next); return next; });
