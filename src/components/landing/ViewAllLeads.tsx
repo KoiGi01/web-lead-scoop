@@ -115,7 +115,7 @@ const priorityOptions: { value: CrmPriority; label: string }[] = [
 const statusTone: Record<CrmStatus, string> = {
   new: "border-slate-300 bg-slate-100 text-slate-700",
   contacted: "border-sky-300 bg-sky-100 text-sky-800",
-  qualified: "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]",
+  qualified: "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]",
   proposal: "border-violet-300 bg-violet-100 text-violet-800",
   won: "border-emerald-300 bg-emerald-100 text-emerald-800",
   lost: "border-red-300 bg-red-100 text-red-800",
@@ -124,7 +124,7 @@ const statusTone: Record<CrmStatus, string> = {
 const priorityTone: Record<CrmPriority, string> = {
   low: "border-slate-300 bg-slate-100 text-slate-700",
   normal: "border-cyan-200 bg-cyan-50 text-cyan-800",
-  high: "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]",
+  high: "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]",
 };
 
 const boardColumnTone: Record<CrmStatus, { shell: string; header: string; badge: string; accent: string }> = {
@@ -534,13 +534,13 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
   const filterButtonClass = (active: boolean) =>
     `inline-flex h-8 items-center gap-1.5 border px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${
       active
-        ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
-        : "border-[#EFEDE6]/10 text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#EFEDE6]"
+        ? "border-[#e8fb52] bg-[#e8fb52] text-black"
+        : "border-[#f3f5f8]/10 text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]"
     }`;
 
   const chipClass = (active: boolean) =>
     `inline-flex items-center gap-1.5 border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest ${
-      active ? "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]" : "border-slate-300 bg-slate-100 text-slate-500"
+      active ? "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]" : "border-slate-300 bg-slate-100 text-slate-500"
     }`;
 
   const renderFilterToggle = (key: string, label: string, Icon: ComponentType<{ className?: string }>, active: boolean, toggle: () => void) => (
@@ -575,22 +575,22 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
   const effectiveArchiveViewMode = mode === "pipeline" ? "board" : archiveViewMode;
 
   return (
-    <section id="tool" className="flex flex-1 flex-col overflow-hidden bg-black text-[#EFEDE6]">
+    <section id="tool" className="flex flex-1 flex-col overflow-hidden bg-black text-[#f3f5f8]">
       <div className="flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
-        <div className="mb-3 flex flex-col gap-3 border-b border-[#EFEDE6]/[0.14] pb-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-3 flex flex-col gap-3 border-b border-[#f3f5f8]/[0.14] pb-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             {onBackToSearch && (
               <button
                 onClick={onBackToSearch}
-                className="flex h-8 shrink-0 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]"
+                className="flex h-8 shrink-0 items-center gap-1.5 border border-[#f3f5f8]/10 px-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#9aa3b2] transition-colors hover:border-[#e8fb52]/50 hover:text-[#e8fb52]"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back
               </button>
             )}
             <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[#F5FF3D]">{pageMeta.kicker}</p>
-              <h2 className="truncate font-display text-2xl font-black leading-none tracking-[-0.04em] text-[#EFEDE6]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[#e8fb52]">{pageMeta.kicker}</p>
+              <h2 className="truncate font-display text-2xl font-black leading-none tracking-[-0.04em] text-[#f3f5f8]">
                 {pageMeta.title}
               </h2>
             </div>
@@ -604,9 +604,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
               ["Emails", emailCount],
               ["People", personNameCount],
             ].map(([label, value]) => (
-              <div key={String(label)} className="flex h-8 min-w-[86px] items-center justify-between gap-2 border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-2.5">
-                <p className="font-mono text-sm font-black tabular-nums text-[#EFEDE6]">{value}</p>
-                <p className="font-mono text-[8px] uppercase tracking-widest text-[#67645B]">{label}</p>
+              <div key={String(label)} className="flex h-8 min-w-[86px] items-center justify-between gap-2 border border-[#f3f5f8]/[0.14] bg-[#111319] px-2.5">
+                <p className="font-mono text-sm font-black tabular-nums text-[#f3f5f8]">{value}</p>
+                <p className="font-mono text-[8px] uppercase tracking-widest text-[#5d6675]">{label}</p>
               </div>
             ))}
           </div>
@@ -614,37 +614,37 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
         {loading && (
           <div className="flex flex-1 items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-[#F5FF3D]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#e8fb52]" />
           </div>
         )}
 
         {!loading && leads.length === 0 && (
-          <div className="flex flex-1 flex-col items-center justify-center border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] py-20 text-center">
-            <Archive className="mb-4 h-10 w-10 text-[#67645B]" />
-            <p className="font-display text-2xl font-bold text-[#EFEDE6]">{pageMeta.empty}</p>
-            <p className="mt-2 text-sm text-[#A8A59C]">{pageMeta.emptyDescription}</p>
+          <div className="flex flex-1 flex-col items-center justify-center border border-[#f3f5f8]/[0.14] bg-[#111319] py-20 text-center">
+            <Archive className="mb-4 h-10 w-10 text-[#5d6675]" />
+            <p className="font-display text-2xl font-bold text-[#f3f5f8]">{pageMeta.empty}</p>
+            <p className="mt-2 text-sm text-[#9aa3b2]">{pageMeta.emptyDescription}</p>
           </div>
         )}
 
         {!loading && leads.length > 0 && (
           <div className="flex min-h-0 flex-1 flex-col gap-3">
-            <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-2.5">
+            <div className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-2.5">
               <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
                 <div className="relative min-w-[260px] flex-1">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#67645B]" />
+                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5d6675]" />
                   <input
                     type="text"
                     placeholder="Search opportunities, businesses, people, emails, notes..."
                     value={filterText}
                     onChange={event => setFilterText(event.target.value)}
-                    className="h-8 w-full border border-[#EFEDE6]/10 bg-black pl-8 pr-3 font-mono text-[11px] text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                    className="h-8 w-full border border-[#f3f5f8]/10 bg-black pl-8 pr-3 font-mono text-[11px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/70"
                   />
                 </div>
 
                 <select
                   value={filterCategory}
                   onChange={event => setFilterCategory(event.target.value)}
-                  className="h-8 min-w-[190px] border border-[#EFEDE6]/10 bg-black px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70"
+                  className="h-8 min-w-[190px] border border-[#f3f5f8]/10 bg-black px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70"
                 >
                   <option value="all">All industries</option>
                   {categoryOptions.map(category => (
@@ -654,16 +654,16 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
 
                 <div className="flex flex-wrap gap-1.5">
                   {mode !== "pipeline" && (
-                    <div className="inline-grid grid-cols-2 border border-[#EFEDE6]/10">
+                    <div className="inline-grid grid-cols-2 border border-[#f3f5f8]/10">
                       <button
                         onClick={() => setArchiveViewMode("list")}
-                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#F5FF3D] text-black" : "text-[#A8A59C] hover:text-[#EFEDE6]"}`}
+                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "list" ? "bg-[#e8fb52] text-black" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}
                       >
                         <List className="h-3 w-3" /> List
                       </button>
                       <button
                         onClick={() => setArchiveViewMode("board")}
-                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#F5FF3D] text-black" : "text-[#A8A59C] hover:text-[#EFEDE6]"}`}
+                        className={`inline-flex h-8 items-center gap-1.5 px-2.5 font-mono text-[9px] uppercase tracking-widest transition-colors ${archiveViewMode === "board" ? "bg-[#e8fb52] text-black" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}
                       >
                         <LayoutGrid className="h-3 w-3" /> Board
                       </button>
@@ -685,31 +685,31 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
               </div>
 
               {showAdvancedFilters && (
-                <div className="mt-3 grid gap-3 border-t border-[#EFEDE6]/10 pt-3 lg:grid-cols-4">
-                  <select value={filterDate} onChange={event => setFilterDate(event.target.value as DateFilter)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                <div className="mt-3 grid gap-3 border-t border-[#f3f5f8]/10 pt-3 lg:grid-cols-4">
+                  <select value={filterDate} onChange={event => setFilterDate(event.target.value as DateFilter)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70">
                     <option value="all">All time</option>
                     <option value="today">Today</option>
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
                     <option value="custom">Custom range</option>
                   </select>
-                  <select value={filterContactState} onChange={event => setFilterContactState(event.target.value as ContactStateFilter)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                  <select value={filterContactState} onChange={event => setFilterContactState(event.target.value as ContactStateFilter)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70">
                     <option value="all">All contact states</option>
                     <option value="contacted">Contacted</option>
                     <option value="not_contacted">Not contacted</option>
                   </select>
-                  <select value={filterStatus} onChange={event => setFilterStatus(event.target.value as "all" | CrmStatus)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                  <select value={filterStatus} onChange={event => setFilterStatus(event.target.value as "all" | CrmStatus)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70">
                     <option value="all">All pipeline statuses</option>
                     {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                  <select value={filterPriority} onChange={event => setFilterPriority(event.target.value as "all" | CrmPriority)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70">
+                  <select value={filterPriority} onChange={event => setFilterPriority(event.target.value as "all" | CrmPriority)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70">
                     <option value="all">All priorities</option>
                     {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                   {filterDate === "custom" && (
                     <>
-                      <input type="date" value={customDateStart} onChange={event => setCustomDateStart(event.target.value)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70" />
-                      <input type="date" value={customDateEnd} onChange={event => setCustomDateEnd(event.target.value)} className="h-9 border border-[#EFEDE6]/10 bg-black px-3 font-mono text-[10px] text-[#A8A59C] outline-none focus:border-[#F5FF3D]/70" />
+                      <input type="date" value={customDateStart} onChange={event => setCustomDateStart(event.target.value)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70" />
+                      <input type="date" value={customDateEnd} onChange={event => setCustomDateEnd(event.target.value)} className="h-9 border border-[#f3f5f8]/10 bg-black px-3 font-mono text-[10px] text-[#9aa3b2] outline-none focus:border-[#e8fb52]/70" />
                     </>
                   )}
                   <div className="flex flex-wrap gap-2 lg:col-span-4">
@@ -718,8 +718,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     {renderFilterToggle("due", "Follow-up due", CalendarClock, filterDueOnly, () => setFilterDueOnly(value => !value))}
                     {userProfile && renderFilterToggle("intel", "Has intel", Zap, filterByIntelligence, () => setFilterByIntelligence(value => !value))}
                     {userProfile && (
-                      <div className="flex items-center gap-1 border border-[#EFEDE6]/10 px-2 py-1">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Score</span>
+                      <div className="flex items-center gap-1 border border-[#f3f5f8]/10 px-2 py-1">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Score</span>
                         {[0, 50, 75].map(value => (
                           <button key={value} onClick={() => setFilterScoreMin(value)} className={filterButtonClass(filterScoreMin === value)}>
                             {value === 0 ? "All" : value}
@@ -733,13 +733,13 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
             </div>
 
             <div className={`grid min-h-0 flex-1 gap-4 ${mode === "pipeline" ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_420px]"}`}>
-              <div className={`min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] ${mode === "pipeline" ? "bg-[#F6F3EA]" : "bg-black"}`}>
+              <div className={`min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] ${mode === "pipeline" ? "bg-[#F6F3EA]" : "bg-black"}`}>
                 {sortedResults.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-4 text-center">
-                    <Search className="mb-4 h-9 w-9 text-[#67645B]" />
-                    <p className="font-display text-xl font-bold text-[#EFEDE6]">{pageMeta.noMatch}</p>
-                    <p className="mt-2 text-sm text-[#A8A59C]">Clear filters or widen the criteria.</p>
-                    <button onClick={clearFilters} className="mt-5 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black">
+                    <Search className="mb-4 h-9 w-9 text-[#5d6675]" />
+                    <p className="font-display text-xl font-bold text-[#f3f5f8]">{pageMeta.noMatch}</p>
+                    <p className="mt-2 text-sm text-[#9aa3b2]">Clear filters or widen the criteria.</p>
+                    <button onClick={clearFilters} className="mt-5 border border-[#e8fb52] bg-[#e8fb52] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black">
                       Clear filters
                     </button>
                   </div>
@@ -830,7 +830,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     })}
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#EFEDE6]/10">
+                  <div className="divide-y divide-[#f3f5f8]/10">
                     {sortedResults.map(lead => {
                       const topContact = getTopContact(lead);
                       const selected = lead.id === selectedLead?.id;
@@ -838,12 +838,12 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                         <button
                           key={lead.id}
                           onClick={() => setSelectedLeadId(lead.id)}
-                          className={`block w-full px-4 py-4 text-left transition-colors ${selected ? "bg-[#F5FF3D]/[0.07]" : "hover:bg-[#EFEDE6]/[0.03]"}`}
+                          className={`block w-full px-4 py-4 text-left transition-colors ${selected ? "bg-[#e8fb52]/[0.07]" : "hover:bg-[#f3f5f8]/[0.03]"}`}
                         >
                           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate font-display text-base font-semibold text-[#EFEDE6]">{lead.name}</p>
+                                <p className="truncate font-display text-base font-semibold text-[#f3f5f8]">{lead.name}</p>
                                 <span className={`border px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${statusTone[lead.crm_status]}`}>
                                   {lead.crm_status}
                                 </span>
@@ -851,9 +851,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                                   {lead.crm_priority}
                                 </span>
                               </div>
-                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
-                              {lead.selected_service && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">{lead.selected_service}</p>}
-                              <p className="mt-2 truncate text-xs text-[#A8A59C]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
+                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{lead.category.replace(/_/g, " ") || "No industry"}</p>
+                              {lead.selected_service && <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">{lead.selected_service}</p>}
+                              <p className="mt-2 truncate text-xs text-[#9aa3b2]">{topContact?.fullName || topContact?.email || lead.address || "No person listed"}</p>
                             </div>
                             <div className="flex shrink-0 flex-wrap gap-1.5">
                               <span className={chipClass(!!lead.phone)}><Phone className="h-3 w-3" /></span>
@@ -870,17 +870,17 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
               </div>
 
               {mode !== "pipeline" && (
-              <aside className="min-h-0 overflow-y-auto border border-[#EFEDE6]/[0.14] bg-[#0A0A0A]">
+              <aside className="min-h-0 overflow-y-auto border border-[#f3f5f8]/[0.14] bg-[#111319]">
                 {selectedLead ? (
                   <div className="flex min-h-full flex-col">
-                    <div className="border-b border-[#EFEDE6]/10 p-5">
+                    <div className="border-b border-[#f3f5f8]/10 p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Selected opportunity</p>
-                          <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#EFEDE6]">{selectedLead.name}</h3>
-                          <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Selected opportunity</p>
+                          <h3 className="mt-2 font-display text-2xl font-black leading-tight text-[#f3f5f8]">{selectedLead.name}</h3>
+                          <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{selectedLead.category.replace(/_/g, " ") || "No industry"}</p>
                         </div>
-                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-sky-300 bg-sky-100 text-sky-800" : "border-[#DDFB1F] bg-[#F5FF3D] text-[#102B2F]"}`}>
+                        <span className={`shrink-0 border px-2 py-1 font-mono text-[10px] uppercase tracking-widest ${isContactedLead(selectedLead) ? "border-sky-300 bg-sky-100 text-sky-800" : "border-[#DDFB1F] bg-[#e8fb52] text-[#102B2F]"}`}>
                           {isContactedLead(selectedLead) ? "Contacted" : "Not contacted"}
                         </span>
                       </div>
@@ -889,7 +889,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                         <button
                           onClick={() => selectedLead.phone && handleCopyField(`${selectedLead.id}-phone-primary`, selectedLead.phone, "Phone copied")}
                           disabled={!selectedLead.phone}
-                          className="inline-flex h-12 items-center justify-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:border-[#EFEDE6]/10 disabled:bg-[#EFEDE6]/10 disabled:text-[#67645B]"
+                          className="inline-flex h-12 items-center justify-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black transition-colors hover:bg-[#f3ff8a] disabled:cursor-not-allowed disabled:border-[#f3f5f8]/10 disabled:bg-[#f3f5f8]/10 disabled:text-[#5d6675]"
                         >
                           {copiedKeys.has(`${selectedLead.id}-phone-primary`) ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                           {selectedLead.phone ? `Copy ${selectedLead.phone}` : "No phone number"}
@@ -898,7 +898,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                           <button
                             onClick={() => selectedLead.emails[0] && handleCopyField(`${selectedLead.id}-email`, selectedLead.emails[0], "Email copied")}
                             disabled={!selectedLead.emails[0]}
-                            className="inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D] disabled:opacity-30"
+                            className="inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52] disabled:opacity-30"
                           >
                             <Mail className="h-3.5 w-3.5" /> Email
                           </button>
@@ -906,7 +906,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                             href={selectedLead.website || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]" : "pointer-events-none text-[#67645B] opacity-30"}`}
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.website ? "text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
                           >
                             <Globe className="h-3.5 w-3.5" /> Site
                           </a>
@@ -914,7 +914,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                             href={selectedLead.linkedinUrl || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#A8A59C] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#67645B] opacity-30"}`}
+                            className={`inline-flex h-10 items-center justify-center gap-1.5 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest ${selectedLead.linkedinUrl ? "text-[#9aa3b2] hover:border-[#0A66C2] hover:text-[#4A9BE8]" : "pointer-events-none text-[#5d6675] opacity-30"}`}
                           >
                             <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                           </a>
@@ -923,23 +923,23 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                     </div>
 
                     <div className="space-y-5 p-5">
-                      <section className="border border-[#EFEDE6]/10 bg-black p-4">
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Person</p>
-                        <p className="mt-2 text-sm font-semibold text-[#EFEDE6]">{selectedContact?.fullName || selectedContact?.email || "No person listed"}</p>
-                        {selectedContact?.title && <p className="mt-1 text-sm text-[#A8A59C]">{selectedContact.title}</p>}
-                        {selectedContact?.email && <p className="mt-2 truncate font-mono text-[11px] text-[#F5FF3D]">{selectedContact.email}</p>}
+                      <section className="border border-[#f3f5f8]/10 bg-black p-4">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Person</p>
+                        <p className="mt-2 text-sm font-semibold text-[#f3f5f8]">{selectedContact?.fullName || selectedContact?.email || "No person listed"}</p>
+                        {selectedContact?.title && <p className="mt-1 text-sm text-[#9aa3b2]">{selectedContact.title}</p>}
+                        {selectedContact?.email && <p className="mt-2 truncate font-mono text-[11px] text-[#e8fb52]">{selectedContact.email}</p>}
                       </section>
 
                       <section className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <label>
-                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Status</span>
+                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Status</span>
                             <select value={selectedLead.crm_status} onChange={event => patchLead(selectedLead.id, { crm_status: event.target.value as CrmStatus })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${statusTone[selectedLead.crm_status]}`}>
                               {statusOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
                           </label>
                           <label>
-                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority</span>
+                            <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Priority</span>
                             <select value={selectedLead.crm_priority} onChange={event => patchLead(selectedLead.id, { crm_priority: event.target.value as CrmPriority })} className={`h-10 w-full border bg-black px-3 font-mono text-[10px] uppercase tracking-widest outline-none ${priorityTone[selectedLead.crm_priority]}`}>
                               {priorityOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
@@ -947,46 +947,46 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                         </div>
 
                         <label>
-                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Follow-up</span>
-                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full border bg-black px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#F5FF3D] text-[#F5FF3D]" : "border-[#EFEDE6]/10 text-[#A8A59C]"}`} />
+                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Follow-up</span>
+                          <input type="date" value={toDateInputValue(selectedLead.next_follow_up_at)} onChange={event => patchLead(selectedLead.id, { next_follow_up_at: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : null })} className={`h-10 w-full border bg-black px-3 font-mono text-[11px] outline-none ${isDue(selectedLead) ? "border-[#e8fb52] text-[#e8fb52]" : "border-[#f3f5f8]/10 text-[#9aa3b2]"}`} />
                         </label>
 
-                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 border border-[#EFEDE6]/10 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]">
+                        <button onClick={() => markContacted(selectedLead)} className="inline-flex h-10 w-full items-center justify-center gap-2 border border-[#f3f5f8]/10 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]">
                           <Send className="h-3.5 w-3.5" /> Mark contacted
                         </button>
 
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
                           Last contacted: {selectedLead.last_contacted_at ? new Date(selectedLead.last_contacted_at).toLocaleDateString() : "-"}
                         </p>
                       </section>
 
                       <section>
                         <label>
-                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Notes</span>
+                          <span className="mb-1 block font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Notes</span>
                           <textarea
                             value={selectedLead.crm_notes}
                             onChange={event => setLeads(current => current.map(item => item.id === selectedLead.id ? { ...item, crm_notes: event.target.value } : item))}
                             onBlur={event => patchLead(selectedLead.id, { crm_notes: event.target.value })}
                             placeholder="Add next step, objection, pitch angle..."
-                            className="h-32 w-full resize-none border border-[#EFEDE6]/10 bg-black p-3 text-sm leading-6 text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                            className="h-32 w-full resize-none border border-[#f3f5f8]/10 bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/70"
                           />
                         </label>
                       </section>
 
-                      <section className="space-y-2 border-t border-[#EFEDE6]/10 pt-4">
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Business</p>
-                        <p className="text-sm text-[#A8A59C]">{selectedLead.address || "No address listed"}</p>
-                        {selectedLead.intelligence?.positioning && <p className="text-sm leading-6 text-[#A8A59C]">{selectedLead.intelligence.positioning}</p>}
+                      <section className="space-y-2 border-t border-[#f3f5f8]/10 pt-4">
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Business</p>
+                        <p className="text-sm text-[#9aa3b2]">{selectedLead.address || "No address listed"}</p>
+                        {selectedLead.intelligence?.positioning && <p className="text-sm leading-6 text-[#9aa3b2]">{selectedLead.intelligence.positioning}</p>}
                         {selectedLead.selected_service && (
-                          <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Service sold: {selectedLead.selected_service}</p>
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Service sold: {selectedLead.selected_service}</p>
                         )}
                         {selectedLead.intelligence?.opportunityScore !== undefined && (
                           <div>
-                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Opportunity score</p>
+                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Opportunity score</p>
                             <div className="flex items-center gap-3">
-                              <span className="font-mono text-xl font-black text-[#F5FF3D]">{selectedLead.intelligence.opportunityScore}</span>
-                              <div className="h-1.5 flex-1 bg-[#EFEDE6]/10">
-                                <div className="h-full bg-[#F5FF3D]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
+                              <span className="font-mono text-xl font-black text-[#e8fb52]">{selectedLead.intelligence.opportunityScore}</span>
+                              <div className="h-1.5 flex-1 bg-[#f3f5f8]/10">
+                                <div className="h-full bg-[#e8fb52]" style={{ width: `${selectedLead.intelligence.opportunityScore}%` }} />
                               </div>
                             </div>
                           </div>
@@ -996,9 +996,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
                   </div>
                 ) : (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
-                    <Archive className="mb-4 h-9 w-9 text-[#67645B]" />
-                    <p className="font-display text-xl font-bold text-[#EFEDE6]">Select an opportunity</p>
-                    <p className="mt-2 text-sm text-[#A8A59C]">Pick a prospect from the list to review public contact data and next steps.</p>
+                    <Archive className="mb-4 h-9 w-9 text-[#5d6675]" />
+                    <p className="font-display text-xl font-bold text-[#f3f5f8]">Select an opportunity</p>
+                    <p className="mt-2 text-sm text-[#9aa3b2]">Pick a prospect from the list to review public contact data and next steps.</p>
                   </div>
                 )}
               </aside>
@@ -1006,14 +1006,14 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox" }: ViewAllLeadsPr
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
                 {linkedInCount} with LinkedIn · {personNameCount} with person names
               </p>
               <div className="flex gap-2">
-                <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30">
+                <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
                   {emailsCopied ? "Copied emails" : "Copy visible emails"}
                 </button>
-                <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]">
+                <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#f3ff8a]">
                   <Download className="h-3.5 w-3.5" /> Export opportunities
                 </button>
               </div>

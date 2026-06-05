@@ -444,6 +444,7 @@ export type Database = {
           depth: string | null
           enrich_mode: boolean
           selected_service: string | null
+          opportunity_signals: string[]
           usage_type: string
           status: string
           lead_count: number
@@ -461,6 +462,7 @@ export type Database = {
           depth?: string | null
           enrich_mode?: boolean
           selected_service?: string | null
+          opportunity_signals?: string[]
           usage_type?: string
           status?: string
           lead_count?: number
@@ -478,6 +480,7 @@ export type Database = {
           depth?: string | null
           enrich_mode?: boolean
           selected_service?: string | null
+          opportunity_signals?: string[]
           usage_type?: string
           status?: string
           lead_count?: number

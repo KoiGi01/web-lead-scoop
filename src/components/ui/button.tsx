@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-none font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F5FF3D]/40",
+  "inline-flex items-center justify-center gap-2 rounded-none font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8fb52]/40",
   {
     variants: {
       variant: {
         primary:
-          "bg-[#F5FF3D] text-black border border-[#F5FF3D] hover:bg-[#FFFE7A] hover:border-[#FFFE7A] active:scale-[0.98]",
+          "bg-[#e8fb52] text-black border border-[#e8fb52] hover:bg-[#f3ff8a] hover:border-[#f3ff8a] active:scale-[0.98]",
         accent:
-          "bg-[#F5FF3D] text-black border border-[#F5FF3D] hover:bg-[#FFFE7A] hover:border-[#FFFE7A] active:scale-[0.98]",
+          "bg-[#e8fb52] text-black border border-[#e8fb52] hover:bg-[#f3ff8a] hover:border-[#f3ff8a] active:scale-[0.98]",
         secondary:
-          "bg-transparent text-[#EFEDE6] border border-[#EFEDE6]/25 hover:border-[#EFEDE6] hover:bg-[#EFEDE6]/5",
+          "bg-transparent text-[#f3f5f8] border border-[#f3f5f8]/25 hover:border-[#f3f5f8] hover:bg-[#f3f5f8]/5",
         ghost:
-          "bg-transparent text-[#A8A59C] hover:bg-[#EFEDE6]/5 hover:text-[#EFEDE6]",
+          "bg-transparent text-[#9aa3b2] hover:bg-[#f3f5f8]/5 hover:text-[#f3f5f8]",
         destructive:
           "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20",
-        link: "text-[#F5FF3D] underline-offset-4 hover:underline",
+        link: "text-[#e8fb52] underline-offset-4 hover:underline",
       },
       size: {
         sm: "h-8 px-3 text-xs",

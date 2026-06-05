@@ -20,7 +20,7 @@ const GlobaLeadsLogo = ({
   className,
 }: GlobaLeadsLogoProps) => {
   const { text, width, height } = sizeMap[size];
-  const wordColor = theme === "dark" ? "#EFEDE6" : "#000000";
+  const wordColor = theme === "dark" ? "#f3f5f8" : "#000000";
 
   if (showMark) {
     return (
@@ -46,7 +46,7 @@ const GlobaLeadsLogo = ({
         {showText && (
           <span
             style={{
-              fontFamily: "'Archivo', system-ui, sans-serif",
+              fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
               fontWeight: 800,
               fontSize: text,
               letterSpacing: "-0.01em",
@@ -58,7 +58,7 @@ const GlobaLeadsLogo = ({
             GlobaLeads
             <sup
               style={{
-                color: "#F5FF3D",
+                color: "#e8fb52",
                 fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                 fontSize: Math.max(9, Math.round(text * 0.66)),
                 fontWeight: 600,
@@ -80,7 +80,7 @@ const GlobaLeadsLogo = ({
     >
       <span
         style={{
-          fontFamily: "'Archivo', system-ui, sans-serif",
+          fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
           fontWeight: 700,
           fontSize: text,
           letterSpacing: "-0.01em",
@@ -90,7 +90,7 @@ const GlobaLeadsLogo = ({
         <span style={{ color: wordColor }}>GlobaLeads</span>
         <sup
           style={{
-            color: "#F5FF3D",
+            color: "#e8fb52",
             fontFamily: "'JetBrains Mono', ui-monospace, monospace",
             fontSize: Math.max(9, Math.round(text * 0.66)),
             fontWeight: 500,

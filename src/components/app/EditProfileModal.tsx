@@ -97,14 +97,14 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && !saving && onClose()}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#EFEDE6]/10 bg-black p-0 text-[#EFEDE6] shadow-2xl sm:max-w-2xl">
-        <div className="h-1 w-full bg-[#F5FF3D]" />
+      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#f3f5f8]/10 bg-black p-0 text-[#f3f5f8] shadow-2xl sm:max-w-2xl">
+        <div className="h-1 w-full bg-[#e8fb52]" />
         <div className="p-5 sm:p-7">
           <DialogHeader className="mb-6 text-left">
-            <DialogTitle className="font-display text-2xl font-black text-[#EFEDE6]">
+            <DialogTitle className="font-display text-2xl font-black text-[#f3f5f8]">
               Edit profile
             </DialogTitle>
-            <p className="text-sm leading-6 text-[#A8A59C]">
+            <p className="text-sm leading-6 text-[#9aa3b2]">
               Keep your company and search defaults up to date.
             </p>
           </DialogHeader>
@@ -131,12 +131,12 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
               <Field label="Deal size" value={pricingTier} onChange={setPricingTier} />
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 border border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] p-3 text-sm text-[#A8A59C]">
+            <label className="flex cursor-pointer items-center gap-3 border border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] p-3 text-sm text-[#9aa3b2]">
               <input
                 type="checkbox"
                 checked={sellsOnline}
                 onChange={(event) => setSellsOnline(event.target.checked)}
-                className="h-4 w-4 accent-[#F5FF3D]"
+                className="h-4 w-4 accent-[#e8fb52]"
               />
               I can work with customers outside my local area
             </label>
@@ -169,12 +169,12 @@ const Field = ({
   placeholder?: string;
 }) => (
   <label className="grid gap-1.5">
-    <span className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">{label}</span>
+    <span className="font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">{label}</span>
     <input
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+      className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
     />
   </label>
 );

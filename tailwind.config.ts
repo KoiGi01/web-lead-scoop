@@ -17,10 +17,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading:  ["'Archivo'", "'Space Grotesk'", "sans-serif"],
-        display:  ["'Archivo'", "system-ui", "sans-serif"],
+        heading:  ["'Bricolage Grotesque'", "system-ui", "sans-serif"],
+        display:  ["'Bricolage Grotesque'", "system-ui", "sans-serif"],
         serif:    ["'Newsreader'", "'Times New Roman'", "serif"],
-        body:     ["'Inter'", "sans-serif"],
+        body:     ["'Hanken Grotesk'", "sans-serif"],
+        sans:     ["'Hanken Grotesk'", "system-ui", "sans-serif"],
         mono:     ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
       colors: {
@@ -69,59 +70,60 @@ export default {
           ring:                 "hsl(var(--sidebar-ring))",
         },
 
-        // ── Landing page palette (v5 design) ─────────────────────────────────
-        // Pure black ground + bone paper + electric yellow accent
+        // ── "Instrument" workspace palette ───────────────────────────────────
+        // near-black ground + cool-grey text + citron accent
+        black:   "#0a0b0e",   // remap canvas: bg-black/text-black -> near-black
         paper: {
-          DEFAULT: "#EFEDE6",
-          dim:     "#A8A59C",
-          mid:     "#67645B",
-          low:     "#3A3833",
+          DEFAULT: "#f3f5f8",
+          dim:     "#9aa3b2",
+          mid:     "#5d6675",
+          low:     "#3a414e",
         },
         lemon: {
-          DEFAULT: "#F5FF3D",
-          soft:    "#FFFE7A",
+          DEFAULT: "#e8fb52",
+          soft:    "#f3ff8a",
         },
 
-        // ── App palette (wine/petrol/cream) ───────────────────────────────────
-        // Deep aubergine wine — accent, links, badges, logo mark
+        // ── Legacy app scales, remapped to the "Instrument" system ────────────
+        // wine -> citron accent
         wine: {
-          50:  "#F9EFF5",
-          100: "#F0DAE6",
-          200: "#E0B5CC",
-          300: "#C788A7",
-          400: "#A05F84",
-          500: "#7A3D63",
-          600: "#5E2D4B",
-          700: "#4D243D",
-          800: "#3A1B2E",
-          900: "#251220",
+          50:  "#fbffe0",
+          100: "#f6ffc0",
+          200: "#f1ff97",
+          300: "#f3ff8a",
+          400: "#edfd6e",
+          500: "#e8fb52",
+          600: "#d4e83f",
+          700: "#c9e02f",
+          800: "#a3b71f",
+          900: "#7c8c14",
         },
-        // Deep teal-black — primary dark background canvas
+        // petrol -> cool near-black surface scale
         petrol: {
-          50:  "#E0F0F2",
-          100: "#B5DBDF",
-          200: "#7FB9C0",
-          300: "#4D9099",
-          400: "#2C6B73",
-          500: "#1A4F56",
-          600: "#0F3A40",
-          700: "#082E33",
-          800: "#042B2F",
-          900: "#00272B",
-          950: "#001A1D",
+          50:  "#e9edf3",
+          100: "#c3c9d4",
+          200: "#9aa3b2",
+          300: "#5d6675",
+          400: "#3a414e",
+          500: "#272c38",
+          600: "#1d212c",
+          700: "#161922",
+          800: "#111319",
+          900: "#0a0b0e",
+          950: "#07080a",
         },
-        // Warm parchment cream — primary text on dark, light theme surfaces
+        // cream -> cool light-grey text scale
         cream: {
-          50:  "#FAF5EC",
-          100: "#ECDCC9",
-          200: "#DCC5A8",
-          300: "#C5A983",
-          400: "#A88862",
-          500: "#8B6B47",
-          600: "#6E5436",
-          700: "#523F28",
-          800: "#3A2C1C",
-          900: "#1F1810",
+          50:  "#ffffff",
+          100: "#f3f5f8",
+          200: "#e3e7ee",
+          300: "#9aa3b2",
+          400: "#7b8494",
+          500: "#5d6675",
+          600: "#474e5b",
+          700: "#343a45",
+          800: "#21262f",
+          900: "#12151b",
         },
       },
 

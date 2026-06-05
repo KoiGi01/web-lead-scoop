@@ -204,15 +204,15 @@ const LocationAutocomplete = ({
             disabled={disabled}
             autoComplete="off"
             className={`w-full h-12 bg-black ${
-              hasError ? "border border-[#ff4757]" : "border border-[#EFEDE6]/10"
-            } focus:border-[#F5FF3D]/70 text-[#EFEDE6] text-sm font-mono placeholder:text-[#67645B] outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+              hasError ? "border border-[#ff4757]" : "border border-[#f3f5f8]/10"
+            } focus:border-[#e8fb52]/70 text-[#f3f5f8] text-sm font-mono placeholder:text-[#5d6675] outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
             style={{ paddingLeft: "2.5rem", paddingRight: "1rem", borderRadius: "0px" }}
           />
         </div>
 
         {/* Loading spinner */}
         {isLoading && (
-          <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#F5FF3D] animate-spin pointer-events-none" />
+          <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#e8fb52] animate-spin pointer-events-none" />
         )}
       </div>
 
@@ -220,7 +220,7 @@ const LocationAutocomplete = ({
       {isOpen && predictions.length > 0
         && createPortal(
           <div
-            className="fixed z-50 bg-[#0A0A0A] border border-[#EFEDE6]/10 shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden"
+            className="fixed z-50 bg-[#111319] border border-[#f3f5f8]/10 shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden"
             style={{
               borderRadius: "0px",
               top: `${dropdownPosition.top}px`,
@@ -233,17 +233,17 @@ const LocationAutocomplete = ({
                 key={pred.placeId}
                 className={`w-full px-4 py-3 text-left transition-colors flex items-center gap-3 border-l-2 ${
                   idx === highlightedIndex
-                    ? "bg-[#F5FF3D]/10 border-[#F5FF3D]"
-                    : "border-transparent hover:bg-[#EFEDE6]/[0.05] hover:border-[#EFEDE6]/20"
+                    ? "bg-[#e8fb52]/10 border-[#e8fb52]"
+                    : "border-transparent hover:bg-[#f3f5f8]/[0.05] hover:border-[#f3f5f8]/20"
                 }`}
                 onMouseEnter={() => setHighlightedIndex(idx)}
                 onClick={() => handleSelectPrediction(pred)}
               >
-                <MapPin className="h-3.5 w-3.5 text-[#67645B] flex-shrink-0" />
+                <MapPin className="h-3.5 w-3.5 text-[#5d6675] flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[#EFEDE6] text-sm font-mono truncate">{pred.mainText}</div>
+                  <div className="text-[#f3f5f8] text-sm font-mono truncate">{pred.mainText}</div>
                   {pred.secondaryText && (
-                    <div className="text-[#A8A59C] text-xs truncate">{pred.secondaryText}</div>
+                    <div className="text-[#9aa3b2] text-xs truncate">{pred.secondaryText}</div>
                   )}
                 </div>
               </button>

@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 @tailwind base;
@@ -18,46 +18,48 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 @layer base {
-  /* ── Dark theme (default) ─────────────────────────────────────────────── */
+  /* ── Dark theme (default) — "Instrument" system ───────────────────────────
+     near-black surfaces · citron accent · cool-grey text
+     --bg #0a0b0e · --surf #111319 · --surf-2 #161922 · --acc #e8fb52 · --text #f3f5f8 */
   :root {
-    --background:              186 100% 8%;   /* petrol-900  #00272B */
-    --foreground:              33 47% 86%;    /* cream-100   #ECDCC9 */
+    --background:              225 18% 5%;    /* #0a0b0e */
+    --foreground:              216 29% 96%;   /* #f3f5f8 */
 
-    --card:                    185 84% 10%;   /* petrol-800  #042B2F */
-    --card-foreground:         33 47% 86%;
+    --card:                    225 19% 8%;    /* #111319 surf */
+    --card-foreground:         216 29% 96%;
 
-    --popover:                 185 76% 12%;   /* petrol-700  #082E33 */
-    --popover-foreground:      33 47% 86%;
+    --popover:                 221 21% 11%;   /* #161922 surf-2 */
+    --popover-foreground:      216 29% 96%;
 
-    --primary:                 33 47% 86%;    /* cream-100 — Aesop button bg */
-    --primary-foreground:      186 100% 8%;   /* petrol-900 — text on cream btn */
+    --primary:                 67 91% 65%;    /* citron #e8fb52 — primary actions */
+    --primary-foreground:      225 30% 5%;    /* near-black text on citron */
 
-    --secondary:               185 84% 10%;   /* petrol-800 */
-    --secondary-foreground:    33 47% 86%;
+    --secondary:               221 21% 11%;   /* #161922 */
+    --secondary-foreground:    216 29% 96%;
 
-    --muted:                   185 76% 12%;   /* petrol-700 */
-    --muted-foreground:        33 26% 64%;    /* cream-300 approx */
+    --muted:                   221 21% 11%;
+    --muted-foreground:        218 14% 65%;   /* #9aa3b2 */
 
-    --accent:                  323 36% 22%;   /* wine-700   #4D243D */
-    --accent-foreground:       33 47% 86%;
+    --accent:                  67 91% 65%;    /* citron #e8fb52 */
+    --accent-foreground:       225 30% 5%;
 
-    --destructive:             0 84% 60%;
-    --destructive-foreground:  33 47% 86%;
+    --destructive:             4 100% 64%;    /* #ff5c49 */
+    --destructive-foreground:  216 29% 96%;
 
-    --border:                  186 28% 15%;   /* subtle cream-tint on petrol */
-    --input:                   185 84% 10%;   /* petrol-800 */
-    --ring:                    323 36% 22%;   /* wine-700 focus ring */
+    --border:                  220 15% 16%;   /* hairline on near-black */
+    --input:                   221 18% 14%;
+    --ring:                    67 91% 65%;    /* citron focus ring */
 
     --radius: 0.5rem;
 
-    --sidebar-background:      186 100% 8%;
-    --sidebar-foreground:      33 47% 86%;
-    --sidebar-primary:         33 47% 86%;
-    --sidebar-primary-foreground: 186 100% 8%;
-    --sidebar-accent:          185 84% 10%;
-    --sidebar-accent-foreground: 33 47% 86%;
-    --sidebar-border:          186 28% 15%;
-    --sidebar-ring:            323 36% 22%;
+    --sidebar-background:      222 16% 6%;    /* #0d0f13 bg-1 */
+    --sidebar-foreground:      216 29% 96%;
+    --sidebar-primary:         67 91% 65%;
+    --sidebar-primary-foreground: 225 30% 5%;
+    --sidebar-accent:          221 21% 11%;
+    --sidebar-accent-foreground: 216 29% 96%;
+    --sidebar-border:          220 15% 16%;
+    --sidebar-ring:            67 91% 65%;
   }
 
   /* ── Light theme (.light class on marketing pages) ────────────────────── */
@@ -112,7 +114,7 @@
 
   body {
     @apply antialiased;
-    font-family: 'Archivo', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
     font-size: 15px;
@@ -134,16 +136,16 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Archivo', sans-serif;
+    font-family: 'Bricolage Grotesque', sans-serif;
     letter-spacing: -0.02em;
     color: hsl(var(--foreground));
     line-height: 1.2;
   }
 
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #000; }
-  ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #333; }
+  ::-webkit-scrollbar-track { background: #0a0b0e; }
+  ::-webkit-scrollbar-thumb { background: #1d212c; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2a2f3a; }
 }
 
 /* Authenticated app theme bridge.
@@ -458,8 +460,8 @@
 @layer utilities {
 
   /* Typography */
-  .font-heading { font-family: 'Space Grotesk', sans-serif; }
-  .font-body    { font-family: 'Inter', -apple-system, sans-serif; }
+  .font-heading { font-family: 'Bricolage Grotesque', sans-serif; }
+  .font-body    { font-family: 'Hanken Grotesk', -apple-system, sans-serif; }
   .font-mono    { font-family: 'JetBrains Mono', monospace; }
 
   /* Label — small mono cap labels (// SECTION style, used sparingly) */

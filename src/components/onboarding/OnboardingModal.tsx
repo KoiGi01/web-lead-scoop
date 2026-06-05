@@ -144,8 +144,8 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && !saving && void saveProfile(true)}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#EFEDE6]/10 bg-black p-0 text-[#EFEDE6] shadow-2xl sm:max-w-xl">
-        <div className="h-1 w-full bg-[#F5FF3D]" />
+      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#f3f5f8]/10 bg-black p-0 text-[#f3f5f8] shadow-2xl sm:max-w-xl">
+        <div className="h-1 w-full bg-[#e8fb52]" />
         <div className="p-5 sm:p-7">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div className="flex gap-1.5">
@@ -153,7 +153,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 <span
                   key={item}
                   className={`h-1.5 rounded-full transition-all ${
-                    item <= step ? "w-8 bg-[#F5FF3D]" : "w-3 bg-[#EFEDE6]/15"
+                    item <= step ? "w-8 bg-[#e8fb52]" : "w-3 bg-[#f3f5f8]/15"
                   }`}
                 />
               ))}
@@ -162,19 +162,19 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
               type="button"
               onClick={() => void saveProfile(true)}
               disabled={saving}
-              className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:text-[#EFEDE6] disabled:opacity-50"
+              className="font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] transition-colors hover:text-[#f3f5f8] disabled:opacity-50"
             >
               Skip
             </button>
           </div>
 
           <DialogHeader className="mb-6 text-left">
-            <DialogTitle className="font-display text-2xl font-black text-[#EFEDE6]">
+            <DialogTitle className="font-display text-2xl font-black text-[#f3f5f8]">
               {step === 1 && "What do you sell?"}
               {step === 2 && "Who should we help you find?"}
               {step === 3 && "Set your search defaults"}
             </DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+            <DialogDescription className="text-sm leading-6 text-[#9aa3b2]">
               {step === 1 && "This helps rank leads around the kind of work you actually want."}
               {step === 2 && "Pick the buyer type closest to your first campaign."}
               {step === 3 && "You can still search any niche or country later."}
@@ -188,7 +188,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 placeholder="Your name"
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
-                className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
               />
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -197,14 +197,14 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   placeholder="Company name"
                   value={companyName}
                   onChange={(event) => setCompanyName(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
                 <input
                   type="text"
                   placeholder="Your role (optional)"
                   value={roleTitle}
                   onChange={(event) => setRoleTitle(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
               </div>
 
@@ -214,19 +214,19 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   placeholder="Company website (optional)"
                   value={companyWebsite}
                   onChange={(event) => setCompanyWebsite(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
                 <input
                   type="tel"
                   placeholder="Phone (optional)"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
               </div>
 
-              <div className="border-t border-[#EFEDE6]/10 pt-4">
-                <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">What do you sell?</p>
+              <div className="border-t border-[#f3f5f8]/10 pt-4">
+                <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">What do you sell?</p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {SERVICE_TYPES.map((service) => (
                     <button
@@ -239,8 +239,8 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                       }}
                       className={`min-h-16 border px-3 py-3 text-left text-sm font-semibold transition-colors ${
                         serviceType === service
-                          ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
-                          : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                          ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                          : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] text-[#f3f5f8] hover:border-[#f3f5f8]/30"
                       }`}
                     >
                       {serviceType === service && <Check className="mb-2 h-3.5 w-3.5" />}
@@ -258,8 +258,8 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 }}
                 className={`w-full border px-3 py-3 text-left text-sm font-semibold transition-colors ${
                   serviceType === "Other"
-                    ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
-                    : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                    ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                    : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] text-[#f3f5f8] hover:border-[#f3f5f8]/30"
                 }`}
               >
                 Other
@@ -272,7 +272,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   placeholder="Example: commercial cleaning, recruiting, software"
                   value={serviceOther}
                   onChange={(event) => setServiceOther(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
               )}
 
@@ -294,8 +294,8 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                     }}
                     className={`flex min-h-14 items-center gap-3 border px-3 py-3 text-left transition-colors ${
                       selected
-                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
-                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] text-[#EFEDE6] hover:border-[#EFEDE6]/30"
+                        ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                        : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] text-[#f3f5f8] hover:border-[#f3f5f8]/30"
                     }`}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />
@@ -320,21 +320,21 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                     }}
                     className={`min-h-24 border p-3 text-left transition-colors ${
                       pricingTier === tier.value
-                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10"
-                        : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] hover:border-[#EFEDE6]/30"
+                        ? "border-[#e8fb52] bg-[#e8fb52]/10"
+                        : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] hover:border-[#f3f5f8]/30"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-bold text-[#EFEDE6]">{tier.label}</span>
-                      {pricingTier === tier.value && <Check className="h-4 w-4 text-[#F5FF3D]" />}
+                      <span className="text-sm font-bold text-[#f3f5f8]">{tier.label}</span>
+                      {pricingTier === tier.value && <Check className="h-4 w-4 text-[#e8fb52]" />}
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-[#A8A59C]">{tier.description}</p>
+                    <p className="mt-2 text-xs leading-5 text-[#9aa3b2]">{tier.description}</p>
                   </button>
                 ))}
               </div>
 
               <label className="block">
-                <span className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
+                <span className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">
                   Preferred market
                 </span>
                 <input
@@ -342,16 +342,16 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   placeholder="Example: United States, Mexico, Miami"
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
-                  className="h-11 w-full border border-[#EFEDE6]/10 bg-[#050505] px-3 text-sm text-[#EFEDE6] outline-none transition-colors placeholder:text-[#67645B] focus:border-[#F5FF3D]"
+                  className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                 />
               </label>
 
-              <label className="flex cursor-pointer items-center gap-3 border border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.03] p-3 text-sm text-[#A8A59C]">
+              <label className="flex cursor-pointer items-center gap-3 border border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] p-3 text-sm text-[#9aa3b2]">
                 <input
                   type="checkbox"
                   checked={sellsOnline}
                   onChange={(event) => setSellsOnline(event.target.checked)}
-                  className="h-4 w-4 accent-[#F5FF3D]"
+                  className="h-4 w-4 accent-[#e8fb52]"
                 />
                 I can work with customers outside my local area
               </label>

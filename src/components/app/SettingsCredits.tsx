@@ -27,56 +27,56 @@ const SettingsCredits = ({
   onSignOut,
 }: SettingsCreditsProps) => {
   return (
-    <section className="flex flex-1 flex-col overflow-hidden bg-black text-[#EFEDE6]">
+    <section className="flex flex-1 flex-col overflow-hidden bg-black text-[#f3f5f8]">
       <div className="flex min-h-0 flex-1 flex-col px-4 py-3 sm:px-6">
-        <div className="mb-3 border-b border-[#EFEDE6]/[0.14] pb-3">
-          <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[#F5FF3D]">Settings & Credits</p>
-          <h2 className="font-display text-2xl font-black leading-none tracking-[-0.04em] text-[#EFEDE6]">
+        <div className="mb-3 border-b border-[#f3f5f8]/[0.14] pb-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[#e8fb52]">Settings & Credits</p>
+          <h2 className="font-display text-2xl font-black leading-none tracking-[-0.04em] text-[#f3f5f8]">
             Account
           </h2>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-5">
+          <section className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-5">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-[#EFEDE6]/10 bg-black">
-                <Mail className="h-4 w-4 text-[#F5FF3D]" />
+              <div className="flex h-10 w-10 items-center justify-center border border-[#f3f5f8]/10 bg-black">
+                <Mail className="h-4 w-4 text-[#e8fb52]" />
               </div>
               <div className="min-w-0">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Signed in as</p>
-                <p className="truncate text-sm font-semibold text-[#EFEDE6]">{user?.email || "No account"}</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Signed in as</p>
+                <p className="truncate text-sm font-semibold text-[#f3f5f8]">{user?.email || "No account"}</p>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="border border-[#EFEDE6]/10 bg-black p-4">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Role</p>
-                <p className="mt-2 font-display text-xl font-bold text-[#EFEDE6]">{isAdmin ? "Admin" : "Workspace user"}</p>
+              <div className="border border-[#f3f5f8]/10 bg-black p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Role</p>
+                <p className="mt-2 font-display text-xl font-bold text-[#f3f5f8]">{isAdmin ? "Admin" : "Workspace user"}</p>
               </div>
-              <div className="border border-[#EFEDE6]/10 bg-black p-4">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Plan</p>
-                <p className="mt-2 font-display text-xl font-bold text-[#EFEDE6]">{PLAN_LABELS[plan]}</p>
+              <div className="border border-[#f3f5f8]/10 bg-black p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Plan</p>
+                <p className="mt-2 font-display text-xl font-bold text-[#f3f5f8]">{PLAN_LABELS[plan]}</p>
               </div>
-              <div className="border border-[#EFEDE6]/10 bg-black p-4">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Plan credits</p>
-                <p className="mt-2 font-display text-xl font-bold text-[#EFEDE6]">{creditsTotal}</p>
+              <div className="border border-[#f3f5f8]/10 bg-black p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Plan credits</p>
+                <p className="mt-2 font-display text-xl font-bold text-[#f3f5f8]">{creditsTotal}</p>
               </div>
             </div>
 
-            <div className="mt-4 border border-[#EFEDE6]/10 bg-black p-4">
+            <div className="mt-4 border border-[#f3f5f8]/10 bg-black p-4">
               <div className="mb-3 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-[#F5FF3D]" />
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Organization</p>
+                <Building2 className="h-4 w-4 text-[#e8fb52]" />
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Organization</p>
               </div>
               {organizationId ? (
                 <div>
-                  <p className="font-display text-lg font-bold text-[#EFEDE6]">{organizationName || "Organization"}</p>
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{organizationId}</p>
+                  <p className="font-display text-lg font-bold text-[#f3f5f8]">{organizationName || "Organization"}</p>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{organizationId}</p>
                 </div>
               ) : (
-                <div className="border border-[#EFEDE6]/10 bg-[#050505] p-3">
-                  <p className="font-display text-base font-bold text-[#EFEDE6]">Team seats coming soon</p>
-                  <p className="mt-1 text-sm leading-6 text-[#A8A59C]">
+                <div className="border border-[#f3f5f8]/10 bg-[#0d0f13] p-3">
+                  <p className="font-display text-base font-bold text-[#f3f5f8]">Team seats coming soon</p>
+                  <p className="mt-1 text-sm leading-6 text-[#9aa3b2]">
                     Pro will add organization seats so multiple people can use the CRM together. This is not available yet.
                   </p>
                 </div>
@@ -86,34 +86,34 @@ const SettingsCredits = ({
             {user && (
               <button
                 onClick={onSignOut}
-                className="mt-5 inline-flex h-10 items-center gap-2 border border-[#EFEDE6]/10 px-4 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-red-400/50 hover:text-red-300"
+                className="mt-5 inline-flex h-10 items-center gap-2 border border-[#f3f5f8]/10 px-4 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-red-400/50 hover:text-red-300"
               >
                 <LogOut className="h-3.5 w-3.5" /> Sign out
               </button>
             )}
           </section>
 
-          <aside className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-5">
+          <aside className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-5">
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-[#F5FF3D]/40 bg-[#F5FF3D]/10">
-                <Zap className="h-4 w-4 text-[#F5FF3D]" />
+              <div className="flex h-10 w-10 items-center justify-center border border-[#e8fb52]/40 bg-[#e8fb52]/10">
+                <Zap className="h-4 w-4 text-[#e8fb52]" />
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Available credits</p>
-                <p className="font-display text-3xl font-black text-[#EFEDE6]">{creditsBalance}</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Available credits</p>
+                <p className="font-display text-3xl font-black text-[#f3f5f8]">{creditsBalance}</p>
               </div>
             </div>
 
-            <div className="mb-5 h-1.5 bg-[#EFEDE6]/10">
+            <div className="mb-5 h-1.5 bg-[#f3f5f8]/10">
               <div
-                className="h-full bg-[#F5FF3D]"
+                className="h-full bg-[#e8fb52]"
                 style={{ width: `${creditsTotal > 0 ? Math.min(100, (creditsBalance / creditsTotal) * 100) : 0}%` }}
               />
             </div>
 
             <button
               onClick={onBuyCredits}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black hover:bg-[#FFFE7A]"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black hover:bg-[#f3ff8a]"
             >
               <CreditCard className="h-4 w-4" /> Upgrade or top up
             </button>

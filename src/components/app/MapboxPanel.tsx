@@ -53,11 +53,11 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
             map.setPaintProperty(layer.id, "background-color", "#000000");
           }
           if (layer.type === "water") {
-            map.setPaintProperty(layer.id, "fill-color", "#050505");
+            map.setPaintProperty(layer.id, "fill-color", "#0d0f13");
           }
           if (layer.type === "land" || layer.id.includes("land")) {
-            map.setPaintProperty(layer.id, "background-color", "#0A0A0A");
-            map.setPaintProperty(layer.id, "fill-color", "#0A0A0A");
+            map.setPaintProperty(layer.id, "background-color", "#111319");
+            map.setPaintProperty(layer.id, "fill-color", "#111319");
           }
           if (layer.id.includes("road") && "line-color" in ((layer as any).paint || {})) {
             map.setPaintProperty(layer.id, "line-color", "rgba(239,237,230,0.18)");
@@ -69,7 +69,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
           }
           if (layer.type === "symbol" && layer.id.includes("label")) {
             if ("text-color" in ((layer as any).paint || {})) {
-              map.setPaintProperty(layer.id, "text-color", "#A8A59C");
+              map.setPaintProperty(layer.id, "text-color", "#9aa3b2");
             }
             if ("text-halo-color" in ((layer as any).paint || {})) {
               map.setPaintProperty(layer.id, "text-halo-color", "#000000");
@@ -167,9 +167,9 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
             "circle-radius": {
               stops: [[0, 0], [20, radiusKm * 1000]] // rough estimation for pixel radius
             },
-            "circle-color": "#F5FF3D",
+            "circle-color": "#e8fb52",
             "circle-opacity": 0.08,
-            "circle-stroke-color": "#F5FF3D",
+            "circle-stroke-color": "#e8fb52",
             "circle-stroke-opacity": 0.42,
             "circle-stroke-width": 1.5
           }
@@ -214,7 +214,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
         const el = document.createElement('div');
         el.style.width = '9px';
         el.style.height = '9px';
-        el.style.backgroundColor = hasEmail ? '#F5FF3D' : '#A8A59C';
+        el.style.backgroundColor = hasEmail ? '#e8fb52' : '#9aa3b2';
         el.style.boxShadow = hasEmail ? '0 0 12px rgba(245,255,61,0.7)' : 'none';
         el.style.borderRadius = '999px';
         
@@ -225,7 +225,7 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
         pulse.style.left = '50%';
         pulse.style.width = '100%';
         pulse.style.height = '100%';
-        pulse.style.backgroundColor = '#F5FF3D';
+        pulse.style.backgroundColor = '#e8fb52';
         pulse.style.transform = 'translate(-50%, -50%)';
         pulse.style.borderRadius = '50%';
         pulse.style.animation = 'dot-pulse 1.5s infinite';
@@ -260,10 +260,10 @@ const MapboxPanel = ({ center, radiusKm, markers, isSearching }: MapboxPanelProp
       >
       </div>
 
-      <div className="absolute bottom-3 right-3 z-10 border border-[#EFEDE6]/10 px-3 py-2" style={{ background: "rgba(0, 0, 0, 0.72)", backdropFilter: "blur(18px)" }}>
-        <div className="flex gap-2 items-center text-[10px] font-mono text-[#A8A59C]">
-          <div className="w-2 h-2 rounded-full bg-[#F5FF3D]"></div> <span className="text-[#EFEDE6]">Lead with contact</span>
-          <div className="w-2 h-2 rounded-full bg-[#A8A59C] ml-4"></div> Lead found
+      <div className="absolute bottom-3 right-3 z-10 border border-[#f3f5f8]/10 px-3 py-2" style={{ background: "rgba(0, 0, 0, 0.72)", backdropFilter: "blur(18px)" }}>
+        <div className="flex gap-2 items-center text-[10px] font-mono text-[#9aa3b2]">
+          <div className="w-2 h-2 rounded-full bg-[#e8fb52]"></div> <span className="text-[#f3f5f8]">Lead with contact</span>
+          <div className="w-2 h-2 rounded-full bg-[#9aa3b2] ml-4"></div> Lead found
         </div>
       </div>
     </div>

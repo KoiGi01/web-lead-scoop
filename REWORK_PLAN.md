@@ -42,10 +42,13 @@ The product should help freelancers, consultants, small agencies, web designers,
 
 ## Phase 3 - Add Opportunity Signal Selection
 
-- [ ] Add service-aware signal chips.
-- [ ] Support signals such as weak website, no online booking, no clear CTA, generic inbox, low review count, no social links, no contact form, and weak local presence.
-- [ ] Store signal preferences with the search session.
-- [ ] Show selected signals in the search preview/agent plan.
+- [x] Add service-aware signal chips.
+- [x] Support signals such as weak website, no online booking, no clear CTA, generic inbox, low review count, no social links, no contact form, and weak local presence.
+- [x] Store signal preferences with the search session.
+- [x] Show selected signals in the search preview/agent plan.
+- [x] Verify Phase 3 with `npm.cmd run build` and `npm.cmd run test`.
+
+Phase 3 note: these are stored search preferences only. They do not filter, score, or claim evidence until Phase 4 signal detection ships.
 
 ## Phase 4 - Rule-Based Signal Detection
 

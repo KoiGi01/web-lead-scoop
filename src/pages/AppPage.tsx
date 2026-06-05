@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bug, CheckCheck, CreditCard, Loader2, LogOut, Moon, Settings, Sun, UserRound } from "lucide-react";
+import { Bug, CheckCheck, CreditCard, Loader2, LogOut, Plus, Settings, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ import CreditsModal from "@/components/app/CreditsModal";
 import EditProfileModal from "@/components/app/EditProfileModal";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
+import HomeDashboard from "@/components/app/HomeDashboard";
 import AppSidebar from "@/components/app/AppSidebar";
 import type { AppSidebarView } from "@/components/app/AppSidebar";
 import AdminDashboard from "@/components/app/AdminDashboard";
@@ -66,6 +67,16 @@ type AppTheme = "light" | "dark";
 type AppViewMode = AppSidebarView;
 type CheckoutConfirmationStatus = "idle" | "confirming" | "success" | "pending" | "error";
 const PAID_WORKSPACE_VIEWS = new Set<AppSidebarView>(["lead-inbox", "pipeline", "follow-ups", "saved-searches"]);
+const VIEW_LABELS: Record<AppSidebarView, string> = {
+  home: "Home",
+  search: "New scan",
+  "lead-inbox": "Prospects",
+  pipeline: "Pipeline",
+  "follow-ups": "Follow-ups",
+  "saved-searches": "Saved scans",
+  settings: "Settings",
+  admin: "Admin",
+};
 
 interface CheckoutConfirmationState {
   open: boolean;
@@ -105,7 +116,7 @@ const AppPage = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [workspaceUpgradeOpen, setWorkspaceUpgradeOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<AppViewMode>("search");
+  const [viewMode, setViewMode] = useState<AppViewMode>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -117,11 +128,8 @@ const AppPage = () => {
     title: "",
     description: "",
   });
-  const [theme, setTheme] = useState<AppTheme>(() => {
-    if (isDemoPreview) return "dark";
-    if (typeof window === "undefined") return "light";
-    return window.localStorage.getItem("globaleads-app-theme") === "dark" ? "dark" : "light";
-  });
+  // v1 of the redesign is dark-only; light mode is deferred (see redesign spec).
+  const [theme] = useState<AppTheme>("dark");
 
   useEffect(() => {
     document.documentElement.classList.toggle("light", theme === "light");
@@ -365,110 +373,104 @@ const AppPage = () => {
   ].join("\n"))}`;
 
   return (
-    <div className={`app-theme ${theme === "light" ? "app-light light" : "app-dark dark"} h-screen flex flex-col relative overflow-hidden bg-black text-[#EFEDE6]`}>
-      {/* ── App Header ── */}
-      <header className="sticky top-0 z-50 border-b border-[#EFEDE6]/[0.14] bg-black/80 backdrop-blur-xl">
-        <div className="flex h-14 w-full items-center">
+    <div className="app-theme app-dark dark relative flex h-screen overflow-hidden bg-[#08090c] text-[#f3f5f8]">
+      {/* ── Full-height sidebar ── */}
+      {user && (
+        <AppSidebar
+          activeView={viewMode}
+          onNavigate={handleNavigate}
+          creditsUsed={Math.max(0, planCredits - creditsBalance)}
+          creditsTotal={planCredits}
+          onViewAdmin={handleViewAdmin}
+          isAdmin={isAdmin}
+          onBuyCredits={() => setCreditsOpen(true)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          userName={String(displayName)}
+          planLabel={isAdmin ? "Admin" : paidBadgeLabel}
+        />
+      )}
 
-          <div
-            className="flex h-full flex-shrink-0 items-center border-r border-[#EFEDE6]/[0.10] px-2 transition-all duration-300 sm:px-3 md:w-56"
-          >
-            <GlobaLeadsLogo
-              size="md"
-              theme={theme === "light" ? "light" : "dark"}
-              className="hidden sm:inline-flex"
-            />
-            <GlobaLeadsLogo
-              size="md"
-              theme={theme === "light" ? "light" : "dark"}
-              showText={false}
-              className="inline-flex sm:hidden"
-            />
-          </div>
+      {/* ── Right column: topbar + scrolling content ── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 flex-shrink-0 items-center gap-4 border-b border-[#f3f5f8]/[0.07] bg-[#08090c] px-4 sm:px-6">
+          {user ? (
+            <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-[#5b6472]">
+              workspace / <span className="text-[#f3f5f8]">{VIEW_LABELS[viewMode]}</span>
+            </span>
+          ) : (
+            <GlobaLeadsLogo size="md" theme="dark" />
+          )}
 
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 px-2 sm:gap-4 sm:px-6">
-            <a
-              href={bugReportHref}
-              className="inline-flex h-9 items-center gap-2 whitespace-nowrap border border-[#F5FF3D] bg-[#F5FF3D] px-2.5 font-mono text-[10px] font-black uppercase tracking-widest text-black shadow-[0_0_24px_rgba(245,255,61,0.22)] transition-colors hover:bg-[#FFFE7A] sm:px-3"
-            >
-              <Bug className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Report bug</span>
-              <span className="sm:hidden">Bug</span>
-            </a>
-            <button
-              type="button"
-              onClick={() => setTheme(current => current === "light" ? "dark" : "light")}
-              className="inline-flex h-9 items-center gap-2 border border-[#EFEDE6]/10 px-2.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] transition-colors hover:border-[#F5FF3D] hover:text-[#EFEDE6] sm:px-3"
-              aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-            >
-              {theme === "light" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{theme === "light" ? "Dark" : "Light"}</span>
-            </button>
+          <div className="ml-auto flex items-center gap-2.5">
+            {user && (
+              <button
+                type="button"
+                onClick={() => handleNavigate("search")}
+                className="inline-flex items-center gap-2 rounded-[10px] bg-[#e8fb52] px-4 py-2 font-display text-[13px] font-semibold text-[#08090c] shadow-[0_6px_18px_rgba(232,251,82,0.16)] transition-colors hover:bg-white"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">New scan</span>
+              </button>
+            )}
             {user ? (
               <>
-                {showPaidBadge && (
-                  <div className="hidden lg:flex items-center gap-2 border border-[#F5FF3D]/60 bg-[#F5FF3D]/10 px-3 py-1.5">
-                    <CheckCheck className="h-3.5 w-3.5 text-[#F5FF3D]" />
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]">
-                      {paidBadgeLabel} member
-                    </span>
-                  </div>
-                )}
-                <div className="hidden md:flex items-center gap-2 border border-[#EFEDE6]/10 px-3 py-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#F5FF3D]" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">
-                    {isAdmin ? "Admin" : `${creditsBalance} credits`}
-                  </span>
-                </div>
+                {/* plan badge + credits now live in the sidebar */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex h-10 items-center gap-2 border border-[#EFEDE6]/10 px-2 pr-3 transition-colors hover:border-[#F5FF3D]/60"
+                      className="inline-flex h-10 items-center gap-2 border border-[#f3f5f8]/10 px-2 pr-3 transition-colors hover:border-[#e8fb52]/60"
                       aria-label="Open account menu"
                     >
-                      <Avatar className="h-7 w-7 border border-[#EFEDE6]/10">
+                      <Avatar className="h-7 w-7 border border-[#f3f5f8]/10">
                         <AvatarImage src={avatarUrl} alt={String(displayName)} />
-                        <AvatarFallback className="bg-[#F5FF3D] font-mono text-[10px] font-black text-black">
+                        <AvatarFallback className="bg-[#e8fb52] font-mono text-[10px] font-black text-black">
                           {fallbackInitials}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="hidden max-w-[160px] truncate font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] sm:block">
+                      <span className="hidden max-w-[160px] truncate font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] sm:block">
                         {profile?.full_name || user.email}
                       </span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 border-[#EFEDE6]/10 bg-black p-1 text-[#EFEDE6]">
+                  <DropdownMenuContent align="end" className="w-64 border-[#f3f5f8]/10 bg-black p-1 text-[#f3f5f8]">
                     <DropdownMenuLabel className="px-3 py-2">
-                      <p className="truncate text-sm font-semibold text-[#EFEDE6]">{displayName}</p>
-                      <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{user.email}</p>
+                      <p className="truncate text-sm font-semibold text-[#f3f5f8]">{displayName}</p>
+                      <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{user.email}</p>
                       {showPaidBadge && (
-                        <span className="mt-2 inline-flex items-center gap-1.5 border border-[#F5FF3D]/50 bg-[#F5FF3D]/10 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]">
+                        <span className="mt-2 inline-flex items-center gap-1.5 border border-[#e8fb52]/50 bg-[#e8fb52]/10 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#e8fb52]">
                           <CheckCheck className="h-3 w-3" />
                           {paidBadgeLabel} member
                         </span>
                       )}
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-[#EFEDE6]/10" />
+                    <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
                     <DropdownMenuItem
                       onClick={() => setEditProfileOpen(true)}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
                     >
                       <UserRound className="h-3.5 w-3.5" /> Edit profile
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setCreditsOpen(true)}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
                     >
                       <CreditCard className="h-3.5 w-3.5" /> Upgrade or top up
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setViewMode("settings")}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#A8A59C] focus:bg-[#F5FF3D]/10 focus:text-[#F5FF3D]"
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
                     >
                       <Settings className="h-3.5 w-3.5" /> Account settings
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-[#EFEDE6]/10" />
+                    <DropdownMenuItem
+                      onClick={() => { window.location.href = bugReportHref; }}
+                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
+                    >
+                      <Bug className="h-3.5 w-3.5" /> Report bug
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
                     <DropdownMenuItem
                       onClick={signOut}
                       className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-red-300 focus:bg-red-500/10 focus:text-red-200"
@@ -484,26 +486,9 @@ const AppPage = () => {
               </Button>
             )}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* ── Main Content with Sidebar ── */}
-      <div className="flex flex-1 overflow-hidden">
-        {user && (
-          <AppSidebar
-            activeView={viewMode}
-            onNavigate={handleNavigate}
-            creditsUsed={Math.max(0, planCredits - creditsBalance)}
-            creditsTotal={planCredits}
-            onViewAdmin={handleViewAdmin}
-            isAdmin={isAdmin}
-            onBuyCredits={() => setCreditsOpen(true)}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
-        )}
-
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1 overflow-y-auto">
           <ErrorBoundary>
             {viewMode === "search" ? (
               <LeadGeneratorSection
@@ -515,6 +500,19 @@ const AppPage = () => {
                 effectivePlan={entitlements.effectivePlan}
                 demoMode={isDemoPreview}
                 opportunityModeEnabled={opportunityModeEnabled}
+              />
+            ) : viewMode === "home" ? (
+              <HomeDashboard
+                userId={user?.id}
+                demoMode={isDemoPreview}
+                userName={String(displayName)}
+                searchHistory={searchHistory}
+                creditsRemaining={creditsBalance}
+                creditsTotal={planCredits}
+                onNewScan={() => handleNavigate("search")}
+                onResumeScan={() => handleNavigate("search")}
+                onViewScans={() => setViewMode("saved-searches")}
+                onViewFollowups={() => handleNavigate("follow-ups")}
               />
             ) : viewMode === "lead-inbox" ? (
               <ViewAllLeads
@@ -565,22 +563,22 @@ const AppPage = () => {
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <Dialog open={workspaceUpgradeOpen} onOpenChange={setWorkspaceUpgradeOpen}>
-        <DialogContent className="border-[#EFEDE6]/15 bg-black text-[#EFEDE6] sm:max-w-md">
+        <DialogContent className="border-[#f3f5f8]/15 bg-black text-[#f3f5f8] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl font-black">
               Unlock the sales workspace
             </DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+            <DialogDescription className="text-sm leading-6 text-[#9aa3b2]">
               Lead Inbox, Pipeline, Follow-ups, and Saved Searches are available on Starter and Growth.
               Upgrade to organize leads, track outreach, and close more deals.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="border border-[#F5FF3D]/30 bg-[#F5FF3D]/10 p-4">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">
+          <div className="border border-[#e8fb52]/30 bg-[#e8fb52]/10 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">
               Starter and Growth unlock all current app capabilities
             </p>
-            <p className="mt-2 text-sm text-[#EFEDE6]">
+            <p className="mt-2 text-sm text-[#f3f5f8]">
               Full search quality, lead inbox, pipeline, follow-ups, saved searches, and exports.
             </p>
           </div>
@@ -589,7 +587,7 @@ const AppPage = () => {
             <button
               type="button"
               onClick={() => setWorkspaceUpgradeOpen(false)}
-              className="h-10 border border-[#EFEDE6]/10 px-4 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#EFEDE6]/30 hover:text-[#EFEDE6]"
+              className="h-10 border border-[#f3f5f8]/10 px-4 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#f3f5f8]/30 hover:text-[#f3f5f8]"
             >
               Not now
             </button>
@@ -599,7 +597,7 @@ const AppPage = () => {
                 setWorkspaceUpgradeOpen(false);
                 setCreditsOpen(true);
               }}
-              className="h-10 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black hover:bg-[#FFFE7A]"
+              className="h-10 border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black hover:bg-[#f3ff8a]"
             >
               Upgrade now
             </button>
@@ -610,27 +608,27 @@ const AppPage = () => {
         open={checkoutConfirmation.open}
         onOpenChange={open => setCheckoutConfirmation(current => ({ ...current, open }))}
       >
-        <DialogContent className="border-[#EFEDE6]/15 bg-black text-[#EFEDE6] sm:max-w-md">
+        <DialogContent className="border-[#f3f5f8]/15 bg-black text-[#f3f5f8] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 font-display text-xl font-black">
               {checkoutConfirmation.status === "confirming" ? (
-                <Loader2 className="h-5 w-5 animate-spin text-[#F5FF3D]" />
+                <Loader2 className="h-5 w-5 animate-spin text-[#e8fb52]" />
               ) : checkoutConfirmation.status === "success" ? (
-                <CheckCheck className="h-5 w-5 text-[#F5FF3D]" />
+                <CheckCheck className="h-5 w-5 text-[#e8fb52]" />
               ) : (
-                <CreditCard className="h-5 w-5 text-[#F5FF3D]" />
+                <CreditCard className="h-5 w-5 text-[#e8fb52]" />
               )}
               {checkoutConfirmation.title}
             </DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-[#A8A59C]">
+            <DialogDescription className="text-sm leading-6 text-[#9aa3b2]">
               {checkoutConfirmation.description}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="border border-[#EFEDE6]/10 bg-[#0A0A0A] p-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
-            <p>Type: <span className="text-[#EFEDE6]">{checkoutConfirmation.checkoutType}</span></p>
+          <div className="border border-[#f3f5f8]/10 bg-[#111319] p-3 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
+            <p>Type: <span className="text-[#f3f5f8]">{checkoutConfirmation.checkoutType}</span></p>
             {checkoutConfirmation.sessionId && (
-              <p className="mt-1 truncate">Session: <span className="text-[#EFEDE6]">{checkoutConfirmation.sessionId}</span></p>
+              <p className="mt-1 truncate">Session: <span className="text-[#f3f5f8]">{checkoutConfirmation.sessionId}</span></p>
             )}
           </div>
 
@@ -639,7 +637,7 @@ const AppPage = () => {
               <button
                 type="button"
                 onClick={() => void confirmCheckoutReturn(checkoutConfirmation.checkoutType, checkoutConfirmation.sessionId)}
-                className="h-10 border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black"
+                className="h-10 border border-[#e8fb52] bg-[#e8fb52] px-4 font-display text-sm font-bold text-black"
               >
                 Check again
               </button>

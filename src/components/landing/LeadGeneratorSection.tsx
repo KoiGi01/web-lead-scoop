@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BarChart3,
   Bot,
+  Check,
   CheckCheck,
   Copy,
   Download,
@@ -14,8 +15,10 @@ import {
   Linkedin,
   Loader2,
   Mail,
+  MapPin,
   Paperclip,
   Phone,
+  Play,
   Search,
   Send,
   SlidersHorizontal,
@@ -89,6 +92,15 @@ type Strictness = "broad" | "balanced" | "strict";
 type ProgressStage = "idle" | "maps" | "scrape" | "enrich" | "rank" | "done";
 type SearchMode = "free" | "manual";
 type ChatRole = "user" | "assistant";
+type OpportunitySignalKey =
+  | "weak_website"
+  | "no_booking"
+  | "no_clear_cta"
+  | "generic_inbox"
+  | "low_reviews"
+  | "no_social_links"
+  | "no_contact_form"
+  | "weak_local_presence";
 
 interface SearchStepStatus {
   current: number;
@@ -115,6 +127,7 @@ interface SearchConfig {
   enrichMode: boolean;
   strictness: Strictness;
   required: RequiredContactFilters;
+  opportunitySignals: OpportunitySignalKey[];
   preferPublicEmail: boolean;
   queryVariants?: string[];
 }
@@ -127,6 +140,7 @@ interface FreeSearchPlan {
   enrichMode: boolean;
   strictness: Strictness;
   requiredChannels: string[];
+  opportunitySignals?: OpportunitySignalKey[];
   queryVariants: string[];
   maxResults: number;
   summary: string;
@@ -210,8 +224,8 @@ const HelpHint = ({ children }: { children: ReactNode }) => {
         aria-expanded={open}
         className={`inline-flex h-4 w-4 items-center justify-center rounded-full border font-mono text-[9px] leading-none transition-colors ${
           open
-            ? "border-[#F5FF3D] bg-[#F5FF3D] text-black"
-            : "border-[#EFEDE6]/30 bg-transparent text-[#A8A59C] hover:border-[#F5FF3D] hover:text-[#F5FF3D]"
+            ? "border-[#e8fb52] bg-[#e8fb52] text-black"
+            : "border-[#f3f5f8]/30 bg-transparent text-[#9aa3b2] hover:border-[#e8fb52] hover:text-[#e8fb52]"
         }`}
       >
         ?
@@ -220,7 +234,7 @@ const HelpHint = ({ children }: { children: ReactNode }) => {
         <div
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          className="absolute left-0 top-full z-30 mt-2 w-72 border border-[#EFEDE6]/15 bg-[#0A0A0A] p-3.5 text-xs leading-5 text-[#A8A59C] shadow-[0_12px_32px_rgba(0,0,0,0.65)]"
+          className="absolute left-0 top-full z-30 mt-2 w-72 border border-[#f3f5f8]/15 bg-[#111319] p-3.5 text-xs leading-5 text-[#9aa3b2] shadow-[0_12px_32px_rgba(0,0,0,0.65)]"
           role="tooltip"
         >
           {children}
@@ -263,7 +277,7 @@ const TypewriterText = ({ text, enabled = true, onDone }: { text: string; enable
   return (
     <>
       {displayedText}
-      {enabled && displayedText.length < text.length && <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse bg-[#F5FF3D]" />}
+      {enabled && displayedText.length < text.length && <span className="ml-0.5 inline-block h-4 w-1 translate-y-0.5 animate-pulse bg-[#e8fb52]" />}
     </>
   );
 };
@@ -291,20 +305,20 @@ const ClarificationPanel = ({
   };
 
   return (
-    <div className="mt-4 w-full rounded-md border border-[#EFEDE6]/15 bg-[#11110E]/95 p-4 shadow-[0_18px_48px_rgba(245,255,61,0.08)]">
-      <div className="flex items-start gap-3 border-b border-[#EFEDE6]/10 pb-3">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#F5FF3D]" />
+    <div className="mt-3 w-full rounded-[12px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-4">
+      <div className="flex items-start gap-2.5 border-b border-[#f3f5f8]/[0.07] pb-3">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#e8fb52]" />
         <div>
-          <p className="font-display text-sm font-black text-[#F5FF3D]">Quick clarification</p>
-          <p className="mt-1 text-xs leading-5 text-[#A8A59C]">This helps me tune the search and return better leads.</p>
-      </div>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#e8fb52]">Quick clarification</p>
+          <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">Helps the agent tune the scan and return better prospects.</p>
+        </div>
       </div>
       <div className="grid gap-4 py-4">
         {questions.map(question => (
           <div key={question.id}>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{question.header}</p>
-            <p className="mt-1 text-sm font-semibold text-[#EFEDE6]">{question.question}</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">{question.header}</p>
+            <p className="mt-1 text-[13.5px] font-semibold text-[#f3f5f8]">{question.question}</p>
+            <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
               {[...question.options, "Write my own answer"].map(option => {
                 const value = option === "Write my own answer" ? "__custom" : option;
                 const active = answers[question.id] === value;
@@ -314,14 +328,14 @@ const ClarificationPanel = ({
                     type="button"
                     onClick={() => setAnswers(prev => ({ ...prev, [question.id]: value }))}
                     disabled={disabled}
-                    className={`flex min-h-10 items-center gap-2 rounded border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`flex min-h-[40px] items-center gap-2 rounded-[9px] border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       active
-                        ? "border-[#F5FF3D] bg-[#F5FF3D]/10 text-[#F5FF3D]"
-                        : "border-[#EFEDE6]/10 bg-black/50 text-[#A8A59C] hover:border-[#F5FF3D]/70 hover:text-[#EFEDE6]"
+                        ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                        : "border-[#f3f5f8]/[0.13] bg-black text-[#9aa3b2] hover:border-[#e8fb52]/60 hover:text-[#f3f5f8]"
                     }`}
                   >
-                    <span className={`h-3.5 w-3.5 shrink-0 rounded-full border ${active ? "border-[#F5FF3D] bg-[#F5FF3D]" : "border-[#A8A59C]/50"}`} />
-                    <span className="text-xs font-semibold leading-5">{option}</span>
+                    <span className={`h-3.5 w-3.5 shrink-0 rounded-full border ${active ? "border-[#e8fb52] bg-[#e8fb52]" : "border-[#98a0af]/50"}`} />
+                    <span className="text-xs font-medium leading-5">{option}</span>
                   </button>
                 );
               })}
@@ -332,22 +346,22 @@ const ClarificationPanel = ({
                 onChange={event => setCustom(prev => ({ ...prev, [question.id]: event.target.value }))}
                 disabled={disabled}
                 placeholder="Type your own answer..."
-                className="mt-2 h-10 w-full border border-[#EFEDE6]/15 bg-black px-3 text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50"
+                className="mt-2 h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60 disabled:opacity-50"
               />
             )}
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-3 border-t border-[#EFEDE6]/10 pt-4">
+      <div className="flex flex-wrap items-center gap-3 border-t border-[#f3f5f8]/[0.07] pt-3.5">
         <button
           type="button"
           onClick={() => onSubmit(buildAnswer())}
           disabled={disabled || !canSubmit}
-          className="h-10 rounded border border-[#F5FF3D] bg-[#F5FF3D] px-5 font-display text-sm font-bold text-black transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
+          className="h-10 rounded-[9px] bg-[#e8fb52] px-5 font-display text-sm font-bold text-[#08090c] transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
         >
-          Submit answers
+          Submit
         </button>
-        <span className="text-xs text-[#67645B]">You can skip and I will use default settings.</span>
+        <span className="text-xs text-[#5d6675]">Skip to use the agent's defaults.</span>
       </div>
     </div>
   );
@@ -367,26 +381,22 @@ const AssistantChatMessage = ({
   const handleTypingDone = useCallback(() => setTypingDone(true), []);
 
   return (
-    <div className="flex max-w-[84%] gap-3">
-      <div className="relative mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#EFEDE6]/20 bg-[#101010] text-[#EFEDE6]">
-        <Bot className="h-5 w-5" />
-        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-emerald-400" />
+    <div className="flex max-w-[88%] gap-3">
+      <div className="mt-0.5 grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#1c2029] text-[#e8fb52]">
+        <Bot className="h-[15px] w-[15px]" />
       </div>
-      <div className="min-w-0 flex-1 rounded-md border border-[#EFEDE6]/12 bg-[#0E0E0D] px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.28)]">
-        <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest">
-          <span className="font-bold text-[#EFEDE6]">AI Assistant</span>
-          <span className="text-[#67645B]">Now</span>
-        </div>
-        <div className="whitespace-pre-line text-sm leading-6 text-[#D9D6CC]">
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">Agent</div>
+        <div className="whitespace-pre-line rounded-[13px] rounded-tl-[4px] border border-[#f3f5f8]/[0.07] bg-[#14171d] px-3.5 py-2.5 text-[13.5px] leading-[1.55] text-[#f3f5f8]">
           <TypewriterText text={message.text} onDone={handleTypingDone} />
         </div>
-      {hasClarification && typingDone && (
-        <ClarificationPanel
-          questions={message.clarificationQuestions || []}
-          onSubmit={onSubmitClarification}
-          disabled={disabled}
-        />
-      )}
+        {hasClarification && typingDone && (
+          <ClarificationPanel
+            questions={message.clarificationQuestions || []}
+            onSubmit={onSubmitClarification}
+            disabled={disabled}
+          />
+        )}
       </div>
     </div>
   );
@@ -484,6 +494,99 @@ const channelsToRequiredContacts = (channels: string[] = []): RequiredContactFil
 
 const requiredContactsToChannels = (required: RequiredContactFilters) =>
   requiredContactKeys.filter(key => required[key]);
+
+const opportunitySignalOptions: Array<{
+  key: OpportunitySignalKey;
+  label: string;
+  description: string;
+  services: string[];
+}> = [
+  {
+    key: "weak_website",
+    label: "Weak website",
+    description: "Outdated, thin, messy, or low-converting website signals.",
+    services: ["Web design", "SEO", "Paid ads", "Lead generation"],
+  },
+  {
+    key: "no_booking",
+    label: "No booking flow",
+    description: "No clear appointment, reservation, or booking path.",
+    services: ["Booking automation", "Web design", "AI automation", "CRM setup"],
+  },
+  {
+    key: "no_clear_cta",
+    label: "No clear CTA",
+    description: "No obvious consultation, quote, booking, or contact action.",
+    services: ["Web design", "Paid ads", "Lead generation", "SEO"],
+  },
+  {
+    key: "generic_inbox",
+    label: "Generic inbox",
+    description: "Only generic email paths such as info, contact, sales, or support.",
+    services: ["Lead generation", "CRM setup", "AI automation"],
+  },
+  {
+    key: "low_reviews",
+    label: "Low reviews",
+    description: "Weak review count, reputation, or review activity.",
+    services: ["Reputation management", "SEO", "Social media marketing"],
+  },
+  {
+    key: "no_social_links",
+    label: "No social links",
+    description: "Weak or missing visible social presence.",
+    services: ["Social media marketing", "Web design", "SEO"],
+  },
+  {
+    key: "no_contact_form",
+    label: "No contact form",
+    description: "No obvious form or lead-capture path on the public site.",
+    services: ["Lead generation", "CRM setup", "Web design", "AI automation"],
+  },
+  {
+    key: "weak_local_presence",
+    label: "Weak local presence",
+    description: "Local visibility gaps, incomplete footprint, or poor discovery signals.",
+    services: ["SEO", "Reputation management", "Paid ads"],
+  },
+];
+
+const opportunitySignalLabels = Object.fromEntries(
+  opportunitySignalOptions.map(option => [option.key, option.label]),
+) as Record<OpportunitySignalKey, string>;
+
+const getServiceRecommendedSignalKeys = (service = ""): OpportunitySignalKey[] => {
+  const normalized = service.trim().toLowerCase();
+  if (!normalized) return ["weak_website", "no_clear_cta", "generic_inbox"];
+  const exact = opportunitySignalOptions
+    .filter(option => option.services.some(item => item.toLowerCase() === normalized))
+    .map(option => option.key);
+  if (exact.length) return exact.slice(0, 4);
+  if (/web|site|design|ux|landing/i.test(service)) return ["weak_website", "no_clear_cta", "no_booking", "no_contact_form"];
+  if (/seo|local|rank|visibility/i.test(service)) return ["weak_local_presence", "low_reviews", "weak_website", "no_social_links"];
+  if (/booking|appointment|reservation/i.test(service)) return ["no_booking", "no_clear_cta", "no_contact_form"];
+  if (/automation|crm|workflow/i.test(service)) return ["no_booking", "no_contact_form", "generic_inbox"];
+  if (/social|content|instagram|tiktok|facebook/i.test(service)) return ["no_social_links", "low_reviews", "weak_website"];
+  return ["weak_website", "no_clear_cta", "generic_inbox"];
+};
+
+const inferOpportunitySignalsFromText = (text: string, service: string): OpportunitySignalKey[] => {
+  const lower = text.toLowerCase();
+  const signals = new Set<OpportunitySignalKey>();
+  if (/weak|outdated|bad|poor|website|mobile|site/i.test(lower)) signals.add("weak_website");
+  if (/booking|appointment|reservation|schedule/i.test(lower)) signals.add("no_booking");
+  if (/cta|call to action|consultation|quote|lead capture|conversion/i.test(lower)) signals.add("no_clear_cta");
+  if (/generic|info@|contact@|sales@|email/i.test(lower)) signals.add("generic_inbox");
+  if (/review|rating|reputation/i.test(lower)) signals.add("low_reviews");
+  if (/social|instagram|facebook|linkedin|tiktok/i.test(lower)) signals.add("no_social_links");
+  if (/form|contact form|lead form/i.test(lower)) signals.add("no_contact_form");
+  if (/local visibility|local seo|maps|ranking|presence/i.test(lower)) signals.add("weak_local_presence");
+  if (!signals.size) getServiceRecommendedSignalKeys(service).slice(0, 3).forEach(signal => signals.add(signal));
+  return [...signals].slice(0, 5);
+};
+
+const getOpportunitySignalLabels = (signals: OpportunitySignalKey[] = []) =>
+  signals.length ? signals.map(signal => opportunitySignalLabels[signal] || signal).join(", ") : "none";
 
 const getClarificationQuestions = (
   text: string,
@@ -658,9 +761,10 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
   const wantsPerson = /owner|manager|founder|ceo|director|decision|person|people|contact/i.test(`${brief} ${plan.summary}`);
   const depth: Depth = plan.maxResults >= 60 ? "deep" : plan.maxResults <= 20 ? "simple" : "normal";
   const locationKey = plan.location.trim().toLowerCase();
+  const selectedService = inferBriefService(brief);
 
   return {
-    selectedService: inferBriefService(brief),
+    selectedService,
     industry: plan.targetBusiness,
     location: plan.location,
     language: "",
@@ -669,6 +773,7 @@ const planToSearchConfig = (plan: FreeSearchPlan, brief: string): SearchConfig =
     enrichMode: typeof plan.enrichMode === "boolean" ? plan.enrichMode : wantsPerson || requiredChannels.has("linkedin"),
     strictness: plan.strictness || (requiredChannels.size >= 2 || lowerBrief.includes("only") ? "strict" : "balanced"),
     required: { ...channelsToRequiredContacts(plan.requiredChannels), person: channelsToRequiredContacts(plan.requiredChannels).person || wantsPerson },
+    opportunitySignals: plan.opportunitySignals || inferOpportunitySignalsFromText(`${brief} ${plan.summary}`, selectedService),
     preferPublicEmail: true,
     queryVariants: plan.queryVariants,
   };
@@ -863,7 +968,7 @@ const SegmentedCircularProgress = ({ value, label }: { value: number; label: str
 
   return (
     <div className="relative mx-auto grid h-44 w-44 place-items-center">
-      <div className="absolute inset-0 rounded-full border border-[#F5FF3D]/10 bg-[#F5FF3D]/[0.03] shadow-[0_0_60px_rgba(245,255,61,0.08)]" />
+      <div className="absolute inset-0 rounded-full border border-[#e8fb52]/10 bg-[#e8fb52]/[0.03] shadow-[0_0_60px_rgba(245,255,61,0.08)]" />
       {Array.from({ length: segments }).map((_, index) => {
         const active = index < filled;
         return (
@@ -871,17 +976,17 @@ const SegmentedCircularProgress = ({ value, label }: { value: number; label: str
             key={index}
             className={`absolute left-1/2 top-1/2 h-5 w-1.5 origin-[50%_82px] -translate-x-1/2 -translate-y-[82px] rounded-[2px] transition-all duration-500 ${
               active
-                ? "bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.7)]"
-                : "bg-[#EFEDE6]/10"
+                ? "bg-[#e8fb52] shadow-[0_0_14px_rgba(245,255,61,0.7)]"
+                : "bg-[#f3f5f8]/10"
             }`}
             style={{ transform: `translateX(-50%) translateY(-82px) rotate(${index * (360 / segments)}deg)` }}
           />
         );
       })}
-      <div className="relative grid h-28 w-28 place-items-center rounded-full border border-[#EFEDE6]/10 bg-black text-center shadow-[inset_0_0_32px_rgba(245,255,61,0.04)]">
+      <div className="relative grid h-28 w-28 place-items-center rounded-full border border-[#f3f5f8]/10 bg-black text-center shadow-[inset_0_0_32px_rgba(245,255,61,0.04)]">
         <div>
-          <p className="font-mono text-3xl font-black tabular-nums text-[#EFEDE6]">{clamped}%</p>
-          <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">{label}</p>
+          <p className="font-mono text-3xl font-black tabular-nums text-[#f3f5f8]">{clamped}%</p>
+          <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">{label}</p>
         </div>
       </div>
     </div>
@@ -900,7 +1005,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const plan = normalizePlan(effectivePlan);
   const hasFullAppAccess = isAdmin || plan !== "free";
 
-  const [searchMode, setSearchMode] = useState<SearchMode | null>(demoMode ? "manual" : null);
+  const [searchMode, setSearchMode] = useState<SearchMode | null>("manual");
   const [selectedService, setSelectedService] = useState(demoMode ? "Web design" : "");
   const [customService, setCustomService] = useState("");
   const [industry, setIndustry] = useState(demoMode ? "Dental clinics" : "");
@@ -917,7 +1022,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     linkedin: false,
     person: false,
   });
+  const [opportunitySignals, setOpportunitySignals] = useState<OpportunitySignalKey[]>(
+    demoMode ? ["weak_website", "no_booking", "no_clear_cta"] : [],
+  );
   const [preferPublicEmail, setPreferPublicEmail] = useState(true);
+  const [onlyWithWebsite, setOnlyWithWebsite] = useState(true);
+  const [skipSaved, setSkipSaved] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [stage, setStage] = useState<ProgressStage>("idle");
@@ -966,9 +1076,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setSearchStepStatus(null);
     };
     const handleNewSearch = () => {
-      setSearchMode(null);
+      setSearchMode("manual");
       setSelectedService("");
       setCustomService("");
+      setOpportunitySignals([]);
       setResults(null);
       setSearchDiagnostics(null);
       setSearchStepStatus(null);
@@ -985,6 +1096,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     };
   }, []);
 
+  // Quality is always on in manual mode: enrichment (decision-maker contacts) always runs.
+  useEffect(() => {
+    if (searchMode === "manual") setEnrichMode(true);
+  }, [searchMode]);
+
   const searchCost = getSearchCost(depth, enrichMode);
   const usageType = isAdmin ? "internal" : "customer";
   const chargedCredits = isAdmin ? 0 : searchCost;
@@ -999,6 +1115,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     enrichMode,
     strictness,
     required: requiredContacts,
+    opportunitySignals,
     preferPublicEmail,
   };
 
@@ -1098,6 +1215,21 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const toggleRequiredContact = (key: keyof RequiredContactFilters) => {
     setRequiredContacts(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleOpportunitySignal = (key: OpportunitySignalKey) => {
+    setOpportunitySignals(prev => (
+      prev.includes(key)
+        ? prev.filter(signal => signal !== key)
+        : [...prev, key]
+    ));
+  };
+
+  const selectService = (value: string) => {
+    setSelectedService(value);
+    if (!opportunityModeOn || opportunitySignals.length > 0) return;
+    const nextService = value === customServiceValue ? customService : value;
+    setOpportunitySignals(getServiceRecommendedSignalKeys(nextService).slice(0, 3));
   };
 
   const handleCopyField = (key: string, text: string) => {
@@ -1206,6 +1338,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       keyword: config.industry,
       location: config.location,
       selected_service: config.selectedService || null,
+      opportunity_signals: config.opportunitySignals,
       depth: config.depth,
       enrich_mode: config.enrichMode,
       usage_type: usageType,
@@ -1219,8 +1352,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       .select()
       .single();
 
-    if (error && /selected_service|schema cache/i.test(error.message)) {
-      const { selected_service: _selectedService, ...fallbackPayload } = sessionPayload;
+    if (error && /selected_service|opportunity_signals|schema cache/i.test(error.message)) {
+      const { selected_service: _selectedService, opportunity_signals: _opportunitySignals, ...fallbackPayload } = sessionPayload;
       const fallback = await supabase
         .from("search_sessions")
         .insert(fallbackPayload)
@@ -1262,6 +1395,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         strictness: config.strictness,
         locationMode: config.locationMode,
         selectedService: config.selectedService,
+        opportunitySignals: config.opportunitySignals,
         requiredContacts: config.required,
         quotedCredits,
       },
@@ -1627,6 +1761,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     setEnrichMode(config.enrichMode);
     setStrictness(config.strictness);
     setRequiredContacts(config.required);
+    setOpportunitySignals(config.opportunitySignals || []);
     setPreferPublicEmail(config.preferPublicEmail);
   };
 
@@ -1739,8 +1874,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const startFreeSearch = () => {
     if (!freePlan) return;
-    applySearchConfigToForm(freePlan.config);
-    void handleGenerate(freePlan.config);
+    // Quality is always on: enrichment (decision-maker contacts) always runs.
+    const config = { ...freePlan.config, enrichMode: true };
+    applySearchConfigToForm(config);
+    void handleGenerate(config);
   };
 
   const updateFreePlanConfig = (updater: (config: SearchConfig) => SearchConfig) => {
@@ -1760,6 +1897,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
           enrichMode: config.enrichMode,
           strictness: config.strictness,
           requiredChannels: requiredContactsToChannels(config.required),
+          opportunitySignals: config.opportunitySignals,
           maxResults,
         },
       };
@@ -1793,22 +1931,22 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     <section
       id="tool"
       data-opportunity-mode={opportunityModeOn ? "on" : "off"}
-      className={`h-full w-full bg-black text-[#EFEDE6] ${searchMode === "manual" || searchMode === "free" ? "overflow-hidden" : "overflow-auto"}`}
+      className={`h-full w-full bg-black text-[#f3f5f8] ${searchMode === "free" ? "overflow-hidden" : "overflow-auto"}`}
     >
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6">
         {authLoading && (
           <div className="flex min-h-[360px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-[#F5FF3D]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#e8fb52]" />
           </div>
         )}
 
         {!authLoading && !user && (
           <div className="mx-auto flex min-h-[420px] max-w-xl flex-col items-center justify-center text-center">
-            <h1 className="font-display text-4xl font-black tracking-[-0.04em] text-[#EFEDE6]">Find prospects with a reason to buy.</h1>
-            <p className="mt-4 text-sm leading-6 text-[#A8A59C]">Sign in to discover businesses, public contact data, likely decision makers, and visible opportunity signals.</p>
+            <h1 className="font-display text-4xl font-black tracking-[-0.04em] text-[#f3f5f8]">Find prospects with a reason to buy.</h1>
+            <p className="mt-4 text-sm leading-6 text-[#9aa3b2]">Sign in to discover businesses, public contact data, likely decision makers, and visible opportunity signals.</p>
             <button
               onClick={onOpenAuth}
-              className="mt-6 border border-[#F5FF3D] bg-[#F5FF3D] px-5 py-3 font-display text-sm font-bold text-black hover:bg-[#FFFE7A]"
+              className="mt-6 border border-[#e8fb52] bg-[#e8fb52] px-5 py-3 font-display text-sm font-bold text-black hover:bg-[#f3ff8a]"
             >
               Start prospecting
             </button>
@@ -1821,9 +1959,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               <div className="flex min-h-[calc(100vh-14rem)] items-center justify-center px-4 py-10">
                 <div className="w-full max-w-6xl">
                   <div className="mb-8 text-center">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">New search</p>
-                    <h1 className="mt-3 font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6] sm:text-4xl">Choose how you want to find opportunities.</h1>
-                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#A8A59C]">Start guided with a prompt, or use precise manual controls for repeatable opportunity searches.</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#e8fb52]">New search</p>
+                    <h1 className="mt-3 font-display text-3xl font-black leading-tight tracking-[-0.04em] text-[#f3f5f8] sm:text-4xl">Choose how you want to find opportunities.</h1>
+                    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#9aa3b2]">Start guided with a prompt, or use precise manual controls for repeatable opportunity searches.</p>
                   </div>
                   <div className="grid gap-6 lg:grid-cols-2">
                     {searchModeCards.map(({ mode, badge, title, description, bullets, bestFor, Icon, featured }) => (
@@ -1831,11 +1969,11 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         key={mode}
                         type="button"
                         onClick={() => setSearchMode(mode)}
-                        className={`new-search-card group grid min-h-[390px] overflow-hidden border bg-[#0A0A0A] text-left shadow-[0_18px_46px_rgba(0,0,0,0.26)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_28px_68px_rgba(0,0,0,0.36)] md:grid-cols-[160px_minmax(0,1fr)] ${
-                          featured ? "new-search-card-featured border-[#F5FF3D]/80" : "new-search-card-muted border-[#EFEDE6]/[0.16] hover:border-[#F5FF3D]/50"
+                        className={`new-search-card group grid min-h-[390px] overflow-hidden border bg-[#111319] text-left shadow-[0_18px_46px_rgba(0,0,0,0.26)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_28px_68px_rgba(0,0,0,0.36)] md:grid-cols-[160px_minmax(0,1fr)] ${
+                          featured ? "new-search-card-featured border-[#e8fb52]/80" : "new-search-card-muted border-[#f3f5f8]/[0.16] hover:border-[#e8fb52]/50"
                         }`}
                       >
-                        <div className={`new-search-card-rail relative min-h-[138px] overflow-hidden border-b border-[#EFEDE6]/10 md:min-h-0 md:border-b-0 md:border-r ${featured ? "border-[#F5FF3D]/40" : "border-[#EFEDE6]/10"}`}>
+                        <div className={`new-search-card-rail relative min-h-[138px] overflow-hidden border-b border-[#f3f5f8]/10 md:min-h-0 md:border-b-0 md:border-r ${featured ? "border-[#e8fb52]/40" : "border-[#f3f5f8]/10"}`}>
                           <div className="absolute left-5 top-5 grid grid-cols-3 gap-2 opacity-35">
                             {Array.from({ length: 18 }).map((_, index) => (
                               <span key={index} className="h-1 w-1 rounded-full bg-current" />
@@ -1852,16 +1990,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
                         <div className="flex min-w-0 flex-col">
                           <div className="flex-1 p-6 sm:p-8">
-                            <span className={`inline-flex border px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest ${featured ? "border-[#F5FF3D] bg-black text-[#F5FF3D]" : "border-[#EFEDE6]/20 text-[#A8A59C] group-hover:border-[#F5FF3D]/70 group-hover:text-[#F5FF3D]"}`}>
+                            <span className={`inline-flex border px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest ${featured ? "border-[#e8fb52] bg-black text-[#e8fb52]" : "border-[#f3f5f8]/20 text-[#9aa3b2] group-hover:border-[#e8fb52]/70 group-hover:text-[#e8fb52]"}`}>
                               {badge}
                             </span>
-                            <h2 className="mt-7 font-display text-3xl font-black leading-none tracking-[-0.04em] text-[#EFEDE6]">{title}</h2>
-                            <p className="mt-5 max-w-md text-base leading-7 text-[#A8A59C]">{description}</p>
+                            <h2 className="mt-7 font-display text-3xl font-black leading-none tracking-[-0.04em] text-[#f3f5f8]">{title}</h2>
+                            <p className="mt-5 max-w-md text-base leading-7 text-[#9aa3b2]">{description}</p>
 
-                            <div className="mt-7 grid gap-3 border-t border-[#EFEDE6]/10 pt-6">
+                            <div className="mt-7 grid gap-3 border-t border-[#f3f5f8]/10 pt-6">
                               {bullets.map(item => (
-                                <span key={item} className="flex items-center gap-3 text-sm text-[#A8A59C]">
-                                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#F5FF3D] text-black">
+                                <span key={item} className="flex items-center gap-3 text-sm text-[#9aa3b2]">
+                                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#e8fb52] text-black">
                                     <CheckCheck className="h-3.5 w-3.5" />
                                   </span>
                                   {item}
@@ -1870,12 +2008,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-4 border-t border-[#EFEDE6]/10 px-6 py-5 sm:px-8">
+                          <div className="flex items-center justify-between gap-4 border-t border-[#f3f5f8]/10 px-6 py-5 sm:px-8">
                             <div>
-                              <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Best for</p>
-                              <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-widest text-[#EFEDE6]">{bestFor}</p>
+                              <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">Best for</p>
+                              <p className="mt-1 font-mono text-[11px] font-bold uppercase tracking-widest text-[#f3f5f8]">{bestFor}</p>
                             </div>
-                            <span className="grid h-14 w-14 shrink-0 place-items-center border border-[#EFEDE6]/10 bg-[#EFEDE6]/5 text-[#A8A59C] transition-all duration-300 group-hover:translate-x-1 group-hover:border-[#FBEE03] group-hover:bg-[#FBEE03] group-hover:text-black">
+                            <span className="grid h-14 w-14 shrink-0 place-items-center border border-[#f3f5f8]/10 bg-[#f3f5f8]/5 text-[#9aa3b2] transition-all duration-300 group-hover:translate-x-1 group-hover:border-[#FBEE03] group-hover:bg-[#FBEE03] group-hover:text-black">
                               <ArrowRight className="h-6 w-6" />
                             </span>
                           </div>
@@ -1887,465 +2025,304 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               </div>
             )}
 
-            {searchMode === "free" && (
-              <div className="flex h-[calc(100vh-8.25rem)] min-h-[560px] flex-col overflow-hidden bg-black">
-                <div className="flex items-center justify-between gap-3 border-b border-[#EFEDE6]/10 px-3 py-3">
-                  <button onClick={() => setSearchMode(null)} className="inline-flex h-10 items-center gap-2 rounded border border-[#EFEDE6]/10 px-4 font-mono text-[10px] uppercase tracking-[0.24em] text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
-                    <ArrowLeft className="h-3.5 w-3.5" /> Options
-                  </button>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#8D897E]">AI search - beta</span>
-                </div>
-
-                <div className="grid min-h-0 flex-1 gap-5 overflow-hidden px-3 py-4 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_430px]">
-                  <div className="flex min-h-0 flex-col overflow-hidden border-r border-[#EFEDE6]/10 pr-3">
-                    <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-4 pt-1">
-                      {freeMessages.map((message, index) => (
-                        message.role === "assistant" ? (
-                          <AssistantChatMessage
-                            key={`${message.role}-${index}`}
-                            message={message}
-                            onSubmitClarification={answer => void handleFreeClarification(answer)}
-                            disabled={isPlanningFreeSearch || isProcessing || index !== freeMessages.length - 1}
-                          />
-                        ) : (
-                          <div key={`${message.role}-${index}`} className="ml-auto max-w-[62%]">
-                            <div className="mb-1 flex items-center justify-end gap-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
-                              <span>You</span>
-                              <span className="text-[#67645B]">Now</span>
-                            </div>
-                            <div className="rounded-md bg-[#F5FF3D] px-4 py-3 text-sm font-medium leading-6 text-black shadow-[0_10px_34px_rgba(245,255,61,0.12)]">
-                              {message.text}
-                              <CheckCheck className="ml-2 inline h-3.5 w-3.5" />
-                            </div>
-                          </div>
-                        )
-                      ))}
-                      {isPlanningFreeSearch && (
-                        <div className="flex max-w-[84%] gap-3">
-                          <div className="relative mt-1 grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#EFEDE6]/20 bg-[#101010] text-[#EFEDE6]">
-                            <Bot className="h-5 w-5" />
-                            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-emerald-400" />
-                          </div>
-                          <div className="inline-flex items-center gap-2 rounded-md border border-[#EFEDE6]/12 bg-[#0E0E0D] px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#F5FF3D]" /> Planning search
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="border-t border-[#EFEDE6]/10 px-3 pt-4">
-                      <div className="flex items-center gap-3 rounded-md border border-[#EFEDE6]/12 bg-[#050505] px-4 py-3 shadow-[0_16px_44px_rgba(0,0,0,0.35)]">
-                        <input
-                          value={freeInput}
-                          onChange={event => setFreeInput(event.target.value)}
-                          onKeyDown={event => {
-                            if (event.key === "Enter" && !event.shiftKey) {
-                              event.preventDefault();
-                              void handleFreeSearchSubmit();
-                            }
-                          }}
-                          disabled={isPlanningFreeSearch || isProcessing}
-                          placeholder="Ask anything about your opportunity search..."
-                          className="h-12 min-w-0 flex-1 bg-transparent text-base text-[#EFEDE6] outline-none placeholder:text-[#67645B] disabled:opacity-50"
-                        />
-                        <button type="button" className="grid h-10 w-10 place-items-center rounded border border-transparent text-[#A8A59C] hover:border-[#EFEDE6]/10 hover:text-[#EFEDE6]" aria-label="Attach context">
-                          <Paperclip className="h-5 w-5" />
-                        </button>
-                        <button type="button" className="grid h-10 w-10 place-items-center rounded border border-transparent text-[#A8A59C] hover:border-[#EFEDE6]/10 hover:text-[#EFEDE6]" aria-label="Search settings">
-                          <SlidersHorizontal className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => void handleFreeSearchSubmit()} disabled={!freeInput.trim() || isPlanningFreeSearch || isProcessing} className="inline-flex h-12 items-center gap-2 rounded border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black shadow-[0_0_28px_rgba(245,255,61,0.2)] disabled:cursor-not-allowed disabled:opacity-40">
-                          <Send className="h-4 w-4" /> Send
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#DFFF00]/80 bg-[#0A0A0A] p-6 shadow-[0_0_42px_rgba(245,255,61,0.16)]">
-                    <div className="flex items-start gap-3 border-b border-[#EFEDE6]/10 pb-5">
-                      <div className="grid h-9 w-9 place-items-center rounded border border-[#F5FF3D]/35 bg-[#F5FF3D]/10 text-[#F5FF3D]">
-                        <Target className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-[#F5FF3D]">Opportunity brief</p>
-                        <p className="mt-2 text-sm text-[#8D897E]">Preview of your AI prospecting plan.</p>
-                      </div>
-                    </div>
-
-                    {freePlan ? (
-                      <div className="min-h-0 flex-1 overflow-y-auto py-5">
-                        <div className="grid gap-5">
-                          <div className="border-b border-[#EFEDE6]/10 pb-4">
-                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><Target className="h-3.5 w-3.5" /> Target</div>
-                            <div className="grid gap-3 text-sm">
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Service sold</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.selectedService || "General outreach"}</span></div>
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Industry / Niche</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.industry || "Not set"}</span></div>
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Location</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.location || "Not set"} ({freePlan.config.locationMode})</span></div>
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Language</span><span className="text-right font-mono text-[#EFEDE6]">{freePlan.config.language || "Optional"}</span></div>
-                            </div>
-                          </div>
-
-                          <div className="border-b border-[#EFEDE6]/10 pb-4">
-                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><BarChart3 className="h-3.5 w-3.5" /> Strategy</div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Depth</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.depth}</p></div>
-                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Mode</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.enrichMode ? "Enrich" : "Normal"}</p></div>
-                              <div className="border border-[#EFEDE6]/10 bg-black/60 p-3"><p className="font-mono text-[9px] uppercase tracking-widest text-[#67645B]">Quality</p><p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-[#EFEDE6]">{freePlan.config.strictness}</p></div>
-                            </div>
-                          </div>
-
-                          <div className="border-b border-[#EFEDE6]/10 pb-4">
-                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><Filter className="h-3.5 w-3.5" /> Filters</div>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#A8A59C]">Priority Signals</span>
-                              <div className="flex gap-1.5">
-                                {requiredContactKeys.map(key => (
-                                  <span key={key} className={`grid h-7 w-7 place-items-center rounded border ${freePlan.config.required[key] ? "border-[#F5FF3D] bg-[#F5FF3D] text-black" : "border-[#EFEDE6]/10 text-[#A8A59C]"}`} title={channelLabels[key]}>
-                                    {key === "phone" && <Phone className="h-3.5 w-3.5" />}
-                                    {key === "website" && <Globe className="h-3.5 w-3.5" />}
-                                    {key === "email" && <Mail className="h-3.5 w-3.5" />}
-                                    {key === "linkedin" && <Linkedin className="h-3.5 w-3.5" />}
-                                    {key === "person" && <UserRound className="h-3.5 w-3.5" />}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="mt-3 flex justify-between gap-4 text-sm"><span className="text-[#A8A59C]">Prefer public email in ranking</span><span className="font-mono uppercase text-[#F5FF3D]">{freePlan.config.preferPublicEmail ? "On" : "Off"}</span></div>
-                          </div>
-
-                          <div>
-                            <div className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#F5FF3D]"><BarChart3 className="h-3.5 w-3.5" /> Estimates</div>
-                            <div className="grid gap-3 text-sm">
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Est. results</span><span className="font-mono text-[#EFEDE6]">{Math.max(8, Math.round(freePlan.plan.maxResults * 0.35))} - {freePlan.plan.maxResults} prospects</span></div>
-                              <div className="flex justify-between gap-4"><span className="text-[#A8A59C]">Confidence</span><span className="font-mono text-emerald-400">High</span></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex min-h-0 flex-1 items-center justify-center py-8 text-center text-sm leading-6 text-[#8D897E]">
-                        Tell the assistant what you sell, who you target, and where. The opportunity plan appears here before you run it.
-                      </div>
-                    )}
-
-                    <div className="mt-auto border-t border-[#EFEDE6]/10 pt-5">
-                      <div className="mb-4 flex items-end justify-between gap-4">
-                        <div><p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Credits</p><p className="mt-1 font-display text-3xl font-black text-[#EFEDE6]">{creditsBalance}</p></div>
-                        <div className="text-right"><p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Cost</p><p className="mt-1 font-display text-3xl font-black text-[#F5FF3D]">{freePlan ? (isAdmin ? "Admin" : getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)) : "-"}</p></div>
-                      </div>
-                      <button onClick={startFreeSearch} disabled={!freePlan || isProcessing} className="h-12 w-full rounded border border-[#F5FF3D] bg-[#F5FF3D] px-4 font-display text-sm font-bold text-black shadow-[0_0_28px_rgba(245,255,61,0.18)] disabled:cursor-not-allowed disabled:opacity-40">
-                        {isProcessing ? "Searching..." : isAdmin ? "Find opportunities - admin" : `Find opportunities${freePlan ? ` - ${getSearchCost(freePlan.config.depth, freePlan.config.enrichMode)} credits` : ""}`}
-                      </button>
-                    </div>
-                  </aside>
-                </div>
-              </div>
-            )}
-            {searchMode === "manual" && (() => {
-              const depthOrder: Depth[] = ["simple", "normal", "deep"];
-              const strictnessOrder: Strictness[] = ["broad", "balanced", "strict"];
-              const depthIndex = depthOrder.indexOf(depth);
-              const strictnessIndex = strictnessOrder.indexOf(strictness);
-              const requiredOptions = [
-                { key: "phone" as const, label: "Phone", Icon: Phone },
-                { key: "website" as const, label: "Website", Icon: Globe },
-                { key: "email" as const, label: "Email", Icon: Mail },
-                { key: "linkedin" as const, label: "LinkedIn", Icon: Linkedin },
-                { key: "person" as const, label: "Person", Icon: UserRound },
+            {searchMode === "free" && (() => {
+              const planCost = freePlan ? getSearchCost(freePlan.config.depth, true) : 0;
+              const planSizes: Array<{ depth: Depth; name: string }> = [
+                { depth: "simple", name: "Quick" },
+                { depth: "normal", name: "Standard" },
+                { depth: "deep", name: "Deep" },
               ];
+              const setPlanDepth = (next: Depth) => updateFreePlanConfig(config => ({ ...config, depth: next, enrichMode: true }));
+              const planRows: Array<{ key: string; label: string; value: string; Icon: typeof Target }> = freePlan
+                ? [
+                    { key: "sell", label: "What you sell", value: freePlan.config.selectedService || "General outreach", Icon: Target },
+                    { key: "market", label: "Target market", value: freePlan.config.industry || "Not set", Icon: UserRound },
+                    { key: "location", label: "Location", value: freePlan.config.location ? `${freePlan.config.location} · ${freePlan.config.locationMode}` : "Not set", Icon: MapPin },
+                  ]
+                : [];
 
-              const renderRange = <T extends string>(
-                value: T,
-                order: T[],
-                labels: Record<T, string>,
-                onSelect: (next: T) => void,
-                gateSearchQuality = false,
-              ) => {
-                return (
-                  <div
-                    className="relative inline-grid h-12 w-full overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black/60"
-                    style={{ gridTemplateColumns: `repeat(${order.length}, minmax(0, 1fr))` }}
-                  >
-                    {order.map((option) => {
-                      const active = option === value;
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            if (gateSearchQuality && !canUseSearchQuality(plan, option as Depth, enrichMode, isAdmin)) {
-                              requestUpgrade("Starter and Growth unlock normal, deep, and enrichment searches.");
-                              return;
-                            }
-                            onSelect(option);
-                          }}
-                          disabled={isProcessing}
-                          className={`relative z-10 flex items-center justify-center border-r border-[#EFEDE6]/10 px-4 font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-all last:border-r-0 disabled:cursor-not-allowed ${
-                            active
-                              ? "bg-[#F5FF3D] text-black shadow-[0_0_24px_rgba(245,255,61,0.45)]"
-                              : "text-[#A8A59C] hover:bg-[#EFEDE6]/5 hover:text-[#EFEDE6]"
-                          }`}
-                          aria-pressed={active}
-                        >
-                          {labels[option]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              };
-
-              const sectionEyebrow = (label: string, hint: ReactNode) => (
-                <div className="mb-5 flex items-start gap-4">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#F5FF3D] font-display text-base font-black text-black shadow-[0_0_24px_rgba(245,255,61,0.55)]">
-                    {label === "Target" ? "1" : label === "Strategy" ? "2" : "3"}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3">
-                      <p className="font-mono text-base font-bold uppercase tracking-[0.18em] text-[#EFEDE6]">{label}</p>
-                      <HelpHint>{hint}</HelpHint>
-                    </div>
-                    <p className="mt-1 text-sm text-[#A8A59C]">
-                      {label === "Target"
-                        ? "What do you sell, and who should we target?"
-                        : label === "Strategy"
-                          ? "Define how broad or specific to search."
-                          : "Choose the most important priority signals."}
-                    </p>
-                  </div>
-                </div>
-              );
-              const selectedSignalLabels = getRequiredContactLabels(requiredContacts);
-              const previewLeads = sortedResults ?? [];
-              const manualPreview = (
-                <aside className="flex h-full max-h-full min-h-0 flex-col overflow-hidden border border-[#F5FF3D]/45 bg-[#080808] p-5 shadow-[0_0_58px_rgba(245,255,61,0.10)]">
-                  <div className="mb-5 flex shrink-0 items-center justify-between gap-3">
-                    <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-[#F5FF3D]">Opportunity preview</p>
-                      <p className="mt-1 text-sm text-[#A8A59C]">
-                        {isProcessing ? "Finding and enriching opportunities now." : results ? "Review the latest opportunities." : "Review your current opportunity setup."}
+              return (
+                <div className="flex h-[calc(100vh-7.5rem)] min-h-[600px] flex-col">
+                  <div className="mb-4 flex shrink-0 items-start justify-between gap-5">
+                    <div className="min-w-0">
+                      <h1 className="font-display text-[25px] font-bold leading-none tracking-[-0.025em] text-[#f3f5f8]">New scan</h1>
+                      <p className="mt-1.5 max-w-[46ch] text-[13px] leading-relaxed text-[#9aa3b2]">
+                        Describe who you want in plain language. The agent asks what it needs, then builds a scan plan before any credits are spent.
                       </p>
                     </div>
-                    {isProcessing && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#F5FF3D]" />}
+                    <div className="inline-flex shrink-0 gap-[3px] rounded-[10px] border border-[#f3f5f8]/[0.07] bg-[#111319] p-[3px]">
+                      <button type="button" onClick={() => setSearchMode("manual")} className="inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold text-[#9aa3b2] transition-colors hover:text-[#f3f5f8]">
+                        <SlidersHorizontal className="h-3.5 w-3.5" /> Manual
+                      </button>
+                      <button type="button" aria-pressed={true} className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#1c2029] px-3 py-1.5 text-[12.5px] font-semibold text-[#f3f5f8]">
+                        <Sparkles className="h-3.5 w-3.5 text-[#e8fb52]" /> AI assisted
+                      </button>
+                    </div>
                   </div>
 
-                  {results && !isProcessing ? (
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                      <div className="mb-4 shrink-0 border-b border-[#EFEDE6]/10 pb-4">
-                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
-                          {previewLeads.length} person-qualified opportunit{previewLeads.length === 1 ? "y" : "ies"}
-                        </p>
+                  <div className="grid min-h-0 flex-1 gap-3.5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                    <div className="flex min-h-0 flex-col overflow-hidden rounded-[16px] border border-[#f3f5f8]/[0.07] bg-[#0f1115]">
+                      <div className="flex shrink-0 items-center gap-2.5 border-b border-[#f3f5f8]/[0.07] px-[18px] py-[13px]">
+                        <span className="h-[7px] w-[7px] rounded-full bg-[#5fe3a1] shadow-[0_0_10px_#5fe3a1]" />
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[#9aa3b2]">Prospecting agent</span>
+                        <span className="ml-auto rounded-full border border-[#f3f5f8]/[0.13] px-2.5 py-[3px] font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Plans before it spends</span>
                       </div>
-                      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                        {previewLeads.map((lead, index) => {
-                          const contact = getTopContact(lead);
-                          return (
-                            <article key={`${lead.placeId || lead.name}-${index}`} className="border border-[#EFEDE6]/10 bg-black/60 p-3">
-                              <p className="truncate font-display text-sm font-bold text-[#EFEDE6]">{contact?.fullName || "Named contact"}</p>
-                              <p className="mt-1 truncate text-xs text-[#A8A59C]">{lead.name}</p>
-                              <p className="mt-1 truncate text-[11px] text-[#67645B]">{lead.category?.replace(/_/g, " ") || lead.address || "No category listed"}</p>
-                              <p className="mt-2 font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">
-                                {getOpportunityLabel(lead)} / {lead.leadQualityScore || 0}
-                              </p>
-                            </article>
-                          );
-                        })}
-                        {previewLeads.length === 0 && (
-                          <div className="border border-[#EFEDE6]/10 bg-black/60 p-5 text-sm text-[#A8A59C]">
-                            No person-qualified opportunities were found. Try a deeper search, a more specific city, or fewer required signals.
+
+                      <div className="min-h-0 flex-1 space-y-[18px] overflow-y-auto px-5 py-[22px]">
+                        {freeMessages.map((message, index) => (
+                          message.role === "assistant" ? (
+                            <AssistantChatMessage
+                              key={`${message.role}-${index}`}
+                              message={message}
+                              onSubmitClarification={answer => void handleFreeClarification(answer)}
+                              disabled={isPlanningFreeSearch || isProcessing || index !== freeMessages.length - 1}
+                            />
+                          ) : (
+                            <div key={`${message.role}-${index}`} className="ml-auto flex max-w-[88%] flex-row-reverse gap-3">
+                              <div className="mt-0.5 grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#0f1115] text-[#98a0af]">
+                                <UserRound className="h-[15px] w-[15px]" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="mb-1.5 text-right font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">You</div>
+                                <div className="rounded-[13px] rounded-tr-[4px] bg-[#e8fb52] px-3.5 py-2.5 text-[13.5px] font-medium leading-[1.5] text-[#08090c]">
+                                  {message.text}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        ))}
+                        {isPlanningFreeSearch && (
+                          <div className="flex max-w-[88%] gap-3">
+                            <div className="mt-0.5 grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] border border-[#f3f5f8]/[0.13] bg-[#1c2029] text-[#e8fb52]">
+                              <Bot className="h-[15px] w-[15px]" />
+                            </div>
+                            <div className="inline-flex items-center gap-2 self-start rounded-[13px] rounded-tl-[4px] border border-[#f3f5f8]/[0.07] bg-[#14171d] px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#9aa3b2]">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#e8fb52]" /> Planning scan
+                            </div>
                           </div>
                         )}
                       </div>
+
+                      <div className="shrink-0 border-t border-[#f3f5f8]/[0.07] px-4 py-3.5">
+                        <div className="flex items-center gap-2.5 rounded-[12px] border border-[#f3f5f8]/[0.13] bg-black py-[7px] pl-[15px] pr-[7px]">
+                          <input
+                            value={freeInput}
+                            onChange={event => setFreeInput(event.target.value)}
+                            onKeyDown={event => {
+                              if (event.key === "Enter" && !event.shiftKey) {
+                                event.preventDefault();
+                                void handleFreeSearchSubmit();
+                              }
+                            }}
+                            disabled={isPlanningFreeSearch || isProcessing}
+                            placeholder="Refine the plan — add a city, a niche detail, anything…"
+                            className="h-9 min-w-0 flex-1 bg-transparent text-[14px] text-[#f3f5f8] outline-none placeholder:text-[#5d6675] disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleFreeSearchSubmit()}
+                            disabled={!freeInput.trim() || isPlanningFreeSearch || isProcessing}
+                            aria-label="Send"
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-[9px] bg-[#e8fb52] text-[#08090c] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Send className="h-[17px] w-[17px]" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <>
-                      {isProcessing ? (
-                        <div className="flex min-h-0 flex-1 flex-col justify-center border-y border-[#EFEDE6]/10 py-6">
-                          <SegmentedCircularProgress value={displayProgress} label={progressLabels[stage]} />
-                          <div className="mt-5 text-center">
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
-                              {searchStepStatus ? `Website ${searchStepStatus.current}/${searchStepStatus.total}` : status}
-                            </p>
-                            {searchStepStatus && (
-                              <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">
-                                People found: {searchStepStatus.peopleFound}
-                              </p>
-                            )}
-                            {searchStepStatus?.businessName && (
-                              <p className="mx-auto mt-1 max-w-[260px] truncate text-xs text-[#A8A59C]">
-                                {searchStepStatus.businessName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="min-h-0 flex-1 space-y-4 overflow-hidden">
-                          <div>
-                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Target</p>
-                            <div className="divide-y divide-[#EFEDE6]/10 border-y border-[#EFEDE6]/10">
-                              <div className="flex justify-between gap-4 py-2 text-sm">
-                                <span className="text-[#A8A59C]">Service sold</span>
-                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{searchConfig.selectedService || "Not set"}</span>
-                              </div>
-                              <div className="flex justify-between gap-4 py-2 text-sm">
-                                <span className="text-[#A8A59C]">Industry / niche</span>
-                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{industry.trim() || "Not set"}</span>
-                              </div>
-                              <div className="flex justify-between gap-4 py-2 text-sm">
-                                <span className="text-[#A8A59C]">Location</span>
-                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{country.trim() ? `${country.trim()} (${locationMode})` : "Not set"}</span>
-                              </div>
-                              <div className="flex justify-between gap-4 py-2 text-sm">
-                                <span className="text-[#A8A59C]">Language</span>
-                                <span className="text-right font-mono text-xs text-[#EFEDE6]">{language.trim() || "Optional"}</span>
-                              </div>
-                            </div>
-                          </div>
 
-                          <div>
-                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Strategy</p>
-                            <div className="grid grid-cols-3 gap-2">
-                              {[
-                                ["Depth", depthConfig[depth].label],
-                                ["Mode", enrichMode ? "Enrich" : "Normal"],
-                                ["Quality", strictness],
-                              ].map(([label, value]) => (
-                                <div key={label} className="border border-[#EFEDE6]/10 bg-black/60 p-2">
-                                  <p className="font-mono text-[8px] uppercase tracking-widest text-[#67645B]">{label}</p>
-                                  <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">{value}</p>
+                    <div className="flex min-h-0 flex-col overflow-hidden rounded-[16px] border border-[#f3f5f8]/[0.13] bg-gradient-to-b from-[#14171d] to-[#0f1115]">
+                      <div className="shrink-0 border-b border-[#f3f5f8]/[0.07] px-[18px] pb-3.5 pt-4">
+                        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">Scan plan</div>
+                        <div className="mt-1 text-[12px] text-[#5d6675]">{freePlan ? "Built from your conversation." : "Fills in as you talk to the agent."}</div>
+                      </div>
+
+                      <div className="min-h-0 flex-1 overflow-y-auto px-[18px] py-1.5">
+                        {freePlan ? (
+                          <>
+                            {planRows.map(row => (
+                              <div key={row.key} className="flex items-start gap-3 border-b border-[#f3f5f8]/[0.07] py-[13px]">
+                                <div className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] border border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]">
+                                  <row.Icon className="h-[13px] w-[13px]" />
                                 </div>
-                              ))}
+                                <div className="min-w-0">
+                                  <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">{row.label}</div>
+                                  <div className="mt-0.5 truncate text-[13.5px] font-medium text-[#f3f5f8]">{row.value}</div>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="flex items-start gap-3 py-[13px]">
+                              <div className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] border border-[#e8fb52]/40 bg-[#e8fb52]/10 text-[#e8fb52]">
+                                <BarChart3 className="h-[13px] w-[13px]" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Scan size</div>
+                                <div className="mt-2 flex gap-1.5">
+                                  {planSizes.map(sz => {
+                                    const active = freePlan.config.depth === sz.depth;
+                                    return (
+                                      <button
+                                        key={sz.depth}
+                                        type="button"
+                                        onClick={() => setPlanDepth(sz.depth)}
+                                        disabled={isProcessing}
+                                        className={`flex-1 rounded-[9px] border px-1.5 py-2 text-center transition-colors disabled:cursor-not-allowed ${
+                                          active ? "border-[#e8fb52] bg-[#e8fb52]/10" : "border-[#f3f5f8]/[0.13] bg-black hover:border-[#f3f5f8]/25"
+                                        }`}
+                                      >
+                                        <div className="font-display text-[12.5px] font-semibold text-[#f3f5f8]">{sz.name}</div>
+                                        <div className={`mt-0.5 font-mono text-[9px] ${active ? "text-[#e8fb52]" : "text-[#5d6675]"}`}>{getSearchCost(sz.depth, true)} cr</div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             </div>
-                          </div>
 
-                          <div>
-                            <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">Filters</p>
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
-                              {selectedSignalLabels === "none" ? "No priority signals selected" : selectedSignalLabels}
-                            </p>
-                            <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C]">
-                              Public email ranking: <span className="text-[#EFEDE6]">{preferPublicEmail ? "On" : "Off"}</span>
-                            </p>
+                            <div className="mt-3.5 flex items-center gap-2 rounded-[10px] border border-[#5fe3a1]/25 bg-[#5fe3a1]/[0.06] px-3 py-2.5">
+                              <Check className="h-3.5 w-3.5 shrink-0 text-[#5fe3a1]" strokeWidth={2.4} />
+                              <span className="text-xs text-[#5fe3a1]">Decision-maker contacts included</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex h-full min-h-0 items-center justify-center px-2 py-8 text-center text-[13px] leading-6 text-[#5d6675]">
+                            Tell the agent what you sell, who you target, and where. The plan appears here before you spend any credits.
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
-                      <div className="mt-4 border-t border-[#EFEDE6]/10 pt-4">
-                        <div className="flex items-end justify-between gap-4">
+                      <div className="shrink-0 border-t border-[#f3f5f8]/[0.07] px-[18px] py-3.5">
+                        <div className="mb-3 flex items-end justify-between gap-4">
                           <div>
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Credits</p>
-                            <p className="mt-1 font-mono text-2xl font-black text-[#EFEDE6]">{creditsBalance}</p>
+                            <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-[#5d6675]">Credits</div>
+                            <div className="mt-0.5 font-display text-[22px] font-bold text-[#f3f5f8]">{creditsBalance}</div>
                           </div>
                           <div className="text-right">
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Cost</p>
-                            <p className="mt-1 font-mono text-2xl font-black text-[#F5FF3D]">{isAdmin ? "Admin" : searchCost}</p>
+                            <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-[#5d6675]">Cost</div>
+                            <div className="mt-0.5 font-display text-[22px] font-bold text-[#e8fb52]">{freePlan ? (isAdmin ? "Admin" : planCost) : "—"}</div>
                           </div>
                         </div>
                         <button
-                          onClick={() => handleGenerate()}
-                          disabled={isProcessing}
-                          className="mt-4 h-12 w-full border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
+                          type="button"
+                          onClick={startFreeSearch}
+                          disabled={!freePlan || isProcessing}
+                          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[#e8fb52] font-display text-[15px] font-bold text-[#08090c] shadow-[0_8px_22px_rgba(232,251,82,0.18)] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                          {isProcessing ? "Finding opportunities..." : isAdmin ? `Find opportunities - admin` : `Find opportunities - ${searchCost} credits`}
+                          <Play className="h-4 w-4 fill-current" />
+                          {isProcessing ? "Scanning…" : isAdmin ? "Start scan · admin" : freePlan ? `Start scan · ${planCost} credits` : "Start scan"}
                         </button>
                       </div>
-                    </>
-                  )}
-                </aside>
+                    </div>
+                  </div>
+                </div>
               );
+            })()}
+            {searchMode === "manual" && (() => {
+              const scanSizes: Array<{ depth: Depth; name: string; count: string }> = [
+                { depth: "simple", name: "Quick", count: "~20 prospects" },
+                { depth: "normal", name: "Standard", count: "~40 prospects" },
+                { depth: "deep", name: "Deep", count: "~60 prospects" },
+              ];
+              const activeSize = scanSizes.find(size => size.depth === depth) ?? scanSizes[1];
+              const canStart = Boolean(selectedServiceValue && industry.trim() && country.trim());
+              const reviewService = searchConfig.selectedService || "Your service";
+              const reviewNiche = industry.trim() || "your niche";
+              const reviewLocation = country.trim() || `your ${locationMode}`;
+              const cardClass = "rounded-[14px] border border-[#f3f5f8]/[0.07] bg-[#111319] px-5 py-4";
+              const cardLabel = "mb-3.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5d6675]";
+              const inputClass = "w-full rounded-[9px] border bg-black px-3.5 py-2.5 text-[13.5px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50 disabled:opacity-50";
+
+              const advancedToggles: Array<{ title: string; desc: string; value: boolean; onToggle: () => void }> = [
+                { title: "Only businesses with a website", desc: "Skip shops with no site to evaluate or pitch.", value: onlyWithWebsite, onToggle: () => setOnlyWithWebsite(prev => !prev) },
+                { title: "Skip prospects I've already saved", desc: "Don't spend credits re-finding businesses you have.", value: skipSaved, onToggle: () => setSkipSaved(prev => !prev) },
+              ];
 
               return (
-              <div className="mx-auto flex h-full w-full max-w-[1440px] flex-col px-4 py-2 sm:px-6">
-                <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
-                  <button onClick={() => setSearchMode(null)} className="inline-flex h-8 items-center gap-1.5 border border-[#EFEDE6]/10 px-2.5 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] hover:border-[#F5FF3D]/50 hover:text-[#F5FF3D]">
-                    <ArrowLeft className="h-3.5 w-3.5" /> Options
-                  </button>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.32em] text-[#F5FF3D]">Manual search</span>
-                </div>
-
-                <div className="grid min-h-0 flex-1 overflow-hidden gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="min-h-0 min-w-0 overflow-y-auto pr-1">
-                    <div className="mb-3">
-                      <h1 className="font-display text-2xl font-black leading-tight tracking-[-0.04em] text-[#EFEDE6]">Set up your opportunity search.</h1>
-                      <p className="mt-1 max-w-xl text-sm leading-5 text-[#A8A59C]">Pick the target, the search effort, and the public signals that matter.</p>
+                <div className="mx-auto w-full max-w-[680px] px-1 pb-12 pt-1">
+                  <div className="mb-5 flex items-start justify-between gap-5">
+                    <div className="min-w-0">
+                      <h1 className="font-display text-[26px] font-bold leading-none tracking-[-0.025em] text-[#f3f5f8]">New scan</h1>
+                      <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-[#9aa3b2]">
+                        Tell the agent what you sell and who to target. It finds businesses and returns ranked prospects with decision-maker contacts.
+                      </p>
                     </div>
-
-                    <div className="flex min-h-0 flex-1 flex-col gap-3">
-                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
-                    {sectionEyebrow("Target", (
-                      <>
-                        <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">What to look for</p>
-                        <p><span className="text-[#EFEDE6]">Service</span> is what you sell. <span className="text-[#EFEDE6]">Industry</span> is the niche or business type to target. <span className="text-[#EFEDE6]">Location</span> narrows results to a country or city.</p>
-                      </>
-                    ))}
-                    <div className="mb-5">
-                      <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">What do you sell?</p>
-                      <div className="flex flex-wrap gap-2">
-                        {serviceOptions.map(option => {
-                          const active = selectedService === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => setSelectedService(option.value)}
-                              disabled={isProcessing}
-                              aria-pressed={active}
-                              className={`h-9 rounded-md border px-3 font-mono text-[10px] uppercase tracking-widest transition-all ${
-                                active
-                                  ? "border-[#F5FF3D] bg-[#F5FF3D] text-black shadow-[0_0_18px_rgba(245,255,61,0.18)]"
-                                  : "border-[#EFEDE6]/15 bg-black text-[#A8A59C] hover:border-[#F5FF3D]/60 hover:text-[#EFEDE6]"
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {selectedService === customServiceValue && (
-                        <input
-                          value={customService}
-                          onChange={event => setCustomService(event.target.value)}
-                          placeholder="Describe your service"
-                          disabled={isProcessing}
-                          className={`mt-2 h-11 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.selectedService ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
-                        />
-                      )}
-                      {fieldErrors.selectedService && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
+                    <div className="inline-flex shrink-0 gap-[3px] rounded-[10px] border border-[#f3f5f8]/[0.07] bg-[#111319] p-[3px]">
+                      <button type="button" aria-pressed={true} className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#1c2029] px-3 py-1.5 text-[12.5px] font-semibold text-[#f3f5f8]">
+                        <SlidersHorizontal className="h-3.5 w-3.5 text-[#e8fb52]" /> Manual
+                      </button>
+                      <button type="button" onClick={() => setSearchMode("free")} className="inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold text-[#9aa3b2] transition-colors hover:text-[#f3f5f8]">
+                        <Sparkles className="h-3.5 w-3.5" /> AI assisted
+                      </button>
                     </div>
-                    <div className="grid gap-5 md:grid-cols-[1.25fr_1fr_0.9fr]">
+                  </div>
+
+                  <div className={`mb-3.5 ${cardClass}`}>
+                    <p className={cardLabel}>What do you sell?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {serviceOptions.map(option => {
+                        const active = selectedService === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => selectService(option.value)}
+                            disabled={isProcessing}
+                            aria-pressed={active}
+                            className={`rounded-[9px] border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
+                              active
+                                ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                                : "border-[#f3f5f8]/[0.13] bg-black text-[#9aa3b2] hover:text-[#f3f5f8]"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedService === customServiceValue && (
+                      <input
+                        value={customService}
+                        onChange={event => {
+                          setCustomService(event.target.value);
+                          if (opportunityModeOn && selectedService === customServiceValue && opportunitySignals.length === 0) {
+                            setOpportunitySignals(getServiceRecommendedSignalKeys(event.target.value).slice(0, 3));
+                          }
+                        }}
+                        placeholder="Describe your service"
+                        disabled={isProcessing}
+                        className={`mt-3 ${inputClass} ${fieldErrors.selectedService ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
+                      />
+                    )}
+                    {fieldErrors.selectedService && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
+                  </div>
+
+                  <div className={`mb-3.5 ${cardClass}`}>
+                    <p className={cardLabel}>Who &amp; where</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <div className="mb-2 flex h-5 items-center">
-                          <label htmlFor="industry" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Industry / niche</label>
-                        </div>
+                        <label htmlFor="industry" className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Target market / niche</label>
                         <input
                           id="industry"
-                          autoFocus
                           value={industry}
                           onChange={event => setIndustry(event.target.value)}
-                          placeholder="AI agencies"
+                          placeholder="Dentists"
                           disabled={isProcessing}
-                          className={`h-12 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
+                          className={`${inputClass} ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
                         />
-                        {fieldErrors.industry && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.industry}</p>}
+                        {fieldErrors.industry && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.industry}</p>}
                       </div>
-
                       <div>
-                        <div className="mb-2 flex h-5 items-center justify-between gap-2">
-                          <label htmlFor="country" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Location</label>
-                          <div className="relative inline-grid h-8 w-[160px] grid-cols-2 overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black">
-                            <span
-                              className={`absolute inset-y-0 w-1/2 transition-transform duration-200 ease-out ${
-                                locationMode === "country" ? "translate-x-0 bg-[#EFEDE6]" : "translate-x-full bg-[#EFEDE6]"
-                              }`}
-                              aria-hidden
-                            />
+                        <div className="mb-1.5 flex items-center justify-between gap-2">
+                          <label htmlFor="country" className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Location</label>
+                          <div className="inline-flex rounded-[7px] border border-[#f3f5f8]/[0.13] bg-black p-0.5">
                             {(["country", "city"] as LocationMode[]).map(option => (
                               <button
                                 key={option}
                                 type="button"
                                 onClick={() => setLocationMode(option)}
                                 disabled={isProcessing}
-                                className={`relative z-10 flex items-center justify-center font-mono text-[10px] uppercase tracking-[0.18em] transition-colors ${
-                                  locationMode === option ? "text-black" : "text-[#A8A59C] hover:text-[#EFEDE6]"
+                                className={`rounded-[5px] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
+                                  locationMode === option ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"
                                 }`}
                               >
                                 {option === "country" ? "Country" : "City"}
@@ -2357,189 +2334,122 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                           id="country"
                           value={country}
                           onChange={event => setCountry(event.target.value)}
-                          placeholder={locationMode === "country" ? "Mexico" : "Lisbon, Portugal"}
+                          placeholder={locationMode === "country" ? "Mexico" : "Austin, TX"}
                           disabled={isProcessing}
-                          className={`h-12 w-full rounded-md border bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50 ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#EFEDE6]/15"}`}
+                          className={`${inputClass} ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
                         />
-                        {fieldErrors.country && <p className="mt-1 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.country}</p>}
+                        {fieldErrors.country && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.country}</p>}
                       </div>
+                    </div>
+                  </div>
 
-                      <div>
-                        <div className="mb-2 flex h-5 items-center">
-                          <label htmlFor="language" className="font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Language <span className="text-[#67645B]/60">(optional)</span></label>
+                  <div className={`mb-3.5 ${cardClass}`}>
+                    <p className={cardLabel}>Scan size</p>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {scanSizes.map(size => {
+                        const active = depth === size.depth;
+                        const credits = getSearchCost(size.depth, true);
+                        return (
+                          <button
+                            key={size.depth}
+                            type="button"
+                            onClick={() => {
+                              if (!canUseSearchQuality(plan, size.depth, true, isAdmin)) {
+                                requestUpgrade("Upgrade to unlock larger, fully enriched scans.");
+                                return;
+                              }
+                              setDepth(size.depth);
+                            }}
+                            disabled={isProcessing}
+                            aria-pressed={active}
+                            className={`relative rounded-[12px] border p-4 text-left transition-colors ${
+                              active ? "border-[#e8fb52] bg-[#e8fb52]/10" : "border-[#f3f5f8]/[0.13] bg-black hover:border-[#f3f5f8]/25"
+                            }`}
+                          >
+                            {active && <Check className="absolute right-3 top-3 h-4 w-4 text-[#e8fb52]" strokeWidth={2.5} />}
+                            <div className="font-display text-[15px] font-semibold text-[#f3f5f8]">{size.name}</div>
+                            <div className="mt-1 text-[12px] text-[#5d6675]">{size.count}</div>
+                            <div className="mt-3 font-mono text-[12px] text-[#e8fb52]">{credits} credits</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`mb-1.5 ${cardClass}`}>
+                    <p className={cardLabel}>Advanced · optional</p>
+                    <div className="flex flex-col">
+                      {advancedToggles.map((row, index) => (
+                        <div key={row.title} className={`flex items-center justify-between gap-4 py-3 ${index === 0 ? "" : "border-t border-[#f3f5f8]/[0.07]"}`}>
+                          <div className="min-w-0">
+                            <b className="block text-[13px] font-semibold text-[#f3f5f8]">{row.title}</b>
+                            <span className="text-[11.5px] text-[#5d6675]">{row.desc}</span>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={row.value}
+                            onClick={row.onToggle}
+                            disabled={isProcessing}
+                            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors disabled:opacity-50 ${row.value ? "bg-[#e8fb52]" : "bg-[#1c2029]"}`}
+                          >
+                            <span className={`absolute top-[3px] h-4 w-4 rounded-full transition-all ${row.value ? "left-[19px] bg-[#08090c]" : "left-[3px] bg-white"}`} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-4 border-t border-[#f3f5f8]/[0.07] py-3">
+                        <div className="min-w-0">
+                          <b className="block text-[13px] font-semibold text-[#f3f5f8]">Language</b>
+                          <span className="text-[11.5px] text-[#5d6675]">Force a language for non-English markets.</span>
                         </div>
                         <input
-                          id="language"
                           value={language}
                           onChange={event => setLanguage(event.target.value)}
-                          placeholder="Spanish"
+                          placeholder="Any"
                           disabled={isProcessing}
-                          className="h-12 w-full rounded-md border border-[#EFEDE6]/15 bg-black px-3 font-mono text-sm text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70 disabled:opacity-50"
+                          className="w-[130px] shrink-0 rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 py-2 text-[13px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50 disabled:opacity-50"
                         />
                       </div>
                     </div>
-                  </section>
+                  </div>
 
-                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
-                    {sectionEyebrow("Strategy", (
-                      <>
-                        <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">How hard the search works</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Depth</span> — Simple pulls ~20 prospects (5 cr), Normal ~40 (10 cr), Deep ~60 (20 cr).</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Contact mode</span> — Normal extracts public website contacts. Enrich also adds likely decision-maker contacts (doubles credit cost).</p>
-                        <p><span className="text-[#EFEDE6]">Strictness</span> — how loosely we match your niche. Broad casts a wide net; Strict keeps only tight matches.</p>
-                      </>
-                    ))}
-                    <div className="grid gap-x-7 gap-y-4 md:grid-cols-3 md:items-end">
-                      <div>
-                        <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Search depth</p>
-                        {renderRange(depth, depthOrder, { simple: "Simple", normal: "Normal", deep: "Deep" }, setDepth, true)}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-4 rounded-[14px] border border-[#f3f5f8]/[0.13] bg-gradient-to-b from-[#1c2029] to-[#111319] px-5 py-4">
+                    <div className="min-w-0">
+                      <div className="text-[14px] text-[#9aa3b2]">
+                        <b className="font-semibold text-[#f3f5f8]">{reviewService}</b> → {reviewNiche} · {reviewLocation} · {activeSize.name}
                       </div>
-
-                      <div>
-                        <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Contact mode</p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!enrichMode && !canUseSearchQuality(plan, depth, true, isAdmin)) {
-                              requestUpgrade("Starter and Growth unlock enrichment searches.");
-                              return;
-                            }
-                            setEnrichMode(!enrichMode);
-                          }}
-                          disabled={isProcessing}
-                          className="relative inline-grid h-12 w-full grid-cols-2 overflow-hidden rounded-md border border-[#EFEDE6]/15 bg-black"
-                        >
-                          <span
-                            className={`absolute inset-y-0 w-1/2 transition-transform duration-200 ease-out ${
-                              enrichMode ? "translate-x-full bg-[#F5FF3D]" : "translate-x-0 bg-[#EFEDE6]"
-                            }`}
-                            aria-hidden
-                          />
-                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${!enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
-                            Normal
-                          </span>
-                          <span className={`relative z-10 flex items-center justify-center font-mono text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${enrichMode ? "text-black" : "text-[#A8A59C]"}`}>
-                            Enrich
-                          </span>
-                        </button>
-                      </div>
-
-                      <div>
-                        <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Quality strictness</p>
-                        {renderRange(strictness, strictnessOrder, { broad: "Broad", balanced: "Balanced", strict: "Strict" }, setStrictness)}
+                      <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[#5d6675]">
+                        {activeSize.count} · <span className="text-[#5fe3a1]">decision-maker contacts included</span>
                       </div>
                     </div>
-                  </section>
-
-                  <section className="rounded-lg border border-[#F5FF3D]/20 bg-[#0A0A0A]/80 p-4 shadow-[0_0_42px_rgba(245,255,61,0.04)]">
-                    {sectionEyebrow("Filters", (
-                      <>
-                        <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6]">Trim and rank the results</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Person + company</span> are mandatory for every saved prospect.</p>
-                        <p className="mb-1.5"><span className="text-[#EFEDE6]">Priority signals</span> rank prospects higher without hiding useful people.</p>
-                        <p><span className="text-[#EFEDE6]">Prefer public email</span> — prospects with a public email rank higher in the list. Prospects without one are still shown.</p>
-                      </>
-                    ))}
-                    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                      <div>
-                        <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">Priority signals</p>
-                        <div className="flex flex-wrap gap-2">
-                          {requiredOptions.map(({ key, label, Icon }) => {
-                            const active = requiredContacts[key];
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => toggleRequiredContact(key)}
-                                disabled={isProcessing}
-                                aria-pressed={active}
-                                className={`inline-flex h-10 items-center gap-2 border px-3.5 font-mono text-[11px] uppercase tracking-widest transition-all ${
-                                  active
-                                    ? "border-[#F5FF3D] bg-[#F5FF3D] text-black shadow-[0_0_0_1px_rgba(245,255,61,0.4)]"
-                                    : "border-[#EFEDE6]/20 bg-[#0A0A0A] text-[#A8A59C] hover:-translate-y-px hover:border-[#F5FF3D]/60 hover:text-[#EFEDE6]"
-                                } h-11 rounded-md px-4 text-[11px] tracking-widest`}
-                              >
-                                <Icon className="h-4 w-4" /> {label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setPreferPublicEmail(!preferPublicEmail)}
-                        disabled={isProcessing}
-                        className="group inline-flex items-center gap-3 self-start md:self-end md:pb-1"
-                        aria-pressed={preferPublicEmail}
-                      >
-                        <span className="relative inline-flex h-6 w-10 items-center rounded-sm border border-[#EFEDE6]/20 bg-black">
-                          <span
-                            className={`absolute h-3.5 w-3.5 transition-all duration-200 ease-out ${
-                              preferPublicEmail ? "left-[21px] bg-[#F5FF3D]" : "left-[3px] bg-[#A8A59C]"
-                            }`}
-                          />
-                        </span>
-                        <span className={`font-mono text-[10px] uppercase tracking-widest transition-colors ${
-                          preferPublicEmail ? "text-[#EFEDE6]" : "text-[#A8A59C] group-hover:text-[#EFEDE6]"
-                        }`}>
-                          Prefer public email in ranking
-                        </span>
-                      </button>
+                    <div className="ml-auto text-right">
+                      <div className="font-display text-[24px] font-bold leading-none tracking-[-0.02em] text-[#e8fb52]">{isAdmin ? "Admin" : getSearchCost(depth, true)}</div>
+                      <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#5d6675]">{isAdmin ? "internal search" : `credits · ${creditsBalance} left`}</div>
                     </div>
-                  </section>
-                </div>
-
-                <div className="hidden" aria-hidden="true">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-widest text-[#67645B]">
-                    {industry.trim()
-                      ? <span className="text-[#EFEDE6]">{industry.trim()}</span>
-                      : <span className="text-[#67645B]/70">Set industry</span>}
-                    <span>·</span>
-                    {country.trim()
-                      ? <span className="text-[#EFEDE6]">{country.trim()}</span>
-                      : <span className="text-[#67645B]/70">Set {locationMode}</span>}
-                    <span>·</span>
-                    <span className="text-[#EFEDE6]">{depthConfig[depth].label}{enrichMode ? " + Enrich" : ""}</span>
-                    <span>·</span>
-                    <span className="text-[#EFEDE6]">{strictness}</span>
-                    {getRequiredContactLabels(requiredContacts) !== "none" && (
-                      <>
-                        <span>·</span>
-                        <span className="text-[#EFEDE6]">{getRequiredContactLabels(requiredContacts)}</span>
-                      </>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => handleGenerate()}
-                    disabled={isProcessing}
-                    className="h-12 border border-[#F5FF3D] bg-[#F5FF3D] px-6 font-display text-sm font-bold text-black transition-colors hover:bg-[#FFFE7A] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isProcessing ? "Finding opportunities..." : isAdmin ? `Find opportunities - admin` : `Find opportunities - ${searchCost} credits`}
-                  </button>
-                </div>
-                  </div>
-
-                  <div className="min-h-0 overflow-hidden">
-                    {manualPreview}
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate({ ...searchConfig, enrichMode: true })}
+                      disabled={isProcessing || !canStart}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-[11px] bg-[#e8fb52] px-6 py-3 font-display text-[15px] font-bold text-[#08090c] shadow-[0_8px_22px_rgba(232,251,82,0.18)] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Play className="h-4 w-4 fill-current" /> {isProcessing ? "Scanning…" : isAdmin ? "Start scan · admin" : `Start scan · ${getSearchCost(depth, true)} credits`}
+                    </button>
                   </div>
                 </div>
-              </div>
               );
             })()}
 
-            {isProcessing && searchMode !== "manual" && (
-              <div className="overflow-hidden border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] px-4 py-4">
+            {isProcessing && (
+              <div className="overflow-hidden border border-[#f3f5f8]/[0.14] bg-[#111319] px-4 py-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                   <div className="flex min-w-[220px] items-center gap-3">
-                    <span className="relative grid h-8 w-8 place-items-center border border-[#F5FF3D]/40 bg-[#F5FF3D]/10">
-                      <span className="absolute h-2 w-2 animate-ping rounded-full bg-[#F5FF3D]" />
-                      <Loader2 className="relative h-4 w-4 animate-spin text-[#F5FF3D]" />
+                    <span className="relative grid h-8 w-8 place-items-center border border-[#e8fb52]/40 bg-[#e8fb52]/10">
+                      <span className="absolute h-2 w-2 animate-ping rounded-full bg-[#e8fb52]" />
+                      <Loader2 className="relative h-4 w-4 animate-spin text-[#e8fb52]" />
                     </span>
                     <div>
-                      <p className="font-display text-sm font-bold text-[#EFEDE6]">{progressLabels[stage]}</p>
-                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">
+                      <p className="font-display text-sm font-bold text-[#f3f5f8]">{progressLabels[stage]}</p>
+                      <p className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
                         {searchStepStatus
                           ? `Website ${searchStepStatus.current}/${searchStepStatus.total}`
                           : stage === "rank"
@@ -2560,28 +2470,28 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                               key={index}
                               className={`h-4 border transition-all duration-500 ${
                                 filled
-                                  ? `border-[#F5FF3D] bg-[#F5FF3D] shadow-[0_0_14px_rgba(245,255,61,0.35)] ${active ? "animate-pulse" : ""}`
-                                  : "border-[#EFEDE6]/10 bg-[#EFEDE6]/[0.04]"
+                                  ? `border-[#e8fb52] bg-[#e8fb52] shadow-[0_0_14px_rgba(245,255,61,0.35)] ${active ? "animate-pulse" : ""}`
+                                  : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.04]"
                               }`}
                             />
                           );
                         })}
                       </div>
-                      <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-[#F5FF3D]">
+                      <span className="w-12 text-right font-mono text-xs font-bold tabular-nums text-[#e8fb52]">
                         {Math.round(displayProgress)}%
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-widest text-[#67645B]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
                       <span>{searchStepStatus ? "Finding people, emails, and public profiles" : status}</span>
-                      {searchStepStatus && <span className="text-[#F5FF3D]">People found: {searchStepStatus.peopleFound}</span>}
-                      {searchStepStatus?.businessName && <span className="max-w-[320px] truncate text-[#A8A59C]">{searchStepStatus.businessName}</span>}
+                      {searchStepStatus && <span className="text-[#e8fb52]">People found: {searchStepStatus.peopleFound}</span>}
+                      {searchStepStatus?.businessName && <span className="max-w-[320px] truncate text-[#9aa3b2]">{searchStepStatus.businessName}</span>}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {results && !isProcessing && searchMode !== "manual" && (
+            {results && !isProcessing && (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-5">
                   {[
@@ -2591,48 +2501,48 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     ["Emails", emailCount],
                     ["Contacts", contactCount],
                   ].map(([label, value]) => (
-                    <div key={String(label)} className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
-                      <p className="font-mono text-2xl font-black text-[#EFEDE6]">{value}</p>
-                      <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">{label}</p>
+                    <div key={String(label)} className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-4">
+                      <p className="font-mono text-2xl font-black text-[#f3f5f8]">{value}</p>
+                      <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{label}</p>
                     </div>
                   ))}
                 </div>
 
                 {searchDiagnostics && (
-                  <div className="border border-[#F5FF3D]/25 bg-[#F5FF3D]/[0.06] p-4">
+                  <div className="border border-[#e8fb52]/25 bg-[#e8fb52]/[0.06] p-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#F5FF3D]">Person-first search</p>
-                        <p className="mt-1 text-sm leading-6 text-[#A8A59C]">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Person-first search</p>
+                        <p className="mt-1 text-sm leading-6 text-[#9aa3b2]">
                           Found {searchDiagnostics.discoveredCompanies} companies, scanned {searchDiagnostics.scannedWebsites} websites, and saved {searchDiagnostics.savedLeads} opportunities with a real person name.
                           {searchDiagnostics.rejectedNoPerson > 0 ? ` ${searchDiagnostics.rejectedNoPerson} company-only candidates were rejected.` : ""}
                         </p>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 font-mono text-[10px] uppercase tracking-widest text-[#A8A59C] sm:min-w-[360px]">
-                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.peopleFound}</b>People</span>
-                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.emailsFound}</b>Emails</span>
-                        <span className="border border-[#EFEDE6]/10 bg-black/40 p-2"><b className="block text-base text-[#EFEDE6]">{searchDiagnostics.linkedinProfilesFound}</b>LinkedIn</span>
+                      <div className="grid grid-cols-3 gap-2 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] sm:min-w-[360px]">
+                        <span className="border border-[#f3f5f8]/10 bg-black/40 p-2"><b className="block text-base text-[#f3f5f8]">{searchDiagnostics.peopleFound}</b>People</span>
+                        <span className="border border-[#f3f5f8]/10 bg-black/40 p-2"><b className="block text-base text-[#f3f5f8]">{searchDiagnostics.emailsFound}</b>Emails</span>
+                        <span className="border border-[#f3f5f8]/10 bg-black/40 p-2"><b className="block text-base text-[#f3f5f8]">{searchDiagnostics.linkedinProfilesFound}</b>LinkedIn</span>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3 border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 border border-[#f3f5f8]/[0.14] bg-[#111319] p-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="relative w-full lg:max-w-sm">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67645B]" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5d6675]" />
                     <input
                       type="text"
                       placeholder="Filter opportunities..."
                       value={filterText}
                       onChange={event => setFilterText(event.target.value)}
-                      className="h-10 w-full border border-[#EFEDE6]/10 bg-black pl-9 pr-3 font-mono text-xs text-[#EFEDE6] outline-none placeholder:text-[#67645B] focus:border-[#F5FF3D]/70"
+                      className="h-10 w-full border border-[#f3f5f8]/10 bg-black pl-9 pr-3 font-mono text-xs text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/70"
                     />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#EFEDE6]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#EFEDE6] hover:border-[#F5FF3D] disabled:opacity-30">
+                    <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
                       {!hasFullAppAccess ? "Upgrade to copy" : emailsCopied ? "Copied emails" : "Copy emails"}
                     </button>
-                    <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#F5FF3D] bg-[#F5FF3D] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#FFFE7A]">
+                    <button onClick={handleDownload} className="inline-flex items-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-black hover:bg-[#f3ff8a]">
                       <Download className="h-3.5 w-3.5" />
                       {!hasFullAppAccess ? "Upgrade to export" : "Export XLSX"}
                     </button>
@@ -2644,10 +2554,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     const contact = getTopContact(lead);
                     const qualityTone =
                       lead.leadQualityLabel === "Strong lead"
-                        ? "border-[#F5FF3D] text-[#F5FF3D]"
+                        ? "border-[#e8fb52] text-[#e8fb52]"
                         : lead.leadQualityLabel === "Good lead"
                           ? "border-[#8FD8FF]/70 text-[#8FD8FF]"
-                          : "border-[#EFEDE6]/15 text-[#A8A59C]";
+                          : "border-[#f3f5f8]/15 text-[#9aa3b2]";
                     const badges = [
                       lead.website ? "Website" : "",
                       lead.emails.length ? "Email" : "No email",
@@ -2657,38 +2567,38 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     ].filter(Boolean);
 
                     return (
-                      <article key={lead.placeId || index} className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-4">
+                      <article key={lead.placeId || index} className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
-                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#EFEDE6]">{contact?.fullName || "Named contact"}</h3>
-                            <p className="mt-1 line-clamp-1 text-sm font-semibold text-[#A8A59C]">{lead.name}</p>
-                            <p className="mt-1 line-clamp-1 text-xs text-[#67645B]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
+                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#f3f5f8]">{contact?.fullName || "Named contact"}</h3>
+                            <p className="mt-1 line-clamp-1 text-sm font-semibold text-[#9aa3b2]">{lead.name}</p>
+                            <p className="mt-1 line-clamp-1 text-xs text-[#5d6675]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${qualityTone}`}>
                                 {getOpportunityLabel(lead)} / {lead.leadQualityScore || 0}
                               </span>
-                              {lead.leadQualityReason && <span className="text-xs text-[#A8A59C]">{lead.leadQualityReason}</span>}
+                              {lead.leadQualityReason && <span className="text-xs text-[#9aa3b2]">{lead.leadQualityReason}</span>}
                             </div>
                           </div>
                           <div className="flex flex-wrap justify-end gap-1.5">
                             {badges.map(badge => (
-                              <span key={badge} className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${badge === "No email" ? "border-[#EFEDE6]/10 text-[#67645B]" : "border-[#F5FF3D]/30 text-[#F5FF3D]"}`}>
+                              <span key={badge} className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${badge === "No email" ? "border-[#f3f5f8]/10 text-[#5d6675]" : "border-[#e8fb52]/30 text-[#e8fb52]"}`}>
                                 {badge}
                               </span>
                             ))}
                           </div>
                         </div>
 
-                        <div className="mt-4 grid gap-3 border border-[#EFEDE6]/10 bg-black/60 p-3 sm:grid-cols-2">
+                        <div className="mt-4 grid gap-3 border border-[#f3f5f8]/10 bg-black/60 p-3 sm:grid-cols-2">
                           <div>
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">Why this prospect?</p>
-                            <p className="mt-1 text-xs leading-5 text-[#A8A59C]">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Why this prospect?</p>
+                            <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">
                               {lead.leadQualityReason || "This result has usable public evidence for outreach."}
                             </p>
                           </div>
                           <div>
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#F5FF3D]">Outreach angle</p>
-                            <p className="mt-1 text-xs leading-5 text-[#A8A59C]">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Outreach angle</p>
+                            <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">
                               Use the person/company context and public contact path to start a specific, practical conversation.
                             </p>
                           </div>
@@ -2697,26 +2607,26 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                           <div className="space-y-2">
                             {lead.emails[0] && (
-                              <button onClick={() => handleCopyField(`${lead.placeId}-email`, lead.emails[0])} className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#F5FF3D] hover:underline">
+                              <button onClick={() => handleCopyField(`${lead.placeId}-email`, lead.emails[0])} className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#e8fb52] hover:underline">
                                 {copiedKeys.has(`${lead.placeId}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
                                 <span className="truncate">{lead.emails[0]}</span>
                               </button>
                             )}
                             {lead.phone && (
-                              <button onClick={() => handleCopyField(`${lead.placeId}-phone`, lead.phone)} className="flex items-center gap-2 font-mono text-xs text-[#A8A59C] hover:text-[#EFEDE6]">
+                              <button onClick={() => handleCopyField(`${lead.placeId}-phone`, lead.phone)} className="flex items-center gap-2 font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
                                 {copiedKeys.has(`${lead.placeId}-phone`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
                                 {lead.phone}
                               </button>
                             )}
                             {lead.website && (
-                              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#A8A59C] hover:text-[#EFEDE6]">
+                              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
                                 <Globe className="h-3.5 w-3.5" />
                                 <span className="truncate">{compactUrl(lead.website)}</span>
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
                             {lead.socialLinks?.[0] && (
-                              <a href={lead.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#A8A59C] hover:text-[#EFEDE6]">
+                              <a href={lead.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
                                 <Globe className="h-3.5 w-3.5" />
                                 <span className="truncate">{compactUrl(lead.socialLinks[0])}</span>
                                 <ExternalLink className="h-3 w-3" />
@@ -2724,16 +2634,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             )}
                           </div>
 
-                          <div className="border border-[#EFEDE6]/10 bg-black p-3">
-                            <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#67645B]">
+                          <div className="border border-[#f3f5f8]/10 bg-black p-3">
+                            <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
                               <UserRound className="h-3.5 w-3.5" />
                               Likely decision maker
                             </p>
                             {contact ? (
                               <div>
-                                <p className="font-display text-sm font-bold text-[#EFEDE6]">{contact.fullName || contact.email || contact.linkedinUrl}</p>
-                                {contact.title && <p className="mt-1 text-xs text-[#A8A59C]">{contact.title}</p>}
-                                <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#F5FF3D]">{contact.source} · {contact.decisionMakerScore}/100</p>
+                                <p className="font-display text-sm font-bold text-[#f3f5f8]">{contact.fullName || contact.email || contact.linkedinUrl}</p>
+                                {contact.title && <p className="mt-1 text-xs text-[#9aa3b2]">{contact.title}</p>}
+                                <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">{contact.source} · {contact.decisionMakerScore}/100</p>
                                 {contact.linkedinUrl && (
                                   <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0A66C2] hover:text-[#4A9BE8]">
                                     <Linkedin className="h-3.5 w-3.5" />
@@ -2742,7 +2652,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 )}
                               </div>
                             ) : (
-                              <p className="text-xs text-[#67645B]">{enrichMode ? "No named contact found." : "Use Enrich to find named contacts."}</p>
+                              <p className="text-xs text-[#5d6675]">{enrichMode ? "No named contact found." : "Use Enrich to find named contacts."}</p>
                             )}
                           </div>
                         </div>
@@ -2752,9 +2662,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 </div>
 
                 {sortedResults?.length === 0 && (
-                  <div className="border border-[#EFEDE6]/[0.14] bg-[#0A0A0A] p-8 text-center">
-                    <p className="font-display text-lg font-bold text-[#EFEDE6]">No opportunities match this filter.</p>
-                    <p className="mt-2 text-sm text-[#A8A59C]">Clear the filter or run a deeper search to find more usable evidence.</p>
+                  <div className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-8 text-center">
+                    <p className="font-display text-lg font-bold text-[#f3f5f8]">No opportunities match this filter.</p>
+                    <p className="mt-2 text-sm text-[#9aa3b2]">Clear the filter or run a deeper search to find more usable evidence.</p>
                   </div>
                 )}
               </div>
