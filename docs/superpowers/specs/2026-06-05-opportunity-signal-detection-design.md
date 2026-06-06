@@ -121,7 +121,7 @@ Thresholds are named constants in the module so they are tunable.
 | `generic_inbox` | `hasGenericInboxOnly` is true. |
 | `no_contact_form` | `contactFormFound` false **and** `contactPageFound` false. |
 | `no_social_links` | `socialLinks` empty. |
-| `low_reviews` | `reviewCount` below threshold (default < 15). |
+| `low_reviews` | `reviewCount` below threshold (default < 18). |
 | `weak_local_presence` | low `reviewCount` **and** (no website or no rating). |
 
 Each emitted signal carries an evidence snippet: the page URL plus the matched text, or
