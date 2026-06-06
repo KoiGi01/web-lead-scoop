@@ -7,7 +7,6 @@ import {
   Home,
   KanbanSquare,
   Plus,
-  Search,
   Settings,
   ShieldCheck,
   Users,
@@ -126,9 +125,12 @@ const AppSidebar = ({
     >
       {/* brand + collapse */}
       <div className="flex h-16 flex-shrink-0 items-center gap-2.5 border-b border-[#f3f5f8]/[0.07] px-3.5">
-        <span className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-[8px] bg-[#e8fb52] shadow-[0_0_0_1px_rgba(232,251,82,0.3),0_6px_18px_rgba(232,251,82,0.12)]">
-          <Search className="h-[17px] w-[17px] text-[#08090c]" strokeWidth={2.4} />
-        </span>
+        <img
+          src="/logo.png"
+          alt=""
+          aria-hidden="true"
+          className="h-[30px] w-[30px] flex-shrink-0 rounded-[8px] object-contain"
+        />
         {!collapsed && (
           <span className="font-display text-[16.5px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
             GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
