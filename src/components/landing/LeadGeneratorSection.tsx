@@ -38,6 +38,8 @@ import {
   getServiceRecommendedSignalKeys,
 } from "@/lib/opportunitySignals";
 import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
+import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOpportunitySignals";
+import type { WebsiteSignals } from "../../supabase/functions/_shared/websiteSignals";
 
 interface Business {
   placeId: string;
@@ -48,6 +50,8 @@ interface Business {
   category: string;
   lat?: number;
   lng?: number;
+  rating?: number;
+  reviewCount?: number;
 }
 
 interface DecisionMakerContact {
@@ -77,6 +81,8 @@ interface LeadResult extends Business {
   leadQualityLabel?: "Strong lead" | "Good lead" | "Needs work";
   leadQualityReason?: string;
   dbId?: string;
+  websiteSignals?: WebsiteSignals;
+  detectedSignals?: DetectedSignal[];
 }
 
 interface SearchDiagnostics {
@@ -1567,6 +1573,20 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
             getInvokeTimeoutMs(config.depth),
             "Contact enrichment timed out",
           );
+          const websiteSignals: WebsiteSignals | undefined = contactResponse.data?.websiteSignals;
+          const detectedSignals = websiteSignals
+            ? detectOpportunitySignals(
+                websiteSignals,
+                {
+                  rating: business.rating,
+                  reviewCount: business.reviewCount,
+                  hasWebsite: Boolean(business.website),
+                  techStack: websiteSignals.techStack,
+                  ssl: websiteSignals.ssl,
+                },
+                config.opportunitySignals || [],
+              )
+            : undefined;
           const lead = {
             ...business,
             emails: contactResponse.data?.emails || [],
@@ -1576,6 +1596,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
             contactPageFound: contactResponse.data?.contactPageFound || false,
             emailSource: contactResponse.data?.emailSource || "none",
             contacts: contactResponse.data?.contacts || [],
+            websiteSignals,
+            detectedSignals,
           };
           leads.push(lead);
           setSearchStepStatus(current => current ? { ...current, peopleFound: leads.filter(hasQualifiedPersonLead).length } : current);
