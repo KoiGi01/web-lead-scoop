@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
           headers: {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': apiKey,
-            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken',
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,places.rating,places.userRatingCount,nextPageToken',
           },
           body: JSON.stringify(body),
         });
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
           error_code: response.ok ? null : data.error?.status || "GOOGLE_ERROR",
           metadata: {
             sku_inferred: "Places API Text Search Enterprise",
-            field_mask: "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,nextPageToken",
+            field_mask: "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryType,places.types,places.location,places.rating,places.userRatingCount,nextPageToken",
             query,
             max_result_count: body.maxResultCount,
             page_token_used: Boolean(pageToken),
@@ -182,6 +182,8 @@ Deno.serve(async (req) => {
       category: place.primaryType || place.types?.[0] || '',
       lat: place.location?.latitude,
       lng: place.location?.longitude,
+      rating: typeof place.rating === 'number' ? place.rating : undefined,
+      reviewCount: typeof place.userRatingCount === 'number' ? place.userRatingCount : undefined,
     }));
 
     console.log(`Found ${businesses.length} businesses for "${queries.join(' | ')}"`);
