@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildWebsiteSignals, type ScrapedPage } from "../_shared/websiteSignals.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -557,6 +558,7 @@ Deno.serve(async (req) => {
     let linkedinUrl = extractLinkedInCompany(html, links) || discoveredLinkedinUrl;
     let socialLinks = [...new Set([...discoveredProfileLinks, ...extractSocialLinks(html, links, formattedUrl), ...extractProfessionalLinks(html, links)])].slice(0, 6);
     const pageTexts = [stripHtml(html)];
+    const scrapedPages: ScrapedPage[] = [{ url: formattedUrl, html, links }];
 
     const contactPaths = ["/contact", "/contacto", "/about", "/nosotros", "/team", "/equipo", "/doctors", "/doctores", "/staff", "/especialistas"];
     const origin = new URL(formattedUrl).origin;
@@ -613,6 +615,7 @@ Deno.serve(async (req) => {
         const contactPageLinks: string[] = contactData.data?.links || contactData.links || [];
         contactPageFound = true;
         pageTexts.push(stripHtml(contactHtml));
+        scrapedPages.push({ url: contactUrl, html: contactHtml, links: contactPageLinks });
         allEmails = [...new Set([...allEmails, ...extractEmails(contactHtml)])];
         allWhatsApp = [...new Set([...allWhatsApp, ...extractWhatsApp(contactHtml)])];
         linkedInProfiles = [...new Set([...linkedInProfiles, ...extractLinkedInProfiles(contactHtml, contactPageLinks).map(normalizeUrl)])].slice(0, 8);
@@ -726,6 +729,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    const websiteSignals = buildWebsiteSignals({
+      pages: scrapedPages,
+      emails: allEmails,
+      socialLinks,
+      contactPageFound,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -736,6 +746,7 @@ Deno.serve(async (req) => {
         socialLinks,
         contacts: mergeContacts(contacts),
         emailSource,
+        websiteSignals,
         ...(usageType !== "customer" ? { debugProfileLinks: discoveredDebugLinks } : {}),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
