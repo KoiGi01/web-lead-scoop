@@ -40,6 +40,7 @@ import {
 import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOpportunitySignals";
 import type { WebsiteSignals } from "../../supabase/functions/_shared/websiteSignals";
+import { buildLeadIntelligence } from "@/lib/leadIntelligence";
 
 interface Business {
   placeId: string;
@@ -1372,11 +1373,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         contacts: lead.contacts,
         linkedin_url: lead.linkedinUrl || null,
         social_links: lead.socialLinks || [],
+        intelligence: buildLeadIntelligence(lead.detectedSignals, lead.websiteSignals, config.selectedService) ?? null,
       }));
 
       let { data: saved, error: saveError } = await supabase.from("saved_leads").insert(payload).select();
-      if (saveError && /selected_service|linkedin_url|social_links|schema cache/i.test(saveError.message)) {
-        const fallbackPayload = payload.map(({ selected_service: _selectedService, linkedin_url: _linkedinUrl, social_links: _socialLinks, ...lead }) => lead);
+      if (saveError && /selected_service|linkedin_url|social_links|intelligence|schema cache/i.test(saveError.message)) {
+        const fallbackPayload = payload.map(({ selected_service: _selectedService, linkedin_url: _linkedinUrl, social_links: _socialLinks, intelligence: _intelligence, ...lead }) => lead);
         const fallback = await supabase.from("saved_leads").insert(fallbackPayload).select();
         saved = fallback.data;
         saveError = fallback.error;
