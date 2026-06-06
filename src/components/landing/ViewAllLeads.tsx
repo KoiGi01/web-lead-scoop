@@ -31,6 +31,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { type CrmStatus, NON_NEW_STAGES, parseStagePrefs } from "@/lib/stagePrefs";
+import type { PersistedSignals } from "@/lib/leadIntelligence";
 
 type CrmPriority = "low" | "normal" | "high";
 type SortKey = "name" | "emails" | "score" | "follow_up";
@@ -46,6 +47,7 @@ interface LeadIntelligence {
   opportunitySummary?: string;
   suggestedPitchAngle?: string;
   outreachHook?: string;
+  signals?: PersistedSignals;
 }
 
 interface DecisionMakerContact {
