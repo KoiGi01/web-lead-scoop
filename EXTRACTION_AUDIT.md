@@ -100,6 +100,8 @@ Current limitation: it expects homepage text and enrichment input, and it is not
 
 ## Recommended Next Step
 
+> **Status (2026-06-06): DONE.** The extraction layer now returns `websiteSignals` (see `supabase/functions/_shared/websiteSignals.ts`), the detector ships in `src/lib/detectOpportunitySignals.ts`, and detected signals are persisted into `saved_leads.intelligence` via `src/lib/leadIntelligence.ts`. The MVP shape below was implemented with two refinements: `contactPageFound` was added, and the persisted `website` subset drops `ctaTexts`/top-level `evidence` (per-signal evidence lives inside `detected[]`). See `docs/superpowers/specs/2026-06-05-opportunity-signal-detection-design.md` and `docs/superpowers/specs/2026-06-06-persist-opportunity-signals-design.md`.
+
 Before adding detectors, extend the extraction layer to return a structured `websiteSignals` object.
 
 Suggested MVP shape:

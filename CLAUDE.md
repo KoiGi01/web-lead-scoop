@@ -220,16 +220,35 @@ Important tables:
 
 `src/integrations/supabase/types.ts` is generated in principle, but this repo has manual updates. If regenerating types, verify custom accounting/contact types remain present.
 
+`saved_leads.intelligence` (JSON) holds opportunity data. Rule-based detection writes `{ detectedIssues: string[], signals: { version, service, detected[], website } }` via `buildLeadIntelligence` on save (new saves only — no backfill). The Phase 6 AI-scoring fields (`opportunityScore`, `positioning`, `suggestedPitchAngle`, `outreachHook`) share this column but are intentionally left unwritten by rule-based detection to avoid collision.
+
+---
+
+## Opportunity Signal Detection
+
+Phase 4 rule-based detection is shipped (in-memory + persisted; not yet rendered on cards — that is Phase 5). Key files:
+
+- `supabase/functions/_shared/websiteSignals.ts`: gathers website facts from scraped HTML.
+- `src/lib/opportunitySignals.ts`: the 8 signal keys, labels, and service-aware recommendations.
+- `src/lib/detectOpportunitySignals.ts`: pure detector. Interprets `websiteSignals` + Places `rating`/`reviewCount` into the 8 signals, **emitting only the user's selected keys**, each with confidence + evidence. Thresholds are named constants (`LOW_REVIEW_COUNT = 18`, etc.). `EnrichmentContext` has an unused `pageSpeed` slot reserved for future async enrichers.
+- `src/lib/leadIntelligence.ts`: maps detector output into the `saved_leads.intelligence` shape for persistence.
+
+Detection is deterministic and free (derived from data already fetched). External/paid enrichment (PageSpeed, etc.) is deferred to Phase 6/8. SEMrush-class APIs are not free and are not used.
+
 ---
 
 ## Edge Functions
 
 Current active functions:
 
-- `search-places`: business discovery and Google usage logging.
-- `extract-contacts`: website contact extraction, enrichment, and provider usage logging.
+- `search-places`: business discovery and Google usage logging. Returns `rating` and `reviewCount` per business (free; the field mask is already Enterprise-tier).
+- `extract-contacts`: website contact extraction, enrichment, and provider usage logging. Also returns a structured `websiteSignals` object built from the already-scraped homepage + contact-page HTML (no extra API calls), via the shared `supabase/functions/_shared/websiteSignals.ts` builder.
 - `create-checkout-session`: Stripe Checkout session creation.
 - `stripe-webhook`: credit fulfillment, Stripe payment logging, purchase transaction logging.
+
+Shared edge code:
+
+- `supabase/functions/_shared/websiteSignals.ts`: pure, dependency-free fact builder (`buildWebsiteSignals`). No Deno globals, so it is also imported and unit-tested from `src/`.
 
 Legacy or currently inactive in main flow:
 
