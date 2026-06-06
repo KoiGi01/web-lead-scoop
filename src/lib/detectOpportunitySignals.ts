@@ -30,7 +30,7 @@ const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
 type Detector = (facts: WebsiteSignals, ctx: EnrichmentContext) => DetectedSignal;
 
-const sourceUrlOf = (facts: WebsiteSignals) => facts.pagesScanned[0] || "";
+const sourceUrlOf = (facts: WebsiteSignals) => facts.pagesScanned[0] || "no-page-scanned";
 const pageCount = (facts: WebsiteSignals) => facts.pagesScanned.length;
 
 const DETECTORS: Record<OpportunitySignalKey, Detector> = {
@@ -82,7 +82,7 @@ const DETECTORS: Record<OpportunitySignalKey, Detector> = {
   }),
 
   no_contact_form: (facts) => {
-    const present = !facts.contactFormFound;
+    const present = !facts.contactFormFound && !facts.contactPageFound;
     return {
       key: "no_contact_form",
       present,

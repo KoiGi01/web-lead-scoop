@@ -66,6 +66,7 @@ interface WebsiteSignals {
   metaDescription?: string;
   homepageTextLength: number;      // stripped body length (thin-site hint)
   contactFormFound: boolean;       // <form> with email/contact-like inputs
+  contactPageFound: boolean;       // a contact/about page was reached during the scrape
   bookingLinks: string[];          // calendly/acuity/booksy/"book"/"appointment" hrefs
   ctaTexts: string[];              // button/link texts matching action verbs
   socialLinks: string[];           // reuse existing extraction
@@ -122,7 +123,7 @@ Thresholds are named constants in the module so they are tunable.
 | `no_contact_form` | `contactFormFound` false **and** `contactPageFound` false. |
 | `no_social_links` | `socialLinks` empty. |
 | `low_reviews` | `reviewCount` below threshold (default < 18). |
-| `weak_local_presence` | low `reviewCount` **and** (no website or no rating). |
+| `weak_local_presence` | low `reviewCount` **and** weak `rating` (default < 4.0). Note: the literal "no website" conjunct is omitted because detection only runs on businesses that have a website and carry Places rating data, which would make that rule near-dead; rating strength is the meaningful proxy. |
 
 Each emitted signal carries an evidence snippet: the page URL plus the matched text, or
 a deterministic absence message (e.g. "no booking link found across N pages scanned").

@@ -21,6 +21,7 @@ export interface WebsiteSignals {
   metaDescription?: string;
   homepageTextLength: number;
   contactFormFound: boolean;
+  contactPageFound: boolean;
   bookingLinks: string[];
   ctaTexts: string[];
   socialLinks: string[];
@@ -129,6 +130,7 @@ export function buildWebsiteSignals(input: BuildWebsiteSignalsInput): WebsiteSig
     metaDescription: extractMetaDescription(homepage.html),
     homepageTextLength: stripHtmlToText(homepage.html).length,
     contactFormFound,
+    contactPageFound: input.contactPageFound,
     bookingLinks,
     ctaTexts,
     socialLinks: input.socialLinks,
