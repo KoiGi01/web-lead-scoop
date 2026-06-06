@@ -53,10 +53,12 @@ Phase 3 note: these are stored search preferences only. They do not filter, scor
 ## Phase 4 - Rule-Based Signal Detection
 
 - [x] **Dependency first:** audit what `extract-contacts` (and `extract-contacts-v2`) actually return today. Signal detection needs page structure, booking/CTA/contact-form/social-link presence, and basic performance; `extract-contacts` is built for emails/contacts and may not capture this. See `EXTRACTION_AUDIT.md`.
-- [ ] Detect simple visible signals from existing public website/contact data.
-- [ ] Add opportunity signal and evidence fields to saved results.
-- [ ] Display top signals on generated and saved result cards.
+- [x] Detect simple visible signals from existing public website/contact data. Shipped: `extract-contacts` returns a structured `websiteSignals` object (from already-scraped HTML, zero new API calls), `search-places` returns free `rating`/`reviewCount`, and `src/lib/detectOpportunitySignals.ts` interprets these into the 8 signals (selected keys only, with confidence + evidence). Wired into the live search as in-memory `lead.detectedSignals`.
+- [ ] Add opportunity signal and evidence fields to saved results. (Detected in-memory only; not yet persisted to `saved_leads`.)
+- [ ] Display top signals on generated and saved result cards. (Deferred to Phase 5.)
 - [ ] Add diagnostics for rejected or low-signal businesses.
+
+Phase 4 status (2026-06-06): detection shipped and verified via PR #3 on branch `feat/opportunity-signal-detection`. Spec `docs/superpowers/specs/2026-06-05-opportunity-signal-detection-design.md`, plan `docs/superpowers/plans/2026-06-05-opportunity-signal-detection.md`. `npm.cmd run build` + 33 tests pass; per-part Codex verification confirmed no new external calls and an unchanged Places SKU. Decision: `weak_local_presence` keys off low reviews **and** weak rating (< 4.0) rather than the literal "no website" rule, which is near-dead in the live flow (extraction only runs on websited businesses); the spec was updated to match. Remaining before Phase 4 fully closes: persist signals to `saved_leads`, low-signal diagnostics, and **deploying** the `search-places` + `extract-contacts` edge functions.
 
 ## Phase 5 - Opportunity Result Cards
 
