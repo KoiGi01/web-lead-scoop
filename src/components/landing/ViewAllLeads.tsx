@@ -32,6 +32,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { toast } from "@/hooks/use-toast";
 import { type CrmStatus, NON_NEW_STAGES, parseStagePrefs } from "@/lib/stagePrefs";
 import type { PersistedSignals } from "@/lib/leadIntelligence";
+import { resolveSelectedLeadId } from "@/lib/leadSelection";
 
 type CrmPriority = "low" | "normal" | "high";
 type SortKey = "name" | "emails" | "score" | "follow_up";
@@ -573,14 +574,12 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   });
 
   useEffect(() => {
-    if (sortedResults.length === 0) {
-      setSelectedLeadId(null);
-      return;
-    }
-    if (!selectedLeadId || !sortedResults.some(lead => lead.id === selectedLeadId)) {
-      setSelectedLeadId(sortedResults[0].id);
-    }
-  }, [selectedLeadId, sortedResults]);
+    // Pipeline opens a closeable modal off selectedLeadId; inbox/follow-ups/saved use a
+    // persistent side panel that defaults to the first lead. Only the panel auto-selects —
+    // otherwise closing the pipeline modal (null) is instantly undone (it reopens).
+    const next = resolveSelectedLeadId(mode === "pipeline", selectedLeadId, sortedResults.map(lead => lead.id));
+    if (next !== selectedLeadId) setSelectedLeadId(next);
+  }, [selectedLeadId, sortedResults, mode]);
 
   const selectedLead = sortedResults.find(lead => lead.id === selectedLeadId) || sortedResults[0] || null;
   const selectedContact = selectedLead ? getTopContact(selectedLead) : null;
