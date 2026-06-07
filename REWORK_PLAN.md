@@ -50,7 +50,9 @@ The product should help freelancers, consultants, small agencies, web designers,
 
 Phase 3 note: these are stored search preferences only. They do not filter, score, or claim evidence until Phase 4 signal detection ships.
 
-**Phase 3 gap (found 2026-06-07):** the interactive signal **selector was never wired into the UI**. `toggleOpportunitySignal` and `opportunitySignalOptions` are defined/imported in `LeadGeneratorSection.tsx` but never rendered. Signals are only auto-derived from the chosen service (top 3, via `selectService`) and only when opportunity mode is ON; the only on-screen signal view is the read-only "The agent will look for…" plan preview. A user cannot pick or confirm signals. Wiring this selector is the missing piece of Phase 3 and currently blocks real user-driven opportunity searches.
+**Phase 3 gap (found 2026-06-07):** the interactive signal **selector was never wired into the UI**. `toggleOpportunitySignal` and `opportunitySignalOptions` are defined/imported in `LeadGeneratorSection.tsx` but never rendered. Signals are only auto-derived from the chosen service (top 3, via `selectService`) and only when opportunity mode is ON; the only on-screen signal view is the read-only "The agent will look for…" plan preview. A user cannot pick or confirm signals.
+
+**Resolved 2026-06-07** (branch `feat/phase4-signal-diagnostics`): the selector is now wired. In manual + opportunity mode, an "Opportunity signals" card under "What do you sell?" renders **only the service-relevant** signals (new tested helper `getServiceSignalKeys` — never all 8; e.g. Social media marketing shows just Low reviews + No social links) as toggle chips bound to `toggleOpportunitySignal`. The service still seeds sensible defaults; search now requires ≥1 signal when opportunity mode is on. Frontend-only; `opportunitySignals` already flows to the detector. 46/46 tests + build pass.
 
 ## Phase 4 - Rule-Based Signal Detection
 

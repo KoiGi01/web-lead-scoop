@@ -82,3 +82,17 @@ export const getServiceRecommendedSignalKeys = (service = ""): OpportunitySignal
   if (/social|content|instagram|tiktok|facebook/i.test(service)) return ["no_social_links", "low_reviews", "weak_website"];
   return ["weak_website", "no_clear_cta", "generic_inbox"];
 };
+
+// The full set of signals to OFFER in the selector for a given service — only the
+// signals relevant to what the user sells (never all 8). Exact-service matches
+// return every relevant key (uncapped, in option order); custom/unknown services
+// fall back to the keyword recommendations.
+export const getServiceSignalKeys = (service = ""): OpportunitySignalKey[] => {
+  const normalized = service.trim().toLowerCase();
+  if (!normalized) return getServiceRecommendedSignalKeys(service);
+  const exact = opportunitySignalOptions
+    .filter(option => option.services.some(item => item.toLowerCase() === normalized))
+    .map(option => option.key);
+  if (exact.length) return exact;
+  return getServiceRecommendedSignalKeys(service);
+};

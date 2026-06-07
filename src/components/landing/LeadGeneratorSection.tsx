@@ -36,6 +36,7 @@ import {
   opportunitySignalOptions,
   opportunitySignalLabels,
   getServiceRecommendedSignalKeys,
+  getServiceSignalKeys,
 } from "@/lib/opportunitySignals";
 import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOpportunitySignals";
@@ -1235,18 +1236,19 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   };
 
   const validateSearch = () => {
-    const parsed = searchSchema.safeParse({ selectedService: selectedServiceValue, industry, country, language });
-    if (parsed.success) {
-      setFieldErrors({});
-      return true;
-    }
     const errors: Record<string, string> = {};
-    parsed.error.errors.forEach(error => {
-      const key = String(error.path[0]);
-      if (!errors[key]) errors[key] = error.message;
-    });
+    const parsed = searchSchema.safeParse({ selectedService: selectedServiceValue, industry, country, language });
+    if (!parsed.success) {
+      parsed.error.errors.forEach(error => {
+        const key = String(error.path[0]);
+        if (!errors[key]) errors[key] = error.message;
+      });
+    }
+    if (opportunityModeOn && opportunitySignals.length === 0) {
+      errors.opportunitySignals = "Select at least one opportunity signal.";
+    }
     setFieldErrors(errors);
-    return false;
+    return Object.keys(errors).length === 0;
   };
 
   const createSearchSession = async (config = searchConfig, creditsUsed = chargedCredits) => {
@@ -2113,6 +2115,40 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             )}
                             {fieldErrors.selectedService && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
                           </div>
+
+                          {opportunityModeOn && selectedService && (() => {
+                            const effectiveService = selectedService === customServiceValue ? customService : selectedService;
+                            const signalKeys = getServiceSignalKeys(effectiveService);
+                            if (!signalKeys.length) return null;
+                            return (
+                              <div className={cardClass}>
+                                <p className={cardLabel}>Opportunity signals</p>
+                                <p className="mb-2 text-[12px] leading-5 text-[#5d6675]">The gaps to look for — tuned to what you sell. Toggle what matters.</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {signalKeys.map(key => {
+                                    const active = opportunitySignals.includes(key);
+                                    return (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => toggleOpportunitySignal(key)}
+                                        aria-pressed={active}
+                                        title={opportunitySignalOptions.find(option => option.key === key)?.description}
+                                        className={`rounded-[9px] border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
+                                          active
+                                            ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                                            : "border-[#f3f5f8]/[0.13] bg-black text-[#9aa3b2] hover:text-[#f3f5f8]"
+                                        }`}
+                                      >
+                                        {opportunitySignalLabels[key] || key}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                {fieldErrors.opportunitySignals && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.opportunitySignals}</p>}
+                              </div>
+                            );
+                          })()}
 
                           <div className={cardClass}>
                             <p className={cardLabel}>Who &amp; where</p>
