@@ -6,6 +6,7 @@ import {
   Bot,
   Check,
   CheckCheck,
+  ChevronDown,
   Copy,
   Download,
   ExternalLink,
@@ -43,6 +44,7 @@ import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOppor
 import type { WebsiteSignals } from "../../supabase/functions/_shared/websiteSignals";
 import { buildLeadIntelligence } from "@/lib/leadIntelligence";
 import { computeSignalDiagnostics, type SignalDiagnostics } from "@/lib/signalDiagnostics";
+import { summarizeOpportunityCard } from "@/lib/opportunityCard";
 
 interface Business {
   placeId: string;
@@ -960,6 +962,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [filterText, setFilterText] = useState("");
   const [emailsCopied, setEmailsCopied] = useState(false);
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCardExpanded = (id: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   const [freeInput, setFreeInput] = useState("");
   const [freeBrief, setFreeBrief] = useState("");
   const [freeTarget, setFreeTarget] = useState("");
@@ -2559,11 +2569,17 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 <div className="grid gap-3 lg:grid-cols-2">
                   {sortedResults?.map((lead, index) => {
                     const contact = getTopContact(lead);
+                    const cardId = lead.placeId || String(index);
+                    const expanded = expandedCards.has(cardId);
+                    const summary = summarizeOpportunityCard(
+                      lead.detectedSignals,
+                      selectedService === customServiceValue ? customService : selectedService,
+                    );
                     const qualityTone =
                       lead.leadQualityLabel === "Strong lead"
-                        ? "border-[#e8fb52] text-[#e8fb52]"
+                        ? "border-[#e8fb52]/40 text-[#e8fb52]"
                         : lead.leadQualityLabel === "Good lead"
-                          ? "border-[#8FD8FF]/70 text-[#8FD8FF]"
+                          ? "border-[#57b9ff]/50 text-[#57b9ff]"
                           : "border-[#f3f5f8]/15 text-[#9aa3b2]";
                     const badges = [
                       lead.website ? "Website" : "",
@@ -2572,95 +2588,156 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                       lead.linkedinUrl || contact?.linkedinUrl ? "LinkedIn" : "",
                       lead.socialLinks?.length ? "Social" : "",
                     ].filter(Boolean);
+                    const hasContactPath = Boolean(lead.emails[0] || lead.phone || lead.website || lead.socialLinks?.[0]);
 
                     return (
-                      <article key={lead.placeId || index} className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-4">
+                      <article key={cardId} className="border border-[#f3f5f8]/[0.14] bg-[#111319] p-4 transition-colors hover:border-[#f3f5f8]/20">
+                        {/* Header — company + opportunity score */}
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
-                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#f3f5f8]">{contact?.fullName || "Named contact"}</h3>
-                            <p className="mt-1 line-clamp-1 text-sm font-semibold text-[#9aa3b2]">{lead.name}</p>
+                            <h3 className="truncate font-display text-lg font-bold tracking-[-0.02em] text-[#f3f5f8]">{lead.name}</h3>
                             <p className="mt-1 line-clamp-1 text-xs text-[#5d6675]">{lead.address || lead.category?.replace(/_/g, " ") || "No location listed"}</p>
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${qualityTone}`}>
-                                {getOpportunityLabel(lead)} / {lead.leadQualityScore || 0}
-                              </span>
-                              {lead.leadQualityReason && <span className="text-xs text-[#9aa3b2]">{lead.leadQualityReason}</span>}
-                            </div>
                           </div>
-                          <div className="flex flex-wrap justify-end gap-1.5">
+                          <span className={`shrink-0 border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${qualityTone}`}>
+                            {getOpportunityLabel(lead)} · {lead.leadQualityScore || 0}
+                          </span>
+                        </div>
+
+                        {/* Buying signals (opportunity mode) */}
+                        {opportunityModeOn && (
+                          <div className="mt-3.5">
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Buying signals</p>
+                            {summary.hasSignals ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {summary.presentSignals.map(signal => (
+                                  <span key={signal.key} className="inline-flex items-center gap-1.5 border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[#e8fb52]">
+                                    {signal.label}
+                                    <b className="font-semibold text-[#cfe935]">{signal.confidence}</b>
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-1.5 text-xs leading-5 text-[#5d6675]">No opportunity signals detected on this prospect.</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Why this prospect */}
+                        <div className="mt-3.5 border border-[#f3f5f8]/10 bg-black/40 p-3">
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Why this prospect</p>
+                          <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">
+                            {summary.whyText || lead.leadQualityReason || "Usable public evidence for outreach."}
+                          </p>
+                        </div>
+
+                        {/* Footer — contact availability + details toggle */}
+                        <div className="mt-3.5 flex items-center justify-between gap-3">
+                          <div className="flex flex-wrap gap-1.5">
                             {badges.map(badge => (
-                              <span key={badge} className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${badge === "No email" ? "border-[#f3f5f8]/10 text-[#5d6675]" : "border-[#e8fb52]/30 text-[#e8fb52]"}`}>
+                              <span key={badge} className={`border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${badge === "No email" ? "border-[#f3f5f8]/10 text-[#5d6675]" : "border-[#f3f5f8]/15 text-[#9aa3b2]"}`}>
                                 {badge}
                               </span>
                             ))}
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleCardExpanded(cardId)}
+                            aria-expanded={expanded}
+                            className="inline-flex shrink-0 items-center gap-1.5 border border-[#f3f5f8]/15 px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] transition-colors hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]"
+                          >
+                            Details
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} />
+                          </button>
                         </div>
 
-                        <div className="mt-4 grid gap-3 border border-[#f3f5f8]/10 bg-black/60 p-3 sm:grid-cols-2">
-                          <div>
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Why this prospect?</p>
-                            <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">
-                              {lead.leadQualityReason || "This result has usable public evidence for outreach."}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Outreach angle</p>
-                            <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">
-                              Use the person/company context and public contact path to start a specific, practical conversation.
-                            </p>
-                          </div>
-                        </div>
+                        {/* Detail panel (collapsible) */}
+                        <div className={`grid transition-all duration-200 ease-out motion-reduce:transition-none ${expanded ? "mt-3.5 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                          <div className="overflow-hidden" inert={!expanded ? true : undefined}>
+                            <div className="space-y-3.5 border-t border-[#f3f5f8]/10 pt-3.5">
+                              {opportunityModeOn && summary.hasSignals && (
+                                <div>
+                                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Evidence</p>
+                                  <ul className="mt-2 space-y-1.5">
+                                    {summary.presentSignals.map(signal => (
+                                      <li key={signal.key} className="text-xs leading-5 text-[#9aa3b2]">
+                                        <span className="text-[#f3f5f8]">{signal.label}</span>
+                                        {signal.evidence?.snippet ? ` — “${signal.evidence.snippet}”` : ""}
+                                        {signal.evidence?.sourceUrl?.startsWith("http") && (
+                                          <span className="ml-1 font-mono text-[10px] text-[#5d6675]">{compactUrl(signal.evidence.sourceUrl)}</span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
 
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            {lead.emails[0] && (
-                              <button onClick={() => handleCopyField(`${lead.placeId}-email`, lead.emails[0])} className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#e8fb52] hover:underline">
-                                {copiedKeys.has(`${lead.placeId}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
-                                <span className="truncate">{lead.emails[0]}</span>
-                              </button>
-                            )}
-                            {lead.phone && (
-                              <button onClick={() => handleCopyField(`${lead.placeId}-phone`, lead.phone)} className="flex items-center gap-2 font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
-                                {copiedKeys.has(`${lead.placeId}-phone`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
-                                {lead.phone}
-                              </button>
-                            )}
-                            {lead.website && (
-                              <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
-                                <Globe className="h-3.5 w-3.5" />
-                                <span className="truncate">{compactUrl(lead.website)}</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                            {lead.socialLinks?.[0] && (
-                              <a href={lead.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
-                                <Globe className="h-3.5 w-3.5" />
-                                <span className="truncate">{compactUrl(lead.socialLinks[0])}</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Contact</p>
+                                  <div className="mt-2 space-y-2">
+                                    {lead.emails[0] && (
+                                      <button onClick={() => handleCopyField(`${lead.placeId}-email`, lead.emails[0])} className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#e8fb52] hover:underline">
+                                        {copiedKeys.has(`${lead.placeId}-email`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
+                                        <span className="truncate">{lead.emails[0]}</span>
+                                      </button>
+                                    )}
+                                    {lead.phone && (
+                                      <button onClick={() => handleCopyField(`${lead.placeId}-phone`, lead.phone)} className="flex items-center gap-2 font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
+                                        {copiedKeys.has(`${lead.placeId}-phone`) ? <CheckCheck className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
+                                        {lead.phone}
+                                      </button>
+                                    )}
+                                    {lead.website && (
+                                      <a href={lead.website} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
+                                        <Globe className="h-3.5 w-3.5" />
+                                        <span className="truncate">{compactUrl(lead.website)}</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                    {lead.socialLinks?.[0] && (
+                                      <a href={lead.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="flex max-w-full items-center gap-2 truncate font-mono text-xs text-[#9aa3b2] hover:text-[#f3f5f8]">
+                                        <Globe className="h-3.5 w-3.5" />
+                                        <span className="truncate">{compactUrl(lead.socialLinks[0])}</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                    {!hasContactPath && <p className="text-xs text-[#5d6675]">No public contact path found.</p>}
+                                  </div>
+                                </div>
 
-                          <div className="border border-[#f3f5f8]/10 bg-black p-3">
-                            <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
-                              <UserRound className="h-3.5 w-3.5" />
-                              Likely decision maker
-                            </p>
-                            {contact ? (
-                              <div>
-                                <p className="font-display text-sm font-bold text-[#f3f5f8]">{contact.fullName || contact.email || contact.linkedinUrl}</p>
-                                {contact.title && <p className="mt-1 text-xs text-[#9aa3b2]">{contact.title}</p>}
-                                <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">{contact.source} · {contact.decisionMakerScore}/100</p>
-                                {contact.linkedinUrl && (
-                                  <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] text-[#0A66C2] hover:text-[#4A9BE8]">
-                                    <Linkedin className="h-3.5 w-3.5" />
-                                    LinkedIn
-                                  </a>
-                                )}
+                                <div className="border border-[#f3f5f8]/10 bg-black p-3">
+                                  <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
+                                    <UserRound className="h-3.5 w-3.5" />
+                                    Likely decision maker
+                                  </p>
+                                  {contact ? (
+                                    <div>
+                                      <p className="font-display text-sm font-bold text-[#f3f5f8]">{contact.fullName || contact.email || contact.linkedinUrl}</p>
+                                      {contact.title && <p className="mt-1 text-xs text-[#9aa3b2]">{contact.title}</p>}
+                                      <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">{contact.source} · {contact.decisionMakerScore}/100</p>
+                                      {contact.linkedinUrl && (
+                                        <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] text-[#57b9ff] hover:text-[#8FD8FF]">
+                                          <Linkedin className="h-3.5 w-3.5" />
+                                          LinkedIn
+                                        </a>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-[#5d6675]">{enrichMode ? "No named contact found." : "Use Enrich to find named contacts."}</p>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
-                              <p className="text-xs text-[#5d6675]">{enrichMode ? "No named contact found." : "Use Enrich to find named contacts."}</p>
-                            )}
+
+                              {opportunityModeOn && (
+                                <div>
+                                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Outreach angle</p>
+                                  <p className="mt-1 flex items-center gap-1.5 text-xs leading-5 text-[#5d6675]">
+                                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                                    An AI-written outreach angle arrives with opportunity scoring.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </article>

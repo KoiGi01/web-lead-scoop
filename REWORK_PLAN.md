@@ -78,9 +78,12 @@ Remaining before Phase 4 fully closes: only the live opportunity-mode smoke test
 
 ## Phase 5 - Opportunity Result Cards
 
-- [ ] Redesign cards around opportunity score, buying signals, person/company, why this prospect, outreach angle, and contact availability.
-- [ ] Move secondary contact details into a detail panel.
-- [ ] Keep cards compact enough for the pipeline and inbox.
+- [x] Redesign cards around opportunity score, buying signals, person/company, why this prospect, outreach angle, and contact availability. **Live search result cards shipped 2026-06-07** (`feat/phase4-signal-diagnostics`): compact card = company + rule-based opportunity score (`leadQualityScore`; AI `opportunityScore` stays Phase 6) + buying-signal chips (present `detectedSignals`, label + confidence, opportunity-mode only) + service-aware "Why this prospect" (pure `summarizeOpportunityCard` helper, TDD) + contact-availability badges.
+- [x] Move secondary contact details into a detail panel. Collapsible "Details" panel (grid-rows animation, `inert` when collapsed, reduced-motion safe) holds per-signal evidence, the contact paths, the likely-decision-maker block, and a Phase-6 outreach-angle placeholder.
+- [x] Keep cards compact enough for the pipeline and inbox. Compact-by-default; detail expands on demand. Matches the Refined Electric system; built with the `impeccable` skill.
+- [ ] Mirror the redesign on the saved-leads surfaces (`ViewAllLeads` / `OpportunitiesDashboard`), which still render the older basic `detectedIssues` chips. (Follow-up; the persisted `intelligence.signals.detected[]` already has the data.)
+
+Phase 5 note (2026-06-07): the live result card consumes in-memory `lead.detectedSignals`. Visual confirmation in the running app is pending the deferred live smoke test (build + 51 tests pass; not yet screenshotted with real data).
 
 ## Phase 6 - AI Opportunity Scoring
 
