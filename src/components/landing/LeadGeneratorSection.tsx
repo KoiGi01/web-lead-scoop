@@ -41,6 +41,7 @@ import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOpportunitySignals";
 import type { WebsiteSignals } from "../../supabase/functions/_shared/websiteSignals";
 import { buildLeadIntelligence } from "@/lib/leadIntelligence";
+import { computeSignalDiagnostics, type SignalDiagnostics } from "@/lib/signalDiagnostics";
 
 interface Business {
   placeId: string;
@@ -95,6 +96,7 @@ interface SearchDiagnostics {
   savedLeads: number;
   rejectedNoPerson: number;
   rejectedNoCompany: number;
+  signals?: SignalDiagnostics;
 }
 
 type Depth = "simple" | "normal" | "deep";
@@ -1640,6 +1642,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         savedLeads: qualityFiltered.length,
         rejectedNoPerson: deduped.filter(lead => lead.name?.trim() && !hasPersonName(lead)).length,
         rejectedNoCompany,
+        signals: opportunityModeOn && config.opportunitySignals?.length
+          ? computeSignalDiagnostics(deduped, config.opportunitySignals)
+          : undefined,
       };
       const ranked = qualityFiltered.sort((a, b) => {
         const preferenceDelta = getPreferredSignalScore(b, config.required) - getPreferredSignalScore(a, config.required);
@@ -2473,6 +2478,23 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                         <span className="border border-[#f3f5f8]/10 bg-black/40 p-2"><b className="block text-base text-[#f3f5f8]">{searchDiagnostics.linkedinProfilesFound}</b>LinkedIn</span>
                       </div>
                     </div>
+                    {isAdmin && searchDiagnostics.signals && (
+                      <div className="mt-3 border-t border-[#e8fb52]/20 pt-3">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[#e8fb52]">Signal detection · admin</p>
+                        <p className="mt-1 text-sm leading-6 text-[#9aa3b2]">
+                          Scanned {searchDiagnostics.signals.sitesScanned} sites · {searchDiagnostics.signals.sitesUnreadable} unreadable · {searchDiagnostics.signals.sitesWithSignals} surfaced ≥1 signal.
+                        </p>
+                        {searchDiagnostics.signals.perSignal.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {searchDiagnostics.signals.perSignal.map(item => (
+                              <span key={item.key} className="border border-[#f3f5f8]/10 bg-black/40 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">
+                                {opportunitySignalLabels[item.key] || item.key} <b className="text-[#f3f5f8]">{item.present}</b>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
