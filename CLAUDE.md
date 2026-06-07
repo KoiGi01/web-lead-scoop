@@ -235,6 +235,8 @@ Phase 4 rule-based detection is shipped (in-memory + persisted; not yet rendered
 
 Detection is deterministic and free (derived from data already fetched). External/paid enrichment (PageSpeed, etc.) is deferred to Phase 6/8. SEMrush-class APIs are not free and are not used.
 
+**Known gap (2026-06-07): the opportunity-signal selector is NOT wired into the UI.** `toggleOpportunitySignal` and `opportunitySignalOptions` exist in `LeadGeneratorSection.tsx` but are never rendered. Signals are only ever auto-derived from the chosen service (`selectService` → `getServiceRecommendedSignalKeys(service).slice(0,3)`), and only when opportunity mode is ON (`src/lib/opportunityMode.ts`: `VITE_ENABLE_OPPORTUNITY_MODE=true`, `?opportunity=1`, or `localStorage['globaleads-opportunity-mode']='true'`). With the flag OFF, the service picker still renders in manual mode but no signals are attached → the detector receives an empty key list → emits nothing → `saved_leads.intelligence` saves as `null`. This is really an unfinished Phase 3 item, and it means the live detection→persist chain is **still UNVERIFIED end-to-end in production** (see `REWORK_PLAN.md` Phase 4 findings). The only on-screen signal view today is the read-only "The agent will look for…" plan preview.
+
 ---
 
 ## Edge Functions
@@ -242,7 +244,7 @@ Detection is deterministic and free (derived from data already fetched). Externa
 Current active functions:
 
 - `search-places`: business discovery and Google usage logging. Returns `rating` and `reviewCount` per business (free; the field mask is already Enterprise-tier).
-- `extract-contacts`: website contact extraction, enrichment, and provider usage logging. Also returns a structured `websiteSignals` object built from the already-scraped homepage + contact-page HTML (no extra API calls), via the shared `supabase/functions/_shared/websiteSignals.ts` builder.
+- `extract-contacts`: website contact extraction, enrichment, and provider usage logging. Also returns a structured `websiteSignals` object built from the already-scraped homepage + contact-page HTML (no extra API calls), via the shared `supabase/functions/_shared/websiteSignals.ts` builder. **Cost-accounting gap (2026-06-07): in Enrich mode it also calls `discoverPublicProfiles` (5 Firecrawl `/v1/search` queries per business), which does NOT call `logUsage` — so those Firecrawl credits never reach `api_usage_events`. Admin COGS therefore UNDERSTATES Firecrawl spend in Enrich mode (a real Simple+Enrich search logs ~30 scrape credits but burns ~50–70 real Firecrawl credits). Fix: add `logUsage` to `discoverPublicProfiles`.**
 - `create-checkout-session`: Stripe Checkout session creation.
 - `stripe-webhook`: credit fulfillment, Stripe payment logging, purchase transaction logging.
 
@@ -291,6 +293,16 @@ Optional cost estimate env vars:
 - `GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD`
 - `FIRECRAWL_CREDIT_COST_USD`
 - `HUNTER_CREDIT_COST_USD`
+
+Verified vendor pricing vs the code defaults (2026-06-07):
+
+- `FIRECRAWL_CREDIT_COST_USD` default `0.00083` — **accurate** (Firecrawl Standard, $83 / 100k pages = 1 credit/page; cheaper at higher tiers). Firecrawl credits reset monthly and do not roll over.
+- `GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD` default `0.035` — **accurate** (Text Search Enterprise ~$35/1k; first 1,000 calls/month free). Billed per `search-places` call, not per lead; a search makes several (pagination/shards).
+- `HUNTER_CREDIT_COST_USD` default `0.034` — **OVERSTATES reality.** Hunter list is ~$0.0149–0.0245/credit, and Hunter only bills when an email is found (a real search billed 6 of 10 domain lookups). Real Hunter COGS is lower than the admin dashboard shows.
+
+AI providers (both legacy, not in the main flow, and NOT cost-logged): `analyze-lead` uses Claude Haiku 4.5 ($1/1M input, $5/1M output); `plan-lead-search` uses Gemini 2.5 Flash. Neither writes `api_usage_events`. **Phase 6 must add an AI cost constant + usage logging before AI scoring ships**, or AI spend will be invisible in admin COGS.
+
+Measured per-lead vendor COGS (2026-06-07): Normal search ~$0.005–0.01/lead; Enriched ~$0.03–0.05/lead (Hunter-dominated). Opportunity signal detection adds $0 (derived from already-fetched data). Rough capacity: 6,500 Firecrawl credits ≈ ~90–100 Simple+Enrich searches or ~215 Simple+Normal searches per month. Enrich roughly doubles Firecrawl burn and accounts for all Hunter burn.
 
 ---
 
