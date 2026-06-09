@@ -1,18 +1,31 @@
 import {
   ArrowUpRight,
   Bookmark,
+  Bug,
   ChevronsLeft,
   ChevronsRight,
+  ChevronUp,
   Clock,
+  CreditCard,
   Home,
   KanbanSquare,
+  LogOut,
   Plus,
   Settings,
   ShieldCheck,
+  UserRound,
   Users,
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type AppSidebarView =
   | "home"
@@ -46,6 +59,12 @@ interface AppSidebarProps {
   planLabel?: string;
   prospectsCount?: number;
   followupsCount?: number;
+  email?: string;
+  showPaidBadge?: boolean;
+  paidBadgeLabel?: string;
+  reportBugHref?: string;
+  onEditProfile?: () => void;
+  onSignOut?: () => void;
 }
 
 const AppSidebar = ({
@@ -62,6 +81,12 @@ const AppSidebar = ({
   planLabel,
   prospectsCount,
   followupsCount,
+  email,
+  showPaidBadge,
+  paidBadgeLabel,
+  reportBugHref,
+  onEditProfile,
+  onSignOut,
 }: AppSidebarProps) => {
   const creditsRemaining = Math.max(0, creditsTotal - creditsUsed);
   const creditPercent = creditsTotal > 0 ? Math.min(100, (creditsRemaining / creditsTotal) * 100) : 0;
@@ -200,20 +225,103 @@ const AppSidebar = ({
         )}
       </div>
 
-      {/* user */}
-      {!collapsed && (
-        <div className="flex flex-shrink-0 items-center gap-2.5 px-4 pb-4 pt-1">
-          <span className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#2a2f3a,#14171d)] font-mono text-[10px] font-semibold text-[#98a0af] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]">
-            {initials}
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-[12.5px] font-semibold text-[#f3f5f8]">{userName || "Account"}</div>
-            {planLabel && (
-              <div className="truncate font-mono text-[9.5px] uppercase tracking-wide text-[#5b6472]">{planLabel}</div>
-            )}
-          </div>
+      {/* report a bug — earns credits */}
+      {reportBugHref && (
+        <div className="flex-shrink-0 px-3 pb-2">
+          {collapsed ? (
+            <a
+              href={reportBugHref}
+              title="Report a bug · +100 credits when fixed"
+              className="flex w-full items-center justify-center rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] py-2.5 text-[#e8fb52] transition-colors hover:bg-[#e8fb52]/[0.1]"
+            >
+              <Bug className="h-4 w-4" />
+            </a>
+          ) : (
+            <a
+              href={reportBugHref}
+              className="flex items-center gap-2.5 rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-2.5 py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
+            >
+              <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
+              <div className="min-w-0">
+                <div className="text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
+                <div className="font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">+100 credits when fixed</div>
+              </div>
+            </a>
+          )}
         </div>
       )}
+
+      {/* account */}
+      <div className="flex-shrink-0 px-3 pb-4 pt-0.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title={collapsed ? (userName || "Account") : undefined}
+              className={`flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 transition-colors hover:bg-[#0f1115] ${collapsed ? "justify-center px-0" : ""}`}
+            >
+              <span className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#2a2f3a,#14171d)] font-mono text-[10px] font-semibold text-[#98a0af] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]">
+                {initials}
+              </span>
+              {!collapsed && (
+                <>
+                  <div className="min-w-0 text-left">
+                    <div className="truncate text-[12.5px] font-semibold text-[#f3f5f8]">{userName || "Account"}</div>
+                    {planLabel && (
+                      <div className="truncate font-mono text-[9.5px] uppercase tracking-wide text-[#5b6472]">{planLabel}</div>
+                    )}
+                  </div>
+                  <ChevronUp className="ml-auto h-4 w-4 flex-shrink-0 text-[#5b6472]" />
+                </>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            sideOffset={8}
+            className="w-60 border-[#f3f5f8]/10 bg-black p-1 text-[#f3f5f8]"
+          >
+            <DropdownMenuLabel className="px-3 py-2">
+              <p className="truncate text-sm font-semibold text-[#f3f5f8]">{userName || "Account"}</p>
+              {email && (
+                <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{email}</p>
+              )}
+              {showPaidBadge && paidBadgeLabel && (
+                <span className="mt-2 inline-flex items-center gap-1.5 border border-[#e8fb52]/50 bg-[#e8fb52]/10 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#e8fb52]">
+                  {paidBadgeLabel} member
+                </span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
+            <DropdownMenuItem
+              onClick={onEditProfile}
+              className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
+            >
+              <UserRound className="h-3.5 w-3.5" /> Edit profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={onBuyCredits}
+              className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
+            >
+              <CreditCard className="h-3.5 w-3.5" /> Upgrade or top up
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onNavigate("settings")}
+              className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
+            >
+              <Settings className="h-3.5 w-3.5" /> Account settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
+            <DropdownMenuItem
+              onClick={onSignOut}
+              className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-red-300 focus:bg-red-500/10 focus:text-red-200"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </aside>
   );
 };

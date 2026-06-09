@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bug, CheckCheck, CreditCard, Loader2, LogOut, Plus, Settings, UserRound } from "lucide-react";
+import { Bug, CheckCheck, CreditCard, Loader2, Settings } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,15 +27,6 @@ import SettingsCredits from "@/components/app/SettingsCredits";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -67,17 +58,6 @@ type AppTheme = "light" | "dark";
 type AppViewMode = AppSidebarView;
 type CheckoutConfirmationStatus = "idle" | "confirming" | "success" | "pending" | "error";
 const PAID_WORKSPACE_VIEWS = new Set<AppSidebarView>(["lead-inbox", "pipeline", "follow-ups", "saved-searches"]);
-const VIEW_LABELS: Record<AppSidebarView, string> = {
-  home: "Home",
-  search: "New scan",
-  "lead-inbox": "Prospects",
-  pipeline: "Pipeline",
-  "follow-ups": "Follow-ups",
-  "saved-searches": "Saved scans",
-  settings: "Settings",
-  admin: "Admin",
-};
-
 interface CheckoutConfirmationState {
   open: boolean;
   status: CheckoutConfirmationStatus;
@@ -343,18 +323,7 @@ const AppPage = () => {
   };
 
   const planCredits = entitlements.includedCredits || getIncludedCredits(creditsPlan);
-  const avatarUrl = typeof user?.user_metadata?.avatar_url === "string"
-    ? user.user_metadata.avatar_url
-    : typeof user?.user_metadata?.picture === "string"
-      ? user.user_metadata.picture
-      : "";
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "Account";
-  const fallbackInitials = String(displayName)
-    .split(/\s+|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0]?.toUpperCase())
-    .join("") || "GL";
   const showPaidBadge = !isAdmin && isPaidPlan(entitlements.effectivePlan);
   const paidBadgeLabel = PLAN_LABELS[entitlements.effectivePlan];
   const bugReportHref = `mailto:contact@globaleads22.com?subject=${encodeURIComponent("GlobaLeads22 bug report")}&body=${encodeURIComponent([
@@ -388,105 +357,28 @@ const AppPage = () => {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           userName={String(displayName)}
           planLabel={isAdmin ? "Admin" : paidBadgeLabel}
+          email={user.email}
+          showPaidBadge={showPaidBadge}
+          paidBadgeLabel={paidBadgeLabel}
+          reportBugHref={bugReportHref}
+          onEditProfile={() => setEditProfileOpen(true)}
+          onSignOut={signOut}
         />
       )}
 
-      {/* ── Right column: topbar + scrolling content ── */}
+      {/* ── Right column: scrolling content (signed-in workspace has no top bar —
+           account menu + New scan live in the sidebar) ── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 flex-shrink-0 items-center gap-4 border-b border-[#f3f5f8]/[0.07] bg-[#08090c] px-4 sm:px-6">
-          {user ? (
-            <span className="font-mono text-[11px] uppercase tracking-[0.05em] text-[#5b6472]">
-              workspace / <span className="text-[#f3f5f8]">{VIEW_LABELS[viewMode]}</span>
-            </span>
-          ) : (
+        {!user && (
+          <header className="flex h-16 flex-shrink-0 items-center gap-4 border-b border-[#f3f5f8]/[0.07] bg-[#08090c] px-4 sm:px-6">
             <GlobaLeadsLogo size="md" theme="dark" />
-          )}
-
-          <div className="ml-auto flex items-center gap-2.5">
-            {user && (
-              <button
-                type="button"
-                onClick={() => handleNavigate("search")}
-                className="inline-flex items-center gap-2 rounded-[10px] bg-[#e8fb52] px-4 py-2 font-display text-[13px] font-semibold text-[#08090c] shadow-[0_6px_18px_rgba(232,251,82,0.16)] transition-colors hover:bg-white"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">New scan</span>
-              </button>
-            )}
-            {user ? (
-              <>
-                {/* plan badge + credits now live in the sidebar */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex h-10 items-center gap-2 border border-[#f3f5f8]/10 px-2 pr-3 transition-colors hover:border-[#e8fb52]/60"
-                      aria-label="Open account menu"
-                    >
-                      <Avatar className="h-7 w-7 border border-[#f3f5f8]/10">
-                        <AvatarImage src={avatarUrl} alt={String(displayName)} />
-                        <AvatarFallback className="bg-[#e8fb52] font-mono text-[10px] font-black text-black">
-                          {fallbackInitials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="hidden max-w-[160px] truncate font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] sm:block">
-                        {profile?.full_name || user.email}
-                      </span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 border-[#f3f5f8]/10 bg-black p-1 text-[#f3f5f8]">
-                    <DropdownMenuLabel className="px-3 py-2">
-                      <p className="truncate text-sm font-semibold text-[#f3f5f8]">{displayName}</p>
-                      <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{user.email}</p>
-                      {showPaidBadge && (
-                        <span className="mt-2 inline-flex items-center gap-1.5 border border-[#e8fb52]/50 bg-[#e8fb52]/10 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#e8fb52]">
-                          <CheckCheck className="h-3 w-3" />
-                          {paidBadgeLabel} member
-                        </span>
-                      )}
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
-                    <DropdownMenuItem
-                      onClick={() => setEditProfileOpen(true)}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
-                    >
-                      <UserRound className="h-3.5 w-3.5" /> Edit profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setCreditsOpen(true)}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
-                    >
-                      <CreditCard className="h-3.5 w-3.5" /> Upgrade or top up
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setViewMode("settings")}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
-                    >
-                      <Settings className="h-3.5 w-3.5" /> Account settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => { window.location.href = bugReportHref; }}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-[#9aa3b2] focus:bg-[#e8fb52]/10 focus:text-[#e8fb52]"
-                    >
-                      <Bug className="h-3.5 w-3.5" /> Report bug
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-[#f3f5f8]/10" />
-                    <DropdownMenuItem
-                      onClick={signOut}
-                      className="cursor-pointer gap-2 rounded-none px-3 py-2 font-mono text-[11px] uppercase tracking-widest text-red-300 focus:bg-red-500/10 focus:text-red-200"
-                    >
-                      <LogOut className="h-3.5 w-3.5" /> Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
+            <div className="ml-auto flex items-center gap-2.5">
               <Button variant="accent" size="sm" className="whitespace-nowrap" onClick={() => setAuthOpen(true)}>
                 SIGN IN
               </Button>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         <main className="flex-1 overflow-y-auto">
           <ErrorBoundary>

@@ -146,6 +146,19 @@
   ::-webkit-scrollbar-track { background: #0a0b0e; }
   ::-webkit-scrollbar-thumb { background: #1d212c; border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: #2a2f3a; }
+
+  /* Stop Chrome/Safari autofill from painting its light background + dark text
+     over dark-themed inputs. Scoped via .dark-autofill so light inputs are unaffected. */
+  .dark-autofill:-webkit-autofill,
+  .dark-autofill:-webkit-autofill:hover,
+  .dark-autofill:-webkit-autofill:focus,
+  .dark-autofill:-webkit-autofill:active {
+    -webkit-text-fill-color: #f3f5f8;
+    -webkit-box-shadow: 0 0 0 1000px #000 inset;
+    box-shadow: 0 0 0 1000px #000 inset;
+    caret-color: #f3f5f8;
+    transition: background-color 9999s ease-out 0s;
+  }
 }
 
 /* Authenticated app theme bridge.

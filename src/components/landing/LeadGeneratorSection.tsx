@@ -2051,7 +2051,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
               const cardClass = "rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#111319] px-4 py-3.5";
               const cardLabel = "mb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5d6675]";
-              const inputClass = "w-full rounded-[9px] border bg-black px-3.5 py-2.5 text-[13.5px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50 disabled:opacity-50";
+              const inputClass = "dark-autofill w-full rounded-[9px] border bg-black px-3.5 py-2.5 text-[13.5px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50 disabled:opacity-50";
               const scanSizes: Array<{ depth: Depth; name: string; count: string }> = [
                 { depth: "simple", name: "Quick", count: "~20" },
                 { depth: "normal", name: "Standard", count: "~40" },
@@ -2165,7 +2165,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             <p className={cardLabel}>Who &amp; where</p>
                             <div className="grid gap-3 sm:grid-cols-2">
                               <div>
-                                <label htmlFor="industry" className="mb-1.5 block font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Target market / niche</label>
+                                <div className="mb-1.5 flex h-7 items-center">
+                                  <label htmlFor="industry" className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Target market / niche</label>
+                                </div>
                                 <input
                                   id="industry"
                                   value={industry}
@@ -2176,7 +2178,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 {fieldErrors.industry && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.industry}</p>}
                               </div>
                               <div>
-                                <div className="mb-1.5 flex items-center justify-between gap-2">
+                                <div className="mb-1.5 flex h-7 items-center justify-between gap-2">
                                   <label htmlFor="country" className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Location</label>
                                   <div className="inline-flex rounded-[7px] border border-[#f3f5f8]/[0.13] bg-black p-0.5">
                                     {(["country", "city"] as LocationMode[]).map(option => (
