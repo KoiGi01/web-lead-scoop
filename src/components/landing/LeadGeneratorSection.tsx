@@ -1026,10 +1026,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     };
   }, []);
 
-  // Quality is always on in manual mode: enrichment (decision-maker contacts) always runs.
-  useEffect(() => {
-    if (searchMode === "manual") setEnrichMode(true);
-  }, [searchMode]);
+  // Enrich (decision-maker discovery) is opt-in. It runs ~5 profile searches per
+  // business — the dominant Firecrawl cost — and is NOT needed for opportunity
+  // signals (those derive from the page scrape we do regardless). See
+  // OPPORTUNITY_SIGNALS.md. Toggle lives in the "Advanced" panel below.
 
   const searchCost = getSearchCost(depth, enrichMode);
   const usageType = isAdmin ? "internal" : "customer";
@@ -2027,7 +2027,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   signals: intel.opportunitySignals,
                   scanTargets: intel.scanTargets,
                   canStart,
-                  onStart: () => handleGenerate({ ...searchConfig, enrichMode: true }),
+                  onStart: () => handleGenerate(searchConfig),
                 };
               } else {
                 const p = freePlan;
@@ -2046,7 +2046,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   onStart: startFreeSearch,
                 };
               }
-              const cost = getSearchCost(view.depth, true);
+              const cost = getSearchCost(view.depth, mode === "free" ? true : enrichMode);
               const sm = sizeMeta[view.depth];
 
               const cardClass = "rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#111319] px-4 py-3.5";
@@ -2058,6 +2058,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                 { depth: "deep", name: "Deep", count: "~60" },
               ];
               const advancedToggles: Array<{ title: string; desc: string; value: boolean; onToggle: () => void }> = [
+                { title: "Find named contacts (Enrich)", desc: "Hunt decision-maker names & emails. Better contacts, but ~2× the credits.", value: enrichMode, onToggle: () => setEnrichMode(prev => !prev) },
                 { title: "Only businesses with a website", desc: "Skip shops with no site to evaluate or pitch.", value: onlyWithWebsite, onToggle: () => setOnlyWithWebsite(prev => !prev) },
                 { title: "Skip prospects I've already saved", desc: "Don't spend credits re-finding businesses you have.", value: skipSaved, onToggle: () => setSkipSaved(prev => !prev) },
               ];
@@ -2209,13 +2210,13 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             <div className="grid grid-cols-3 gap-2.5">
                               {scanSizes.map(size => {
                                 const active = depth === size.depth;
-                                const credits = getSearchCost(size.depth, true);
+                                const credits = getSearchCost(size.depth, enrichMode);
                                 return (
                                   <button
                                     key={size.depth}
                                     type="button"
                                     onClick={() => {
-                                      if (!canUseSearchQuality(plan, size.depth, true, isAdmin)) {
+                                      if (!canUseSearchQuality(plan, size.depth, enrichMode, isAdmin)) {
                                         requestUpgrade("Upgrade to unlock larger, fully enriched scans.");
                                         return;
                                       }

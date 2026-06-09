@@ -252,6 +252,10 @@ function looksLikeLinkedInProfile(url: string) {
 async function discoverPublicProfiles(apiKey: string, businessName: string, location: string) {
   const profileLinks: string[] = [];
   const debugLinks: string[] = [];
+  // Firecrawl bills /v1/search at 2 credits per 10 results. Our limit is 4, so any
+  // call returning results = 2 credits; a call returning nothing = 0. Tracked here
+  // so the caller can log this (previously-invisible) spend to api_usage_events.
+  let searchCredits = 0;
   const locationParts = location
     .split(",")
     .map(part => part.trim())
@@ -282,6 +286,7 @@ async function discoverPublicProfiles(apiKey: string, businessName: string, loca
       if (!searchResp.ok) continue;
       const searchData = await searchResp.json();
       const results: Array<{ url?: string; link?: string; sourceURL?: string; metadata?: { sourceURL?: string } }> = searchData.data || [];
+      if (results.length > 0) searchCredits += 2;
       for (const result of results) {
         const resultUrl = result.url || result.link || result.sourceURL || result.metadata?.sourceURL;
         if (resultUrl) {
@@ -303,6 +308,7 @@ async function discoverPublicProfiles(apiKey: string, businessName: string, loca
       .filter(link => /https?:\/\/(?:www\.|m\.)?(?:facebook|instagram)\.com\/|https?:\/\/(?:www\.)?(?:doximity\.com|healthgrades\.com|webmd\.com|vitals\.com|zocdoc\.com|sharecare\.com|doctor\.webmd\.com|npidb\.org|npi-profile\.com)\//i.test(link))
       .slice(0, 6),
     debugLinks: [...new Set(debugLinks)].slice(0, 12),
+    searchCredits,
   };
 }
 
@@ -485,13 +491,46 @@ Deno.serve(async (req) => {
     let discoveredLinkedinProfiles: string[] = [];
     let discoveredProfileLinks: string[] = [];
     let discoveredDebugLinks: string[] = [];
-    if (enrichMode && businessName) {
+    let profileDiscoveryRan = false;
+    // Profile discovery = 5 Firecrawl /v1/search calls (~10 credits), the dominant
+    // Enrich cost. It's largely redundant with Hunter (which returns name + title +
+    // email + LinkedIn), so it now runs ONLY as a fallback — when Hunter yields no
+    // named contact — instead of for every business. See OPPORTUNITY_SIGNALS.md.
+    const runProfileDiscovery = async () => {
+      if (!(enrichMode && businessName) || profileDiscoveryRan) return;
+      profileDiscoveryRan = true;
       const discovered = await discoverPublicProfiles(firecrawlApiKey, String(businessName), String(location));
       discoveredLinkedinUrl = discovered.linkedinUrl;
       discoveredLinkedinProfiles = discovered.linkedinProfiles || [];
       discoveredProfileLinks = discovered.profileLinks;
       discoveredDebugLinks = discovered.debugLinks;
-    }
+      // Log the Firecrawl /v1/search spend (previously invisible in api_usage_events,
+      // which made admin COGS understate Firecrawl in Enrich mode).
+      await logUsage({
+        user_id: userId,
+        search_session_id: searchSessionId,
+        depth,
+        enrich_mode: true,
+        usage_type: usageType,
+        provider: "firecrawl",
+        operation: "search",
+        endpoint: "v1/search",
+        status_code: 200,
+        success: discovered.searchCredits > 0,
+        billable_units: discovered.searchCredits,
+        estimated_cost_usd: discovered.searchCredits * FIRECRAWL_CREDIT_COST_USD,
+        credits_charged_to_user: Number(creditsChargedToUser || 0),
+        request_fingerprint: String(businessName),
+        result_count: discoveredLinkedinProfiles.length + discoveredProfileLinks.length,
+        error_code: null,
+        metadata: {
+          business_name: String(businessName),
+          operation_detail: "profile_discovery_fallback",
+          billed_search_credits: discovered.searchCredits,
+          profiles_found: discoveredLinkedinProfiles.length,
+        },
+      });
+    };
 
     const scrapeResp = await fetchWithTimeout("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
@@ -532,6 +571,9 @@ Deno.serve(async (req) => {
 
     if (!scrapeResp.ok) {
       console.error("Firecrawl error:", await scrapeResp.text());
+      // Homepage unreachable → Hunter won't run below, so discovery is the only
+      // remaining source of public profiles. Run it (still Enrich-gated internally).
+      await runProfileDiscovery();
       return new Response(
         JSON.stringify({
           success: true,
@@ -631,6 +673,7 @@ Deno.serve(async (req) => {
       ...extractWebsiteContactsFromText(pageTexts.join(" "), industry),
     ];
     let emailSource: "firecrawl" | "hunter" | "both" | "none" = allEmails.length > 0 ? "firecrawl" : "none";
+    let hunterContactCount = 0;
 
     if (enrichMode) {
       const hunterApiKey = Deno.env.get("HUNTER_API_KEY");
@@ -667,11 +710,12 @@ Deno.serve(async (req) => {
           let hunterResultCount = 0;
           if (hunterResp.ok) {
             const hunterData = await hunterResp.json();
-            const hunterContacts = (hunterData?.data?.emails || [])
+            const hunterContacts: DecisionMakerContact[] = (hunterData?.data?.emails || [])
               .map((entry: any) => normalizeHunterContact(entry, industry))
               .filter((entry: DecisionMakerContact | null): entry is DecisionMakerContact => !!entry);
             const hunterEmails = hunterContacts.map(contact => contact.email).filter((email): email is string => !!email);
             hunterResultCount = hunterContacts.length;
+            hunterContactCount = hunterContacts.length;
             hunterCredits = hunterEmails.length > 0 ? Math.ceil(hunterEmails.length / 10) : 0;
             if (hunterEmails.length > 0) {
               allEmails = [...new Set([...allEmails, ...hunterEmails])];
@@ -727,6 +771,17 @@ Deno.serve(async (req) => {
           console.error("Hunter.io enrichment error:", error);
         }
       }
+    }
+
+    // Hunter-gated fallback: only spend the discovery searches when Hunter returned
+    // no named decision-maker. ~60% of domains hit Hunter, so this skips most of the
+    // previously-unconditional ~10-credit/business search cost with no quality loss.
+    if (enrichMode && businessName && hunterContactCount === 0) {
+      await runProfileDiscovery();
+      linkedInProfiles = [...new Set([...discoveredLinkedinProfiles, ...linkedInProfiles])].slice(0, 8);
+      linkedinUrl = linkedinUrl || discoveredLinkedinUrl;
+      socialLinks = [...new Set([...discoveredProfileLinks, ...socialLinks])].slice(0, 6);
+      contacts.push(...discoveredLinkedinProfiles.map(profile => linkedinContact(profile, industry)));
     }
 
     const websiteSignals = buildWebsiteSignals({
