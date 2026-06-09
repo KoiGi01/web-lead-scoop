@@ -73,8 +73,36 @@ Remaining before Phase 4 fully closes: only the live opportunity-mode smoke test
 - **Live chain still UNVERIFIED in production.** An attempted prod smoke test (SEO → "Roofing Companies" → Tulsa, OK, Simple+Enrich, admin, 8 leads, session `ce006a98-c9ad-4ec9-9741-1608f538e032`) ran with **opportunity mode OFF**, so `opportunity_signals` was empty → the detector emitted nothing → all 8 saved leads have `intelligence: null`. The detection + persistence **logic** is unit-verified (`npm.cmd run test` = 38/38 pass), but the deployed `extract-contacts`/`search-places` → detector → persist → reload chain has NOT been exercised live. **To run the smoke test:** enable the flag (`localStorage.setItem('globaleads-opportunity-mode','true')`, reload), pick a service (e.g. SEO → auto-selects `weak_website, low_reviews, no_social_links`), confirm the chips appear in the plan preview, search, save a couple leads, reload, then verify `saved_leads.intelligence.signals.detected[]` is populated.
 - **Signal selector not wired** (see Phase 3 gap above). With the flag on, service auto-derivation makes the smoke test possible, but real user-driven selection still doesn't exist.
 - **Production runs the `master` lineage** (the deployed app's nav labels — New scan / Prospects / Saved scans — exist only on `master`). `origin/main` is a STALE, disjoint history (no shared ancestor; none of the Phase 4 files). Do not treat `origin/main` as live.
-- **Cost-accounting bug:** `extract-contacts` Enrich-mode `discoverPublicProfiles` (5 Firecrawl `/v1/search` per business) does not `logUsage`, so admin COGS understates Firecrawl spend in Enrich mode. The roofing session logged Firecrawl 30 / Hunter 6-of-10-billed / Google 7 = $0.4739, but real Firecrawl was ~50–70 credits. Fix is separate from Phase 4 but worth doing for honest COGS.
+- **Cost-accounting bug:** `extract-contacts` Enrich-mode `discoverPublicProfiles` (5 Firecrawl `/v1/search` per business) does not `logUsage`, so admin COGS understates Firecrawl spend in Enrich mode. The roofing session logged Firecrawl 30 / Hunter 6-of-10-billed / Google 7 = $0.4739, but real Firecrawl was ~50–70 credits. Fix is separate from Phase 4 but worth doing for honest COGS. **(FIXED 2026-06-08 — discovery now logs + is Hunter-gated; see "Firecrawl cost fix" below.)**
 - **Verified vendor costs:** `FIRECRAWL_CREDIT_COST_USD=0.00083` and `GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD=0.035` match reality; `HUNTER_CREDIT_COST_USD=0.034` overstates real Hunter (~$0.0149–0.0245/credit, billed only on hits). AI (Phase 6): `analyze-lead`=Claude Haiku 4.5, `plan-lead-search`=Gemini 2.5 Flash — neither cost-logged; add an AI cost constant + `api_usage_events` logging when AI scoring ships. Measured per-lead COGS: Normal ~$0.005–0.01, Enriched ~$0.03–0.05; detection adds $0. (Details in `CLAUDE.md` → Environment Variables.)
+
+### Firecrawl cost fix & Enrich rework (2026-06-08, branch `feat/phase4-signal-diagnostics`)
+
+Triggered by a real ~250-credit Firecrawl search. **Root cause:** in Enrich mode, `discoverPublicProfiles` ran 5 `/v1/search` calls per business (~10 credits; Firecrawl bills 2 per result-bearing query) for **every** business — the dominant search cost, and **largely redundant with Hunter**, which already returns name+title+email+LinkedIn (discovery only yields bare profile URLs). It was also unlogged, so admin COGS understated Firecrawl. Firecrawl billing confirmed: **per page, flat 1 credit** (not per-word/per-domain); `/v1/search` = 2 credits per 10 results.
+
+Shipped — edge fn `extract-contacts` **deployed to prod** (`uoaxxxoqasczxcxygscy`); frontend **committed on branch but NOT yet Vercel-deployed**:
+
+- **Discovery is now a Hunter-gated fallback** — runs only when Hunter returns 0 named contacts (or the homepage scrape fails, where Hunter can't run). ~60% Hunter hit-rate ⇒ skips most discovery ⇒ an enriched search drops ~250 → ~140–190 Firecrawl credits with no quality loss. Reordered flow: scrape → contact pages → Hunter → conditional discovery → signals.
+- **Discovery spend now logged** to `api_usage_events` as `firecrawl`/`search` (2 cr per result-bearing query). Resolves the 2026-06-07 cost-accounting bug.
+- **Enrich is now opt-in** (frontend) — removed the effect that force-enabled it in manual mode; added a toggle in the Advanced panel (default OFF); fixed cost/quality displays that hard-coded `enrich=true`. Default-off ⇒ most searches skip discovery + Hunter entirely.
+- New doc `OPPORTUNITY_SIGNALS.md`: how each of the 8 signals is derived (Places + already-scraped HTML, $0 extra) + the verified Firecrawl billing model.
+- **Decided AGAINST** blindly trimming the 5 discovery queries (would cut the fallback uniformly and hurt quality on Hunter-empty local businesses); gating gets the savings without that downside.
+
+### App shell: top bar removed (2026-06-08, branch `feat/phase4-signal-diagnostics`, frontend-only, NOT deployed)
+
+- Removed the global signed-in top header (breadcrumb / New scan / profile) to reclaim vertical space for the main section. Minimal logo + Sign in bar kept for signed-out/demo only.
+- Account menu (Edit profile / Upgrade / Account settings / Sign out) moved into the **sidebar initials chip** (now a dropdown; collapsed-state supported, so no access is lost). New **Report a bug** sidebar button with a **"+100 credits when fixed"** incentive — ⚠ **UI promise only; no backend grant flow exists yet.**
+- Fixed "Who & where" input alignment (equal-height label rows) + Chrome autofill painting a light bg over dark inputs (scoped `.dark-autofill` rule in `index.css`).
+- Commits: `0557838` (edge gating + enrich + docs), `b613630` (app shell + input fixes). Build + 58 tests pass.
+
+### Outstanding (next session)
+
+- [ ] **Deploy the frontend.** All 2026-06-08 frontend work sits on `feat/phase4-signal-diagnostics`, undeployed. Vercel builds from the **`master` lineage** (per 2026-06-07 finding; `origin/main` is stale/disjoint — do NOT use). Merge branch → master and push. (Edge fn is already live.)
+- [ ] **Verify gating live.** Run one Simple + Enrich search; query `api_usage_events` for the session — confirm `firecrawl/search` rows appear **only** where Hunter came up empty, and total Firecrawl credits dropped from ~250.
+- [ ] **"+100 credits when fixed" needs a backend** — a real grant flow (even manual: label + credit-grant step) or soften the copy until it exists.
+- [ ] **Mobile regression** — sidebar is `hidden md:flex`; with the header gone, phone-width has no nav/account menu. Add a mobile bar/hamburger if mobile matters (app is currently desktop-first).
+- [ ] **Hunter COGS still overstated** (`HUNTER_CREDIT_COST_USD=0.034` vs real ~$0.0149–0.0245, billed only on hits) — quick default/env tweak for honest margins.
+- [ ] Live opportunity-mode smoke test still pending (carried over from Phase 4 — flag on, search → save → reload, confirm `saved_leads.intelligence.signals.detected[]` populates).
 
 ## Phase 5 - Opportunity Result Cards
 
