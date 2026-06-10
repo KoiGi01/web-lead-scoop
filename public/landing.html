@@ -1,1559 +1,245 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GlobaLeads22 - Find prospects with a reason to buy</title>
-<meta name="description" content="Find prospects with visible opportunity signals, public contact data, likely decision makers, ranked scores, and outreach angles by service, niche, and location." />
-<link rel="canonical" href="https://globaleads22.com" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://globaleads22.com" />
-<meta property="og:title" content="GlobaLeads22 - Find prospects with a reason to buy" />
-<meta property="og:description" content="Search by service, niche, and location. Get ranked prospects with public contact data, likely decision makers, opportunity signals, and outreach angles." />
-<meta property="og:image" content="https://www.globaleads22.com/og-image.jpg?v=20260502" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="GlobaLeads22 - Find prospects with a reason to buy" />
-<meta name="twitter:description" content="Opportunity-based prospecting with public contact data, likely decision makers, and outreach angles." />
-<meta name="twitter:image" content="https://www.globaleads22.com/og-image.jpg?v=20260502" />
-<link rel="icon" type="image/png" href="/favicon.png?v=20260511">
-<link rel="shortcut icon" href="/favicon.ico?v=20260511">
-<link rel="apple-touch-icon" href="/favicon.png?v=20260511">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlobaLeads22 - Find people who need what you offer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --black: #000000;
-    --surface: #0A0A0A;
-    --surface-2: #11110E;
-    --yellow: #F5FF3D;
-    --brand-yellow: #FBEE03;
-    --text: #EFEDE6;
-    --muted: #A8A59C;
-    --dim: #67645B;
-    --line: rgba(239,237,230,.14);
-    --line-strong: rgba(245,255,61,.45);
-    --shadow: rgba(245,255,61,.15);
-    --display: "Archivo", system-ui, sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, monospace;
-  }
-
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--black);
-    color: var(--text);
-    font-family: var(--display);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
-    background-size: 72px 72px, 72px 72px;
-  }
-  a { color: inherit; text-decoration: none; }
-  button { font: inherit; }
-
-  .wrap {
-    width: min(1180px, calc(100% - 40px));
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-  }
-  .section { padding: 92px 0; border-top: 1px solid var(--line); position: relative; }
-  .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-  }
-  .eyebrow::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    background: var(--yellow);
-  }
-  h1, h2, h3, p { margin-top: 0; }
-  h1 {
-    max-width: 780px;
-    margin: 20px 0 22px;
-    font-size: clamp(52px, 7.2vw, 104px);
-    line-height: .88;
-    letter-spacing: -.048em;
-    word-spacing: .055em;
-    font-weight: 900;
-    text-wrap: balance;
-  }
-  h2 {
-    max-width: 760px;
-    margin: 14px 0 18px;
-    font-size: clamp(34px, 4.8vw, 66px);
-    line-height: .95;
-    letter-spacing: -.04em;
-    word-spacing: .02em;
-    font-weight: 900;
-    text-wrap: balance;
-  }
-  h3 {
-    margin-bottom: 10px;
-    font-size: 21px;
-    line-height: 1.05;
-    letter-spacing: -.02em;
-  }
-  p {
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1.58;
-  }
-  .lead-copy {
-    max-width: 770px;
-    color: var(--muted);
-    font-size: 19px;
-    line-height: 1.55;
-  }
-  .highlight { color: var(--yellow); }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 0 20px;
-    border: 1px solid var(--line);
-    background: #050505;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease;
-  }
-  .btn:hover { border-color: var(--yellow); color: var(--yellow); transform: translateY(-1px); }
-  .btn.primary {
-    border-color: var(--yellow);
-    background: var(--yellow);
-    color: #000;
-  }
-  .btn.primary:hover { color: #000; background: #fffe72; }
-  .btn.disabled {
-    color: var(--dim);
-    pointer-events: none;
-    border-color: rgba(239,237,230,.1);
-    background: #050505;
-  }
-
-  .nav {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    border-bottom: 1px solid var(--line);
-    background: rgba(0,0,0,.84);
-    backdrop-filter: blur(16px);
-  }
-  .nav-inner {
-    height: 76px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 25px;
-    font-weight: 900;
-    letter-spacing: -.05em;
-    white-space: nowrap;
-  }
-  .brand img { width: 48px; height: 48px; border-radius: 10px; }
-  .brand sup {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0;
-  }
-  .nav-links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 22px;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-  }
-  .nav-links a:hover { color: var(--yellow); }
-  .nav-actions { display: flex; gap: 10px; align-items: center; }
-
-  .hero {
-    min-height: calc(100vh - 76px);
-    padding: 46px 0 52px;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: minmax(420px, .82fr) minmax(560px, 1.18fr);
-    gap: clamp(30px, 4vw, 58px);
-    align-items: start;
-  }
-  .hero-copy {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .hero-title {
-    max-width: 650px;
-    margin: 18px 0 18px;
-    color: #f8f7ef;
-    font-size: clamp(42px, 4.25vw, 58px);
-    line-height: .9;
-    letter-spacing: -.06em;
-    text-transform: uppercase;
-  }
-  .hero-title .highlight {
-    color: var(--brand-yellow);
-  }
-  .hero .lead-copy {
-    max-width: 600px;
-    margin-bottom: 18px;
-    color: #b8b5aa;
-    font-size: 16px;
-    line-height: 1.42;
-  }
-  .hero-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin: 18px 0 18px;
-  }
-  .founder-line {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-  }
-
-  .brief-panel {
-    width: min(100%, 640px);
-    border: 1px solid rgba(239,237,230,.18);
-    background: #050505;
-  }
-  .brief-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(239,237,230,.14);
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .brief-title span:last-child {
-    color: var(--dim);
-    font-size: 10px;
-  }
-  .typed-search {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 12px;
-    align-items: center;
-    min-height: 58px;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(239,237,230,.14);
-    background: #000;
-  }
-  .typed-search-label {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .typed-search-value {
-    min-width: 0;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.4;
-  }
-  .typed-cursor {
-    display: inline-block;
-    width: 7px;
-    height: 16px;
-    margin-left: 3px;
-    background: var(--yellow);
-    vertical-align: -3px;
-    animation: typedCursor 760ms steps(1, end) infinite;
-  }
-  @keyframes typedCursor {
-    50% { opacity: 0; }
-  }
-  .brief-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-  .brief-field {
-    display: grid;
-    grid-template-columns: 150px minmax(0, 1fr);
-    gap: 14px;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(239,237,230,.1);
-  }
-  .brief-field label {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .brief-value {
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    border: 1px solid rgba(239,237,230,.18);
-    background: #000;
-    padding: 0 13px;
-    color: var(--text);
-    font-size: 15px;
-  }
-  .brief-value svg {
-    width: 15px;
-    height: 15px;
-    color: var(--dim);
-    flex: 0 0 auto;
-  }
-  .brief-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 16px;
-  }
-  .brief-tag {
-    border: 1px solid rgba(245,255,61,.45);
-    color: var(--text);
-    background: #050505;
-    padding: 8px 10px;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .brief-panel .btn {
-    width: calc(100% - 32px);
-    margin: 0 16px 14px;
-    min-height: 44px;
-    font-size: 12px;
-  }
-  .search-note {
-    margin: 0 16px 16px;
-    text-align: center;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: .04em;
-  }
-  .benefit-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
-    width: min(100%, 640px);
-    margin-top: 18px;
-    color: var(--text);
-  }
-  .benefit {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 42px;
-    padding-right: 14px;
-    border-right: 1px solid rgba(239,237,230,.18);
-    font-size: 13px;
-    line-height: 1.15;
-  }
-  .benefit:last-child { border-right: 0; padding-right: 0; }
-  .benefit-icon {
-    width: 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--yellow);
-    flex: 0 0 auto;
-  }
-  .benefit-icon svg {
-    width: 25px;
-    height: 25px;
-    stroke-width: 1.7;
-  }
-
-  .opportunity-workspace {
-    border: 1px solid rgba(239,237,230,.16);
-    background: #050505;
-    min-height: 575px;
-  }
-  .workspace-top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: center;
-    padding: 16px 18px;
-    border-bottom: 1px solid rgba(239,237,230,.14);
-  }
-  .workspace-label,
-  .workspace-status,
-  .workspace-table th,
-  .angle-label {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .workspace-query {
-    margin-top: 8px;
-    color: var(--text);
-    font-size: 24px;
-    font-weight: 900;
-    line-height: 1.1;
-    letter-spacing: -.035em;
-  }
-  .workspace-status {
-    border: 1px solid rgba(245,255,61,.45);
-    padding: 10px 12px;
-    text-align: right;
-  }
-  .workspace-status strong {
-    display: block;
-    color: var(--text);
-    font-family: var(--display);
-    font-size: 30px;
-    letter-spacing: -.03em;
-    line-height: 1;
-  }
-  .workspace-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-bottom: 1px solid rgba(239,237,230,.14);
-  }
-  .workspace-metric {
-    padding: 13px 14px;
-    border-right: 1px solid rgba(239,237,230,.12);
-  }
-  .workspace-metric:last-child { border-right: 0; }
-  .workspace-metric span {
-    display: block;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-  }
-  .workspace-metric strong {
-    display: block;
-    margin-top: 4px;
-    color: var(--text);
-    font-size: 20px;
-    line-height: 1;
-  }
-  .workspace-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .workspace-table th,
-  .workspace-table td {
-    padding: 14px 14px;
-    border-bottom: 1px solid rgba(239,237,230,.1);
-    text-align: left;
-    vertical-align: top;
-  }
-  .workspace-table th:last-child,
-  .workspace-table td:last-child {
-    text-align: right;
-  }
-  .prospect-name {
-    color: var(--text);
-    font-size: 17px;
-    font-weight: 900;
-    letter-spacing: -.025em;
-  }
-  .prospect-company,
-  .prospect-note {
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .signal-pill {
-    display: inline-block;
-    border: 1px solid rgba(245,255,61,.42);
-    color: var(--yellow);
-    padding: 6px 8px;
-    font-family: var(--mono);
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .score-cell {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 24px;
-    font-weight: 900;
-    line-height: 1;
-  }
-  .score-cell span {
-    display: block;
-    margin-top: 5px;
-    color: var(--muted);
-    font-size: 9px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .angle-panel {
-    margin: 16px 18px 18px;
-    border: 1px solid rgba(239,237,230,.14);
-    background: #000;
-    padding: 15px;
-  }
-  .angle-panel p {
-    margin: 7px 0 0;
-    color: var(--text);
-    font-size: 15px;
-    line-height: 1.45;
-  }
-
-  .console {
-    border: 1px solid var(--line-strong);
-    background: linear-gradient(180deg, rgba(17,17,14,.96), rgba(3,3,3,.98));
-    padding: 18px;
-    position: relative;
-    overflow: hidden;
-  }
-  @keyframes scan {
-    0% { transform: translateX(-100%); }
-    40%, 100% { transform: translateX(100%); }
-  }
-  .console-top,
-  .console-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    position: relative;
-  }
-  .console-title {
-    font-family: var(--mono);
-    color: var(--yellow);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-  }
-  .console-query {
-    margin: 18px 0;
-    border: 1px solid var(--line);
-    background: #030303;
-    padding: 14px;
-  }
-  .query-label {
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .query-value {
-    margin-top: 7px;
-    color: var(--text);
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -.018em;
-    word-spacing: .04em;
-  }
-  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
-  .chip {
-    border: 1px solid var(--line);
-    padding: 7px 9px;
-    color: var(--muted);
-    background: #050505;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-  }
-  .chip.active { color: #000; border-color: var(--yellow); background: var(--yellow); }
-  .mock-list {
-    display: grid;
-    gap: 10px;
-    margin-top: 16px;
-  }
-  .mock-card {
-    border: 1px solid var(--line);
-    background: rgba(0,0,0,.64);
-    padding: 14px;
-  }
-  .mock-main {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 12px;
-    align-items: start;
-  }
-  .person {
-    display: block;
-    font-size: 19px;
-    font-weight: 900;
-    letter-spacing: -.012em;
-    word-spacing: .035em;
-  }
-  .company {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  .score {
-    border: 1px solid var(--yellow);
-    color: var(--yellow);
-    padding: 8px;
-    min-width: 56px;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 800;
-  }
-  .micro-label {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .signal-line {
-    margin-top: 11px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .signal {
-    border: 1px solid rgba(245,255,61,.36);
-    color: var(--yellow);
-    padding: 6px 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-  }
-  .console-foot {
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-    gap: 8px;
-    margin-top: 14px;
-  }
-  .console-foot div {
-    border: 1px solid var(--line);
-    padding: 10px;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-  }
-
-  .card-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 30px; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 30px; }
-  .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-top: 30px; }
-  .card {
-    border: 1px solid var(--line);
-    background: rgba(10,10,10,.88);
-    padding: 22px;
-    min-height: 190px;
-  }
-  .card .num {
-    display: inline-flex;
-    width: 34px;
-    height: 34px;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 18px;
-    border: 1px solid var(--yellow);
-    color: #000;
-    background: var(--yellow);
-    font-family: var(--mono);
-    font-weight: 800;
-  }
-
-  .scanner {
-    margin-top: 34px;
-    border: 1px solid var(--line-strong);
-    background: linear-gradient(180deg, rgba(17,17,14,.88), rgba(0,0,0,.92));
-    overflow: hidden;
-  }
-  .scanner-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.2fr;
-    border-top: 1px solid var(--line);
-  }
-  .scanner-row:first-child { border-top: 0; }
-  .scanner-cell {
-    padding: 17px 18px;
-    border-left: 1px solid var(--line);
-  }
-  .scanner-cell:first-child { border-left: 0; }
-  .scanner-head {
-    color: var(--yellow);
-    background: rgba(245,255,61,.06);
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .12em;
-  }
-  .market {
-    color: var(--text);
-    font-weight: 800;
-    letter-spacing: -.02em;
-  }
-  .angle { color: var(--muted); }
-
-  .workflow {
-    counter-reset: step;
-  }
-  .step-card {
-    position: relative;
-    min-height: 230px;
-  }
-  .step-card::after {
-    counter-increment: step;
-    content: "0" counter(step);
-    position: absolute;
-    right: 18px;
-    bottom: 14px;
-    color: rgba(245,255,61,.18);
-    font-family: var(--mono);
-    font-size: 54px;
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .demo-search {
-    margin-top: 30px;
-    border: 1px solid var(--line);
-    background: #030303;
-    padding: 18px;
-  }
-  .demo-search .query-value { font-size: 28px; }
-  .demo-cards {
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 12px;
-    margin-top: 14px;
-  }
-  .demo-card {
-    border: 1px solid var(--line);
-    background: rgba(10,10,10,.92);
-    padding: 18px;
-  }
-  .angle-box {
-    margin-top: 14px;
-    padding: 12px;
-    border: 1px solid rgba(245,255,61,.28);
-    color: var(--text);
-    background: rgba(245,255,61,.045);
-    font-size: 14px;
-    line-height: 1.45;
-  }
-  .disclaimer {
-    margin-top: 14px;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-  }
-
-  .comparison {
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 12px;
-    margin-top: 30px;
-  }
-  .compare-panel {
-    border: 1px solid var(--line);
-    background: #050505;
-    padding: 22px;
-  }
-  .compare-panel.good { border-color: var(--line-strong); background: linear-gradient(180deg, rgba(245,255,61,.06), rgba(0,0,0,.9)); }
-  .check-list {
-    display: grid;
-    gap: 12px;
-    margin: 18px 0 0;
-    padding: 0;
-    list-style: none;
-    color: var(--muted);
-  }
-  .check-list li {
-    display: grid;
-    grid-template-columns: 18px 1fr;
-    gap: 10px;
-    line-height: 1.45;
-  }
-  .check-list li::before {
-    content: "+";
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-weight: 800;
-  }
-  .compare-panel:not(.good) .check-list li::before {
-    content: "-";
-    color: var(--dim);
-  }
-
-  .pricing-grid {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 12px;
-    margin-top: 30px;
-  }
-  .price-card {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--line);
-    background: #050505;
-    padding: 22px;
-    min-height: 330px;
-  }
-  .price-card.hot {
-    border-color: var(--yellow);
-  }
-  .price-card h3 {
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .price {
-    margin: 8px 0 12px;
-    font-size: 40px;
-    font-weight: 900;
-    letter-spacing: -.07em;
-  }
-  .price span { color: var(--muted); font-size: 15px; letter-spacing: -.02em; }
-  .price-card ul {
-    display: grid;
-    gap: 9px;
-    margin: 0 0 22px;
-    padding: 0;
-    list-style: none;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.45;
-  }
-  .price-card li::before {
-    content: "+";
-    margin-right: 8px;
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-weight: 800;
-  }
-  .price-card .btn { margin-top: auto; }
-  .credit-table {
-    margin-top: 18px;
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 12px;
-  }
-  .mini-panel {
-    border: 1px solid var(--line);
-    background: rgba(10,10,10,.78);
-    padding: 18px;
-  }
-  .mini-panel h3 {
-    color: var(--yellow);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-  }
-  .mini-list {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: .03em;
-  }
-  .mini-list li {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    border-top: 1px solid var(--line);
-    padding-top: 8px;
-  }
-  .mini-list b { color: var(--text); }
-
-  .faq {
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 12px;
-    margin-top: 30px;
-  }
-  .faq details {
-    border: 1px solid var(--line);
-    background: rgba(10,10,10,.88);
-    padding: 18px;
-  }
-  .faq summary {
-    cursor: pointer;
-    color: var(--text);
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: -.025em;
-  }
-  .faq details[open] { border-color: rgba(245,255,61,.34); }
-  .faq p { margin: 12px 0 0; }
-
-  .final-cta {
-    border: 1px solid var(--line-strong);
-    background: linear-gradient(135deg, rgba(245,255,61,.12), rgba(0,0,0,.94) 48%, rgba(245,255,61,.06));
-    padding: 42px;
-    display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 28px;
-    align-items: end;
-  }
-  .final-cta h2 { margin-bottom: 12px; }
-  .footer {
-    border-top: 1px solid var(--line);
-    padding: 28px 0;
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 12px;
-  }
-  .footer-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    flex-wrap: wrap;
-  }
-  .footer a:hover { color: var(--yellow); }
-
-  @media (max-width: 1040px) {
-    .nav-links { display: none; }
-    .hero-grid { grid-template-columns: 1fr; }
-    .hero-copy { max-width: 760px; }
-    .opportunity-workspace {
-      max-width: 820px;
-      width: 100%;
-      margin: 10px auto 0;
-    }
-    .console { max-width: 760px; }
-    .card-grid, .pricing-grid { grid-template-columns: repeat(2,1fr); }
-    .grid-3 { grid-template-columns: repeat(2,1fr); }
-  }
-  @media (max-width: 720px) {
-    .wrap { width: min(100% - 28px, 1180px); }
-    .section { padding: 66px 0; }
-    .nav-inner { height: 70px; }
-    .brand { font-size: 20px; }
-    .brand img { width: 44px; height: 44px; }
-    .nav-actions .btn { width: auto; }
-    .nav-actions .btn:not(.primary) { display: none; }
-    .hero { min-height: auto; padding: 46px 0 58px; }
-    h1 { font-size: 48px; letter-spacing: -.04em; }
-    .hero-title { font-size: 39px; line-height: .92; }
-    h2 { font-size: 38px; }
-    .lead-copy { font-size: 17px; }
-    .hero-actions, .final-cta .hero-actions { width: 100%; }
-    .btn { width: 100%; }
-    .brief-field { grid-template-columns: 1fr; gap: 7px; }
-    .typed-search { grid-template-columns: 1fr; gap: 5px; min-height: 76px; }
-    .benefit-row {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px 0;
-      margin-top: 20px;
-    }
-    .benefit:nth-child(2) { border-right: 0; padding-right: 0; }
-    .opportunity-workspace { min-height: auto; margin-top: 8px; overflow-x: auto; }
-    .workspace-top { grid-template-columns: 1fr; }
-    .workspace-status { text-align: left; }
-    .workspace-metrics { grid-template-columns: repeat(2, 1fr); }
-    .workspace-table { min-width: 640px; }
-    .angle-panel { margin: 14px; }
-    .console { padding: 14px; margin: 0 -2px; }
-    .console-row, .mock-main, .final-cta { grid-template-columns: 1fr; }
-    .console-foot, .card-grid, .grid-2, .grid-3, .pricing-grid, .credit-table, .faq, .comparison, .demo-cards { grid-template-columns: 1fr; }
-    .scanner { overflow-x: auto; }
-    .scanner-row { min-width: 760px; }
-    .price-card { min-height: auto; }
-  }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="hero-v2.css">
 </head>
 <body>
-  <header class="nav">
-    <div class="wrap nav-inner">
-      <a class="brand" href="/" aria-label="GlobaLeads22 home">
-        <img src="/logo.png" alt="GlobaLeads22 logo">
-        <span>GlobaLeads<sup>22</sup></span>
-      </a>
-      <nav class="nav-links" aria-label="Primary navigation">
-        <a href="#product">Product</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#resources">Resources</a>
-        <a href="#use-cases">About</a>
-      </nav>
-      <div class="nav-actions">
-        <a class="btn" href="https://app.globaleads22.com">Login</a>
-        <a class="btn primary" href="https://app.globaleads22.com">Start free</a>
+
+<header class="nav">
+  <a class="nav-brand" href="/">
+    <img class="nav-logo" src="uploads/GlobaLeads22-logo.png" alt="GlobaLeads22 logo">
+    <span class="nav-wordmark">GlobaLeads<em>22</em></span>
+  </a>
+  <nav class="nav-links">
+    <a href="#product">Product</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#data">Data</a>
+    <a href="https://app.globaleads22.com">Pricing</a>
+  </nav>
+  <div class="nav-right">
+    <a class="nav-signin" href="https://app.globaleads22.com">Sign in</a>
+    <a class="nav-cta" href="https://app.globaleads22.com">Get started</a>
+  </div>
+</header>
+
+<section class="hero" data-screen-label="Hero">
+
+  <h1 class="headline" id="headline" style="color: rgb(0, 0, 0)">Find people who <span class="mark">need</span> what you offer.</h1>
+
+  <p class="subhead">Stop pitching random businesses. Search a niche and a city, then work only the <strong>opportunities with a real reason to reach out</strong>.</p>
+
+  <div class="cta-row">
+    <a class="btn-primary" href="https://app.globaleads22.com">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
+    <a class="btn-secondary" href="#how-it-works"><span class="play-glyph"></span>See the workflow</a>
+  </div>
+
+</section>
+
+<div class="stage-wrap" id="product" data-screen-label="Product visual">
+  <div class="stage-scaler" id="stage-scaler">
+    <div class="stage" id="stage">
+
+      <div class="grid-room">
+        <svg id="grid-svg" viewBox="0 0 1240 640" width="1240" height="640"></svg>
       </div>
+
+      <div class="floor-shadow"></div>
+
+      <div class="app-window">
+        <div class="win-head">
+          <span class="win-dots"><i></i><i></i><i></i></span>
+          <span class="win-title">Opportunity inbox</span>
+          <span class="win-count"><b id="lead-count">128</b> RANKED OPPORTUNITIES</span>
+        </div>
+
+        <div class="win-query">
+          <span class="q-ico">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F2E500" stroke-width="2.4"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 5 5"></path></svg>
+          </span>
+          <span>dental clinics</span>
+          <span class="q-sep">&middot;</span>
+          <span>austin, tx</span>
+          <span class="live">SCANNING</span>
+        </div>
+
+        <div class="win-body">
+          <aside class="rail">
+            <span class="rail-label">Signals found</span>
+
+            <span class="signal" style="--delay: 0s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18-2.5-2.6-2.5-15.4 0-18z"></path></svg>
+              Website
+            </span>
+            <span class="signal" style="--delay: 0.3s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M8 14h8"></path></svg>
+              Business listing
+            </span>
+            <span class="signal" style="--delay: 0.6s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
+              Contact page
+            </span>
+            <span class="signal" style="--delay: 0.9s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M16 14.5c2.8 0 5 2.2 5 5"></path></svg>
+              Team page
+            </span>
+            <span class="signal" style="--delay: 1.2s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>
+              Public email
+            </span>
+            <span class="signal" style="--delay: 1.5s;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>
+              Phone &amp; social
+            </span>
+
+            <span class="rail-label out">Ready to work</span>
+            <span class="out-chips">
+              <span class="field-chip" style="--delay: 1.9s;">Business</span>
+              <span class="field-chip" style="--delay: 2.1s;">Person</span>
+              <span class="field-chip" style="--delay: 2.3s;">Email</span>
+              <span class="field-chip" style="--delay: 2.5s;">Phone</span>
+              <span class="field-chip" style="--delay: 2.7s;">Score</span>
+            </span>
+          </aside>
+
+          <div class="inbox-list" id="inbox-list"></div>
+        </div>
+
+        <div class="win-foot">
+          <span class="foot-btn">Export CSV</span>
+          <span class="foot-note">synced just now</span>
+        </div>
+      </div>
+
     </div>
+  </div>
+</div>
+
+<section class="sec" id="how-it-works" data-screen-label="How it works">
+  <header class="sec-head">
+    <span class="sec-kicker">How it works</span>
+    <h2 class="sec-title">Do not play the numbers game. Work the right accounts.</h2>
   </header>
-
-  <main>
-    <section class="hero" id="product">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <span class="eyebrow">Opportunity-based prospecting</span>
-          <h1 class="hero-title">Find prospects with <span class="highlight">buying signals.</span></h1>
-          <p class="lead-copy">Enter your service, market, and city. Get ranked prospects with public contact data, buying signals, and an outreach angle.</p>
-
-          <div class="brief-panel" aria-label="Build your first opportunity brief">
-            <div class="brief-title">
-              <span>Build an opportunity brief</span>
-              <span>30 free credits</span>
-            </div>
-            <div class="typed-search" aria-label="Opportunity search example">
-              <span class="typed-search-label">Search for</span>
-              <span class="typed-search-value"><span id="typed-opportunity">Dentists without a website in Miami</span><span class="typed-cursor" aria-hidden="true"></span></span>
-            </div>
-            <div class="brief-grid">
-              <div class="brief-field">
-                <label>What you sell</label>
-                <div class="brief-value">
-                  <span>Web design services</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-              </div>
-              <div class="brief-field">
-                <label>Target market</label>
-                <div class="brief-value">
-                  <span>Dental clinics</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-              </div>
-              <div class="brief-field">
-                <label>Location</label>
-                <div class="brief-value">
-                  <span>Austin, Texas</span>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="2" fill="none" stroke="currentColor"/></svg>
-                </div>
-              </div>
-            </div>
-            <a class="btn primary" href="https://app.globaleads22.com">Preview my opportunity list</a>
-            <p class="search-note">No credit card required</p>
-          </div>
-
-          <div class="benefit-row" aria-label="Key benefits">
-            <div class="benefit">
-              <span class="benefit-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></span>
-              <span>Person-first prospects</span>
-            </div>
-            <div class="benefit">
-              <span class="benefit-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <span>Public contact data</span>
-            </div>
-            <div class="benefit">
-              <span class="benefit-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M12 9v3l2 2" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></span>
-              <span>Ranked &amp; scored</span>
-            </div>
-            <div class="benefit">
-              <span class="benefit-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <span>Export-ready</span>
-            </div>
-          </div>
-        </div>
-
-        <section class="opportunity-workspace" aria-label="Opportunity preview">
-          <div class="workspace-top">
-            <div>
-              <div class="workspace-label">Example output</div>
-              <div class="workspace-query">Web design opportunities for Austin dental clinics</div>
-            </div>
-            <div class="workspace-status">
-              <strong>18</strong>
-              ranked prospects
-            </div>
-          </div>
-
-          <div class="workspace-metrics" aria-label="Search preview metrics">
-            <div class="workspace-metric">
-              <span>People</span>
-              <strong>14</strong>
-            </div>
-            <div class="workspace-metric">
-              <span>Public emails</span>
-              <strong>11</strong>
-            </div>
-            <div class="workspace-metric">
-              <span>Signals</span>
-              <strong>42</strong>
-            </div>
-            <div class="workspace-metric">
-              <span>Export</span>
-              <strong>CSV</strong>
-            </div>
-          </div>
-
-          <table class="workspace-table" aria-label="Ranked opportunity examples">
-            <thead>
-              <tr>
-                <th>Prospect</th>
-                <th>Opportunity signal</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <div class="prospect-name">Dr. Sofia Almeida</div>
-                  <div class="prospect-company">BrightSmile Dental Clinic</div>
-                  <div class="prospect-note">Likely decision maker - public email, phone, website.</div>
-                </td>
-                <td>
-                  <span class="signal-pill">No online booking</span>
-                  <div class="prospect-note">Patients must call to book. Strong fit for a conversion-focused website offer.</div>
-                </td>
-                <td><div class="score-cell">96<span>strong</span></div></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="prospect-name">Ricardo Santos</div>
-                  <div class="prospect-company">PrimeFit Personal Studio</div>
-                  <div class="prospect-note">Owner found - contact page and public phone.</div>
-                </td>
-                <td>
-                  <span class="signal-pill">Weak CTA</span>
-                  <div class="prospect-note">Site has services but no clear first-step consultation action.</div>
-                </td>
-                <td><div class="score-cell">92<span>strong</span></div></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="prospect-name">Mariana Costa</div>
-                  <div class="prospect-company">Aromas Coffee House</div>
-                  <div class="prospect-note">Owner context - website and social link found.</div>
-                </td>
-                <td>
-                  <span class="signal-pill">Mobile gap</span>
-                  <div class="prospect-note">Menu and reservation paths are hard to reach from mobile.</div>
-                </td>
-                <td><div class="score-cell">78<span>good</span></div></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="angle-panel">
-            <div class="angle-label">Suggested outreach angle</div>
-            <p>Lead with the visible booking gap: “I noticed patients have to call to book. I help clinics turn website visitors into booked consultations.”</p>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <span class="eyebrow">The problem</span>
-        <h2>Company names are not enough.</h2>
-        <p class="lead-copy">Most prospecting tools leave you with raw company rows, stale lists, or generic inboxes. You still have to check websites, find who to ask for, clean the data, and invent an outreach angle.</p>
-        <div class="card-grid">
-          <article class="card">
-            <h3>Manual research takes too long</h3>
-            <p>Checking websites, contact pages, team pages, social links, and spreadsheets burns hours before outreach even starts.</p>
-          </article>
-          <article class="card">
-            <h3>Company-only lists are weak</h3>
-            <p>A business name is not a useful prospect if you do not know who to ask for or why they might care.</p>
-          </article>
-          <article class="card">
-            <h3>Generic databases feel bloated</h3>
-            <p>Big sales platforms are powerful, but too heavy when you just need a focused local niche list.</p>
-          </article>
-          <article class="card">
-            <h3>Raw data still needs cleanup</h3>
-            <p>GlobaLeads22 prioritizes ranked, usable prospects instead of dumping rows into another spreadsheet.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <span class="eyebrow">Opportunity signals</span>
-        <h2>Find buying signals, not just contact info.</h2>
-        <p class="lead-copy">GlobaLeads22 helps you spot visible sales opportunities inside local markets, so your outreach has a reason behind it.</p>
-        <div class="scanner" role="table" aria-label="Opportunity signal examples">
-          <div class="scanner-row scanner-head" role="row">
-            <div class="scanner-cell" role="columnheader">Market search</div>
-            <div class="scanner-cell" role="columnheader">Opportunity signal</div>
-            <div class="scanner-cell" role="columnheader">Outreach angle</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Dentists in Austin</div>
-            <div class="scanner-cell" role="cell"><span class="signal">No online booking found</span></div>
-            <div class="scanner-cell angle" role="cell">Help more patients book without calling.</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Restaurants in Miami</div>
-            <div class="scanner-cell" role="cell"><span class="signal">Weak mobile website</span></div>
-            <div class="scanner-cell angle" role="cell">Improve reservations and local discovery.</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Law firms in Dallas</div>
-            <div class="scanner-cell" role="cell"><span class="signal">No clear consultation CTA</span></div>
-            <div class="scanner-cell angle" role="cell">Capture more consultation requests.</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Clinics in Los Angeles</div>
-            <div class="scanner-cell" role="cell"><span class="signal">Generic contact page</span></div>
-            <div class="scanner-cell angle" role="cell">Create a cleaner patient conversion path.</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Real estate offices in Phoenix</div>
-            <div class="scanner-cell" role="cell"><span class="signal">Missing team/contact context</span></div>
-            <div class="scanner-cell angle" role="cell">Make agents easier to reach.</div>
-          </div>
-          <div class="scanner-row" role="row">
-            <div class="scanner-cell market" role="cell">Local agencies in Chicago</div>
-            <div class="scanner-cell" role="cell"><span class="signal">No visible lead magnet</span></div>
-            <div class="scanner-cell angle" role="cell">Turn traffic into qualified calls.</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="how">
-      <div class="wrap">
-        <span class="eyebrow">How it works</span>
-        <h2>From niche + city to outreach-ready opportunities.</h2>
-        <div class="grid-2 workflow">
-          <article class="card step-card">
-            <h3>Search your market</h3>
-            <p>Enter a business type and location, then choose how deep you want the search to go.</p>
-          </article>
-          <article class="card step-card">
-            <h3>Research public business footprints</h3>
-            <p>The app checks public websites, contact pages, team pages, social links, and other visible signals.</p>
-          </article>
-          <article class="card step-card">
-            <h3>Get ranked person-first prospects</h3>
-            <p>Results prioritize useful opportunity records with a company, a person or likely decision maker, contact data, and evidence.</p>
-          </article>
-          <article class="card step-card">
-            <h3>Organize, export, and start outreach</h3>
-            <p>Save searches, review prospects, move them through your pipeline, and export results when you are ready.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <span class="eyebrow">Features</span>
-        <h2>Built for prospecting, not database browsing.</h2>
-        <div class="grid-3">
-          <article class="card"><h3>Person-first results</h3><p>Prioritize prospects with both a company and a real person or likely decision maker.</p></article>
-          <article class="card"><h3>Public contact discovery</h3><p>Find public emails, phone numbers, websites, social links, and useful contact pages when available.</p></article>
-          <article class="card"><h3>Opportunity signals</h3><p>Spot weak websites, missing booking flows, generic contact paths, and other visible reasons to reach out.</p></article>
-          <article class="card"><h3>Opportunity scoring</h3><p>Rank prospects using evidence like person name, company, contact data, website, title, location match, and contact-page signals.</p></article>
-          <article class="card"><h3>Sales workspace</h3><p>Save searches, review prospects, track pipeline stages, manage follow-ups, and export visible results.</p></article>
-          <article class="card"><h3>Credit control</h3><p>Choose Simple, Normal, or Deep searches depending on how much search effort you need.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="use-cases">
-      <div class="wrap">
-        <span class="eyebrow">Use cases</span>
-        <h2>Made for agencies, freelancers, and founders doing outbound.</h2>
-        <div class="grid-3">
-          <article class="card"><h3>Web design agencies</h3><p>Find local businesses with outdated websites, weak mobile UX, missing CTAs, or poor conversion paths.</p></article>
-          <article class="card"><h3>SEO agencies</h3><p>Build city-specific opportunity lists for clinics, law firms, restaurants, real estate offices, and other local niches.</p></article>
-          <article class="card"><h3>Freelancers and consultants</h3><p>Test new markets without manually building spreadsheets from scratch.</p></article>
-          <article class="card"><h3>B2B founders</h3><p>Validate outbound markets by quickly finding companies, people, and public contact paths.</p></article>
-          <article class="card"><h3>Lead generation agencies</h3><p>Build sharper prospect lists around niche, city, contactability, and visible opportunity.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <span class="eyebrow">Product proof</span>
-        <h2>See what one search can produce.</h2>
-        <div class="demo-search">
-          <span class="query-label">Example search</span>
-          <div class="query-value">Cosmetic dentists in Austin</div>
-          <div class="demo-cards">
-            <article class="demo-card">
-              <div class="mock-main"><div><span class="person">Dr. Amanda Reeves</span><span class="company">BrightSmile Dental</span></div><div class="score">91</div></div>
-              <div class="signal-line"><span class="signal">Team page found</span><span class="signal">No online booking found</span></div>
-              <div class="angle-box">Outreach angle: help more patients book appointments without calling.</div>
-            </article>
-            <article class="demo-card">
-              <div class="mock-main"><div><span class="person">Mark Collins</span><span class="company">Austin Cosmetic Dentistry</span></div><div class="score">84</div></div>
-              <div class="signal-line"><span class="signal">Public email found</span><span class="signal">Weak consultation CTA</span></div>
-              <div class="angle-box">Outreach angle: improve the consultation path and reduce missed patient inquiries.</div>
-            </article>
-            <article class="demo-card">
-              <div class="mock-main"><div><span class="person">Sarah Nguyen</span><span class="company">Westside Dental Studio</span></div><div class="score">78</div></div>
-              <div class="signal-line"><span class="signal">Contact page found</span><span class="signal">Generic inbox only</span></div>
-              <div class="angle-box">Outreach angle: make the practice easier to reach with a clearer patient contact flow.</div>
-            </article>
-            <article class="demo-card">
-              <div class="mock-main"><div><span class="person">Daniel Brooks</span><span class="company">Lakeview Dental Spa</span></div><div class="score">73</div></div>
-              <div class="signal-line"><span class="signal">Phone + website found</span><span class="signal">No clear patient booking flow</span></div>
-              <div class="angle-box">Outreach angle: add a stronger booking path for cosmetic consults.</div>
-            </article>
-          </div>
-          <div class="disclaimer">Example data shown for illustration.</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <span class="eyebrow">Comparison</span>
-        <h2>Not another bloated sales database.</h2>
-        <div class="comparison">
-          <article class="compare-panel">
-            <h3>Other lead tools often give you</h3>
-            <ul class="check-list">
-              <li>Raw company rows.</li>
-              <li>Complex enrichment workflows.</li>
-              <li>Generic databases.</li>
-              <li>Manual cleanup.</li>
-              <li>Tools built for big sales teams.</li>
-              <li>Contact data without an outreach angle.</li>
-            </ul>
-          </article>
-          <article class="compare-panel good">
-            <h3>GlobaLeads22 focuses on</h3>
-            <ul class="check-list">
-              <li>Person-first local opportunity lists.</li>
-              <li>Keyword + location workflow.</li>
-              <li>Public contact data.</li>
-              <li>Ranked prospects.</li>
-              <li>Built for agencies, freelancers, and founders.</li>
-              <li>Opportunity signals for sharper outreach.</li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="pricing">
-      <div class="wrap">
-        <span class="eyebrow">Pricing</span>
-        <h2>Start small. Search more when you need to.</h2>
-        <p class="lead-copy">First 20 founder seats get 50% off for 3 months. Paid plans unlock the current sales workspace and full search quality.</p>
-        <div class="pricing-grid">
-          <article class="price-card">
-            <h3>Free</h3>
-            <div class="price">$0</div>
-            <ul>
-              <li>30 credits</li>
-              <li>Simple search only</li>
-              <li>Try the workflow</li>
-            </ul>
-            <a class="btn" href="https://app.globaleads22.com">Start free</a>
-          </article>
-          <article class="price-card hot">
-            <h3>Starter</h3>
-            <div class="price">$19<span>/month</span></div>
-            <ul>
-              <li>150 credits/month</li>
-              <li>Full current app access</li>
-              <li>Lead inbox, pipeline, exports</li>
-            </ul>
-            <a class="btn primary" href="https://app.globaleads22.com">Claim founder seat</a>
-          </article>
-          <article class="price-card">
-            <h3>Growth</h3>
-            <div class="price">$49<span>/month</span></div>
-            <ul>
-              <li>500 credits/month</li>
-              <li>Full current app access</li>
-              <li>More search volume</li>
-            </ul>
-            <a class="btn" href="https://app.globaleads22.com">Start finding prospects</a>
-          </article>
-          <article class="price-card">
-            <h3>Pro</h3>
-            <div class="price">Soon</div>
-            <ul>
-              <li>$99/month planned</li>
-              <li>1500 credits/month planned</li>
-              <li>Team seats and priority support when ready</li>
-            </ul>
-            <span class="btn disabled">Coming soon</span>
-          </article>
-        </div>
-        <div class="credit-table">
-          <div class="mini-panel">
-            <h3>Search credit costs</h3>
-            <ul class="mini-list">
-              <li><span>Simple</span><b>5 normal / 10 enrich</b></li>
-              <li><span>Normal</span><b>10 normal / 20 enrich</b></li>
-              <li><span>Deep</span><b>20 normal / 40 enrich</b></li>
-            </ul>
-          </div>
-          <div class="mini-panel">
-            <h3>Top-ups</h3>
-            <ul class="mini-list">
-              <li><span>$10</span><b>100 credits</b></li>
-              <li><span>$25</span><b>300 credits</b></li>
-              <li><span>$59</span><b>800 credits</b></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="resources">
-      <div class="wrap">
-        <span class="eyebrow">FAQ</span>
-        <h2>Honest answers before you search.</h2>
-        <div class="faq">
-          <details open>
-            <summary>Will every prospect have an email?</summary>
-            <p>No. GlobaLeads22 works with public contact data, so availability depends on what each business makes visible online.</p>
-          </details>
-          <details>
-            <summary>Are these exact decision makers?</summary>
-            <p>No. The app identifies likely decision makers based on public evidence like team pages, titles, profiles, and contact context.</p>
-          </details>
-          <details>
-            <summary>Why do some searches return fewer prospects?</summary>
-            <p>Because weak company-only records are filtered instead of being presented as finished opportunities.</p>
-          </details>
-          <details>
-            <summary>Can I export prospects?</summary>
-            <p>Paid users can export visible prospect results.</p>
-          </details>
-          <details>
-            <summary>Who is this for?</summary>
-            <p>Small agencies, freelancers, consultants, founders, and sales operators doing local or niche outbound.</p>
-          </details>
-          <details>
-            <summary>Is this a CRM?</summary>
-            <p>It is a focused prospecting and sales workspace. CRM-style organization exists, but the core job is building better local opportunity lists faster.</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <div class="final-cta">
-          <div>
-            <span class="eyebrow">Start today</span>
-            <h2>Build your first local opportunity list today.</h2>
-            <p class="lead-copy">Search a niche. Pick a city. Get ranked prospects with people, companies, public contact data, visible opportunity signals, and outreach context.</p>
-            <p class="founder-line">Founder seats: 50% off for 3 months. First 20 users only.</p>
-          </div>
-          <div class="hero-actions">
-            <a class="btn primary" href="https://app.globaleads22.com">Build my first list</a>
-            <a class="btn" href="https://app.globaleads22.com">Claim founder seat</a>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="wrap footer-row">
-      <span>(c) 2026 GlobaLeads22. Local B2B prospecting for operators.</span>
-      <span><a href="/privacy">Privacy</a> - <a href="/terms">Terms</a> - contact@globaleads22.com</span>
+  <div class="steps">
+    <div class="step">
+      <span class="step-num">01</span>
+      <h3>Define the market</h3>
+      <p>Tell GlobaLeads22 what you sell, who you help, and where to look.</p>
     </div>
-  </footer>
-  <script>
-    (() => {
-      const typedOpportunity = document.getElementById("typed-opportunity");
-      if (!typedOpportunity) return;
+    <div class="step">
+      <span class="step-num">02</span>
+      <h3>Find the opening</h3>
+      <p>Spot businesses showing public signs that they may need what you offer.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">03</span>
+      <h3>Start with context</h3>
+      <p>Contact the best-fit people first, with company and contact context attached.</p>
+    </div>
+  </div>
+</section>
 
-      const examples = [
-        "Cafes with poor local SEO in Austin",
-        "Dentists without a website in Miami",
-        "Med spas without online booking in Phoenix",
-        "Law firms with no consultation CTA in Dallas",
-        "Restaurants with weak mobile websites in Chicago",
-        "Clinics with generic contact pages in Los Angeles"
-      ];
+<section class="sec" data-screen-label="Lead anatomy">
+  <header class="sec-head">
+    <span class="sec-kicker">Opportunity first</span>
+    <h2 class="sec-title">Every prospect comes with a reason.</h2>
+  </header>
+  <div class="anatomy-wrap">
+    <div class="big-card">
+      <div class="lead-top">
+        <span class="lead-name">Maya Okafor</span>
+        <span class="lead-score strong">94 &middot; STRONG FIT</span>
+      </div>
+      <div class="lead-role"><i></i>Owner &middot; likely decision maker</div>
+      <div class="lead-co">Brightline Dental Studio</div>
+      <div class="lead-fields" style="margin-top: 12px;">
+        <span class="f"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg>m.okafor@<span class="redact">brightline</span>-dental.com</span>
+        <span class="f"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>(512) 555-<span class="redact">0184</span></span>
+        <span class="f"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18-2.5-2.6-2.5-15.4 0-18z"></path></svg>brightlinedental.com</span>
+      </div>
+    </div>
+    <ul class="anatomy-notes">
+      <li>
+        <span class="n-label">Likely decision maker</span>
+        <span class="n-text">Find the person closest to the problem, not just a generic inbox.</span>
+      </li>
+      <li>
+        <span class="n-label">Public contact data</span>
+        <span class="n-text">Email, phone, and website context from public business pages.</span>
+      </li>
+      <li>
+        <span class="n-label">Fit score</span>
+        <span class="n-text">Prioritize by fit, signal strength, and reachability, so you do not waste the first touch.</span>
+      </li>
+    </ul>
+  </div>
+</section>
 
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        typedOpportunity.textContent = examples[0];
-        return;
-      }
+<section class="sec" data-screen-label="Who it's for">
+  <header class="sec-head">
+    <span class="sec-kicker">Who it&rsquo;s for</span>
+    <h2 class="sec-title">Built for people who need precise outreach.</h2>
+  </header>
+  <div class="who-grid">
+    <div class="who-item">
+      <h3>Agencies</h3>
+      <p>Find accounts that match your offer instead of blasting broad local lists.</p>
+    </div>
+    <div class="who-item">
+      <h3>Freelancers</h3>
+      <p>Turn a service, niche, and city into a focused list of likely buyers.</p>
+    </div>
+    <div class="who-item">
+      <h3>Sales teams</h3>
+      <p>Build territory lists around visible opportunities, not cold volume.</p>
+    </div>
+    <div class="who-item">
+      <h3>Founders</h3>
+      <p>Find early customers who already look closer to the pain you solve.</p>
+    </div>
+  </div>
+</section>
 
-      let exampleIndex = 0;
-      let characterIndex = 0;
-      let deleting = false;
+<section class="sec" id="data" data-screen-label="Data & trust">
+  <div class="trust">
+    <header class="sec-head">
+      <span class="sec-kicker">Data &amp; trust</span>
+      <h2 class="sec-title">No random pitching. Public signals, organized.</h2>
+    </header>
+    <div class="trust-cols">
+      <p class="trust-text">Every opportunity starts from public business signals: the website, the listing, and the contact page a business maintains so customers can find it. GlobaLeads22 organizes what is already public into a sharper reason to reach out.</p>
+      <ul class="trust-list">
+        <li>Public websites &amp; listings</li>
+        <li>Published contact pages</li>
+        <li>No private databases</li>
+        <li>Export and own your lists</li>
+      </ul>
+    </div>
+  </div>
+</section>
 
-      const tick = () => {
-        const example = examples[exampleIndex];
-        characterIndex += deleting ? -1 : 1;
-        typedOpportunity.textContent = example.slice(0, characterIndex);
+<section class="sec final" data-screen-label="Final CTA">
+  <h2 class="final-title">Find the businesses already showing the need.</h2>
+  <a class="btn-primary" href="https://app.globaleads22.com">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
+</section>
 
-        if (!deleting && characterIndex === example.length) {
-          deleting = true;
-          window.setTimeout(tick, 1500);
-          return;
-        }
+<footer class="footer">
+  <a class="f-brand" href="/">GlobaLeads22</a>
+  <span class="f-note">Opportunity signals from public business data.</span>
+  <nav class="f-links">
+    <a href="#product">Product</a>
+    <a href="https://app.globaleads22.com">Pricing</a>
+    <a href="/privacy">Privacy</a>
+    <a href="mailto:contact@globaleads22.com">Contact</a>
+  </nav>
+</footer>
 
-        if (deleting && characterIndex === 0) {
-          deleting = false;
-          exampleIndex = (exampleIndex + 1) % examples.length;
-          window.setTimeout(tick, 320);
-          return;
-        }
+<script src="hero-v2.js"></script>
 
-        window.setTimeout(tick, deleting ? 28 : 56);
-      };
-
-      typedOpportunity.textContent = "";
-      window.setTimeout(tick, 500);
-    })();
-  </script>
 </body>
 </html>
