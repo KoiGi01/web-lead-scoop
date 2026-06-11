@@ -20,15 +20,16 @@
     <a href="#product">Product</a>
     <a href="#how-it-works">How it works</a>
     <a href="#data">Data</a>
-    <a href="https://app.globaleads22.com">Pricing</a>
+    <a href="https://app.globaleads22.com" target="_top">Pricing</a>
   </nav>
   <div class="nav-right">
     <a
       class="nav-signin"
       href="https://app.globaleads22.com/"
-      onclick="window.location.assign('https://app.globaleads22.com/'); return false;"
+      target="_top"
+      onclick="window.top.location.assign('https://app.globaleads22.com/'); return false;"
     >Sign in</a>
-    <a class="nav-cta" href="https://app.globaleads22.com">Get started</a>
+    <a class="nav-cta" href="https://app.globaleads22.com" target="_top">Get started</a>
   </div>
 </header>
 
@@ -39,7 +40,7 @@
   <p class="subhead">Stop pitching random businesses. Search a niche and a city, then work only the <strong>opportunities with a real reason to reach out</strong>.</p>
 
   <div class="cta-row">
-    <a class="btn-primary" href="https://app.globaleads22.com">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
+    <a class="btn-primary" href="https://app.globaleads22.com" target="_top">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
     <a class="btn-secondary" href="#how-it-works"><span class="play-glyph"></span>See the workflow</a>
   </div>
 
@@ -229,7 +230,7 @@
 
 <section class="sec final" data-screen-label="Final CTA">
   <h2 class="final-title">Find the businesses already showing the need.</h2>
-  <a class="btn-primary" href="https://app.globaleads22.com">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
+  <a class="btn-primary" href="https://app.globaleads22.com" target="_top">Find my opportunities <span class="btn-arrow">&rarr;</span></a>
 </section>
 
 <footer class="footer">
@@ -237,13 +238,22 @@
   <span class="f-note">Opportunity signals from public business data.</span>
   <nav class="f-links">
     <a href="#product">Product</a>
-    <a href="https://app.globaleads22.com">Pricing</a>
+    <a href="https://app.globaleads22.com" target="_top">Pricing</a>
     <a href="/privacy">Privacy</a>
     <a href="mailto:contact@globaleads22.com">Contact</a>
   </nav>
 </footer>
 
 <script src="hero-v2.js"></script>
+<script>
+  document.querySelectorAll('a[href^="https://app.globaleads22.com"]').forEach(function (link) {
+    link.setAttribute("target", "_top");
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      window.top.location.assign(link.href);
+    });
+  });
+</script>
 
 </body>
 </html>
