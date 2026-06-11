@@ -1,4 +1,18 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.globaleads22.com" }],
+      "destination": "/landing.html",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "globaleads22.com" }],
+      "destination": "/landing.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
