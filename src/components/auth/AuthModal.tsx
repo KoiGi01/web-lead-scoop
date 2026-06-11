@@ -67,7 +67,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                 onClose();
                 reset();
                 if (!window.location.hostname.startsWith("app.")) {
-                    window.location.href = "https://app.globaleads22.com";
+                    window.location.replace(getAuthRedirectUrl());
                 }
             }
         } catch (err: unknown) {

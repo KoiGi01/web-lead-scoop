@@ -40,6 +40,7 @@ const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
 const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const isDemoPreview = devMode && isLocalHost && new URLSearchParams(window.location.search).get("demo") === "1";
+const productionAppUrl = "https://app.globaleads22.com";
 const demoUser = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "demo@globaleads22.local",
@@ -116,6 +117,17 @@ const AppPage = () => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     window.localStorage.setItem("globaleads-app-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (isAppSubdomain || isLocalHost || devMode || isDemoPreview) {
+      return;
+    }
+
+    const target = new URL(productionAppUrl);
+    target.search = window.location.search;
+    target.hash = window.location.hash;
+    window.location.replace(target.toString());
+  }, []);
 
   // On the app subdomain, auto-open sign-in modal for unauthenticated users
   useEffect(() => {
