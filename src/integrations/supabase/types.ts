@@ -494,6 +494,47 @@ export type Database = {
           created_at?: string
         }
       }
+      lead_list_previews: {
+        Row: {
+          id: string
+          token: string
+          created_by: string | null
+          title: string
+          description: string
+          search_config: Json
+          leads: Json
+          lead_count: number
+          is_public: boolean
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          token: string
+          created_by?: string | null
+          title: string
+          description?: string
+          search_config?: Json
+          leads?: Json
+          lead_count?: number
+          is_public?: boolean
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          token?: string
+          created_by?: string | null
+          title?: string
+          description?: string
+          search_config?: Json
+          leads?: Json
+          lead_count?: number
+          is_public?: boolean
+          expires_at?: string | null
+          created_at?: string
+        }
+      }
       saved_leads: {
         Row: {
           id: string

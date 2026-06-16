@@ -20,6 +20,7 @@ import {
   Play,
   Search,
   Send,
+  Share2,
   SlidersHorizontal,
   Sparkles,
   UserRound,
@@ -188,7 +189,7 @@ interface FreeSearchPlannerResponse {
 
 interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
-  onSearchComplete?: () => void;
+  onSearchComplete?: (savedLeadCount?: number) => void;
   onBuyCredits?: () => void;
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
@@ -961,6 +962,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
   const [searchDiagnostics, setSearchDiagnostics] = useState<SearchDiagnostics | null>(null);
   const [filterText, setFilterText] = useState("");
   const [emailsCopied, setEmailsCopied] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const toggleCardExpanded = (id: string) => {
@@ -1004,6 +1007,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setResults(null);
       setSearchDiagnostics(null);
       setSearchStepStatus(null);
+      setShareUrl("");
     };
     const handleNewSearch = () => {
       setSearchMode("manual");
@@ -1013,6 +1017,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setResults(null);
       setSearchDiagnostics(null);
       setSearchStepStatus(null);
+      setShareUrl("");
       setFilterText("");
       setStage("idle");
       setProgress(0);
@@ -1243,6 +1248,81 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Opportunities");
     XLSX.writeFile(wb, `GlobaLeads22-${industry || "opportunities"}-${country || "search"}.xlsx`);
+  };
+
+  const createPreviewToken = () => {
+    const bytes = new Uint8Array(18);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => byte.toString(36).padStart(2, "0")).join("").slice(0, 28);
+  };
+
+  const getPreviewBaseUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return window.location.origin;
+    }
+
+    return "https://globaleads22.com";
+  };
+
+  const handleShareList = async () => {
+    if (!sortedResults?.length || !user?.id || shareLoading) return;
+    setShareLoading(true);
+
+    try {
+      const token = createPreviewToken();
+      const title = `${searchConfig.selectedService || "Curated"} leads in ${searchConfig.location}`;
+      const previewLeads = sortedResults.map(lead => ({
+        name: lead.name || "",
+        address: lead.address || "",
+        phone: lead.phone || "",
+        website: lead.website || "",
+        category: lead.category || "",
+        selected_service: searchConfig.selectedService || null,
+        emails: lead.emails || [],
+        whatsapp: lead.whatsapp || [],
+        contacts: lead.contacts || [],
+        linkedin_url: lead.linkedinUrl || null,
+        social_links: lead.socialLinks || [],
+        contact_page_found: Boolean(lead.contactPageFound),
+        intelligence: buildLeadIntelligence(lead.detectedSignals, lead.websiteSignals, searchConfig.selectedService) ?? null,
+        quality_score: lead.leadQualityScore ?? null,
+        quality_label: lead.leadQualityLabel || null,
+        quality_reason: lead.leadQualityReason || summarizeOpportunityCard(lead.detectedSignals, searchConfig.selectedService).whyText || null,
+      }));
+
+      const { error } = await supabase.from("lead_list_previews").insert({
+        token,
+        created_by: user.id,
+        title,
+        description: `Preview list from a GlobaLeads22 search for ${searchConfig.industry} in ${searchConfig.location}.`,
+        search_config: {
+          industry: searchConfig.industry,
+          location: searchConfig.location,
+          selectedService: searchConfig.selectedService,
+          opportunitySignals: searchConfig.opportunitySignals,
+          depth: searchConfig.depth,
+          enrichMode: searchConfig.enrichMode,
+        },
+        leads: previewLeads,
+        lead_count: previewLeads.length,
+      });
+
+      if (error) throw error;
+
+      const url = `${getPreviewBaseUrl()}/preview/${token}`;
+      setShareUrl(url);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Preview link copied", description: "Share this public demo list with prospects or on social." });
+      } catch {
+        toast({ title: "Preview link ready", description: "Copy the public demo link from the preview panel." });
+      }
+    } catch (error) {
+      console.error("Error creating lead list preview:", error);
+      toast({ title: "Share failed", description: "Could not create a preview link for this list.", variant: "destructive" });
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   const validateSearch = () => {
@@ -1493,7 +1573,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       setStatus(`${ranked.length} demo opportunities ready`);
       setProgress(100);
       setIsProcessing(false);
-      onSearchComplete?.();
+      onSearchComplete?.(ranked.length);
       return;
     }
 
@@ -1683,7 +1763,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
           : `Found ${businesses.length} companies, but no public person names yet.`,
       });
       await saveSearch(ranked, searchSessionId, config, runChargedCredits);
-      onSearchComplete?.();
+      onSearchComplete?.(ranked.length);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Search failed";
       const isCreditError = /INSUFFICIENT_CREDITS|Insufficient credits/i.test(message);
@@ -2559,6 +2639,10 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     />
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button onClick={handleShareList} disabled={shareLoading || !sortedResults?.length} className="inline-flex items-center gap-2 border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
+                      {shareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                      Share list
+                    </button>
                     <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
                       {!hasFullAppAccess ? "Upgrade to copy" : emailsCopied ? "Copied emails" : "Copy emails"}
                     </button>
@@ -2568,6 +2652,23 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                     </button>
                   </div>
                 </div>
+                {shareUrl && (
+                  <div className="flex flex-col gap-2 border border-[#e8fb52]/25 bg-[#e8fb52]/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Public preview ready</p>
+                      <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all font-mono text-xs text-[#f3f5f8] hover:text-[#e8fb52]">
+                        {shareUrl}
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(shareUrl).then(() => toast({ title: "Copied", description: "Preview link copied again." }))}
+                      className="shrink-0 border border-[#e8fb52]/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52] hover:bg-[#e8fb52]/10"
+                    >
+                      Copy link
+                    </button>
+                  </div>
+                )}
 
                 <div className="grid gap-3 lg:grid-cols-2">
                   {sortedResults?.map((lead, index) => {

@@ -20,6 +20,7 @@ import {
   Phone,
   Search,
   Send,
+  Share2,
   SlidersHorizontal,
   UserRound,
   X,
@@ -249,7 +250,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const [filterByIntelligence, setFilterByIntelligence] = useState(false);
   const [filterDueOnly, setFilterDueOnly] = useState(false);
   const [filterScoreMin, setFilterScoreMin] = useState(0);
+  const [industrySnapKey, setIndustrySnapKey] = useState(0);
   const [emailsCopied, setEmailsCopied] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
   const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<CrmStatus | null>(null);
@@ -325,6 +329,7 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
     setFilterDueOnly(mode === "follow-ups");
     setSortBy("follow_up");
     setShowAdvancedFilters(false);
+    if (mode === "pipeline") setSelectedLeadId(null);
   }, [mode]);
 
   const patchLead = async (leadId: string, patch: Partial<Pick<SavedLead, "crm_status" | "crm_priority" | "crm_notes" | "next_follow_up_at" | "last_contacted_at">>) => {
@@ -521,6 +526,37 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
     [leads],
   );
 
+  const industryBundles = useMemo(() => {
+    const counts = new Map<string, { category: string; count: number; emails: number; people: number; scoreTotal: number; scored: number }>();
+    leads.forEach(lead => {
+      const category = lead.category || "Uncategorized";
+      const current = counts.get(category) || { category, count: 0, emails: 0, people: 0, scoreTotal: 0, scored: 0 };
+      const score = lead.intelligence?.opportunityScore;
+      current.count += 1;
+      current.emails += lead.emails.length;
+      current.people += hasPersonName(lead) ? 1 : 0;
+      if (typeof score === "number") {
+        current.scoreTotal += score;
+        current.scored += 1;
+      }
+      counts.set(category, current);
+    });
+
+    return [...counts.values()]
+      .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category))
+      .slice(0, 8)
+      .map(bundle => ({
+        ...bundle,
+        label: bundle.category.replace(/_/g, " "),
+        averageScore: bundle.scored > 0 ? Math.round(bundle.scoreTotal / bundle.scored) : null,
+      }));
+  }, [leads]);
+
+  const selectIndustryBundle = (category: string) => {
+    setFilterCategory(category);
+    setIndustrySnapKey(value => value + 1);
+  };
+
   const filteredResults = leads.filter(lead => {
     if (filterCategory !== "all" && lead.category !== filterCategory) return false;
     if (!isWithinCreatedDateFilter(lead)) return false;
@@ -584,8 +620,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const selectedLead = sortedResults.find(lead => lead.id === selectedLeadId) || sortedResults[0] || null;
   const selectedContact = selectedLead ? getTopContact(selectedLead) : null;
   const emailCount = sortedResults.reduce((acc, lead) => acc + lead.emails.length, 0);
+  const totalEmailCount = leads.reduce((acc, lead) => acc + lead.emails.length, 0);
   const linkedInCount = sortedResults.filter(lead => lead.linkedinUrl).length;
   const personNameCount = sortedResults.filter(hasPersonName).length;
+  const totalPersonNameCount = leads.filter(hasPersonName).length;
   const contactedCount = sortedResults.filter(isContactedLead).length;
   const notContactedCount = sortedResults.length - contactedCount;
   const leadsByStatus = (["new", ...stageOrder] as CrmStatus[]).map(value => ({
@@ -656,6 +694,89 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Opportunity CRM");
     XLSX.writeFile(wb, "GlobaLeads22-Opportunity-CRM.xlsx");
+  };
+
+  const createPreviewToken = () => {
+    const bytes = new Uint8Array(18);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => byte.toString(36).padStart(2, "0")).join("").slice(0, 28);
+  };
+
+  const getPreviewBaseUrl = () => {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return window.location.origin;
+    }
+
+    return "https://globaleads22.com";
+  };
+
+  const handleShareVisibleList = async () => {
+    if (!sortedResults.length || shareLoading) return;
+    if (!userId || demoMode) {
+      toast({
+        title: "Share is disabled in demo",
+        description: "Sign in with a real account to create public preview links.",
+      });
+      return;
+    }
+
+    setShareLoading(true);
+    try {
+      const token = createPreviewToken();
+      const industryLabel = filterCategory === "all" ? "all industries" : filterCategory.replace(/_/g, " ");
+      const title = filterCategory === "all" ? "Curated lead list" : `${industryLabel} lead list`;
+      const previewLeads = sortedResults.map(lead => ({
+        name: lead.name || "",
+        address: lead.address || "",
+        phone: lead.phone || "",
+        website: lead.website || "",
+        category: lead.category || "",
+        selected_service: lead.selected_service || null,
+        emails: lead.emails || [],
+        whatsapp: lead.whatsapp || [],
+        contacts: lead.contacts || [],
+        linkedin_url: lead.linkedinUrl || null,
+        social_links: lead.socialLinks || [],
+        contact_page_found: Boolean(lead.contact_page_found),
+        intelligence: lead.intelligence || null,
+        quality_score: lead.intelligence?.opportunityScore ?? null,
+        quality_label: null,
+        quality_reason: lead.intelligence?.positioning || lead.intelligence?.opportunitySummary || null,
+      }));
+
+      const { error } = await supabase.from("lead_list_previews").insert({
+        token,
+        created_by: userId,
+        title,
+        description: `Preview list from GlobaLeads22 with ${sortedResults.length} visible lead(s) from ${industryLabel}.`,
+        search_config: {
+          industry: filterCategory === "all" ? "" : filterCategory,
+          location: "",
+          selectedService: "",
+          opportunitySignals: [],
+          depth: "preview",
+          enrichMode: false,
+        },
+        leads: previewLeads,
+        lead_count: previewLeads.length,
+      });
+
+      if (error) throw error;
+
+      const url = `${getPreviewBaseUrl()}/preview/${token}`;
+      setShareUrl(url);
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Preview link copied", description: "Share this public list with prospects or on social." });
+      } catch {
+        toast({ title: "Preview link ready", description: "Copy the public demo link from the preview panel." });
+      }
+    } catch (error) {
+      console.error("Error sharing visible lead list:", error);
+      toast({ title: "Share failed", description: "Could not create a preview link for this list.", variant: "destructive" });
+    } finally {
+      setShareLoading(false);
+    }
   };
 
   const clearFilters = () => {
@@ -903,6 +1024,80 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
 
         {!loading && leads.length > 0 && (
           <div className="flex min-h-0 flex-1 flex-col gap-3">
+            {mode !== "pipeline" && (
+              <div className="rounded-[12px] border border-[#f3f5f8]/[0.1] bg-[#111319] p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-[#e8fb52]">Industry bundles</p>
+                    <p className="mt-1 text-xs text-[#5d6675]">Jump into a focused lead set, or view the full inbox.</p>
+                  </div>
+                  <div className="hidden items-center gap-1 rounded-[8px] border border-[#f3f5f8]/10 bg-black/35 p-1 sm:flex">
+                    <button
+                      type="button"
+                      onClick={() => setArchiveViewMode("list")}
+                      aria-label="List view"
+                      className={`grid h-7 w-7 place-items-center rounded-[6px] transition-colors ${archiveViewMode === "list" ? "bg-[#e8fb52] text-black" : "text-[#5d6675] hover:text-[#f3f5f8]"}`}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setArchiveViewMode("board")}
+                      aria-label="Board view"
+                      className={`grid h-7 w-7 place-items-center rounded-[6px] transition-colors ${archiveViewMode === "board" ? "bg-[#e8fb52] text-black" : "text-[#5d6675] hover:text-[#f3f5f8]"}`}
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <button
+                    type="button"
+                    onClick={() => selectIndustryBundle("all")}
+                    className={`group min-h-[112px] rounded-[10px] border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(0,0,0,0.28)] ${
+                      filterCategory === "all"
+                        ? "border-[#e8fb52] bg-[#e8fb52]/10"
+                        : "border-[#f3f5f8]/[0.1] bg-black/40 hover:border-[#e8fb52]/45"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#e8fb52]/35 bg-[#e8fb52]/10 text-[#e8fb52] transition-transform duration-200 group-hover:scale-105">
+                        <List className="h-4 w-4" />
+                      </span>
+                      <span className="font-mono text-2xl font-black tabular-nums text-[#f3f5f8]">{leads.length}</span>
+                    </div>
+                    <p className="mt-3 font-display text-sm font-bold text-[#f3f5f8]">View all leads</p>
+                    <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{totalEmailCount} emails · {totalPersonNameCount} people</p>
+                  </button>
+
+                  {industryBundles.map(bundle => (
+                    <button
+                      key={bundle.category}
+                      type="button"
+                      onClick={() => selectIndustryBundle(bundle.category)}
+                      className={`group min-h-[112px] rounded-[10px] border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(0,0,0,0.28)] ${
+                        filterCategory === bundle.category
+                          ? "border-[#e8fb52] bg-[#e8fb52]/10"
+                          : "border-[#f3f5f8]/[0.1] bg-black/40 hover:border-[#e8fb52]/45"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="grid h-8 w-8 place-items-center rounded-[8px] border border-[#f3f5f8]/10 bg-[#14171d] font-mono text-[10px] font-black uppercase text-[#e8fb52] transition-transform duration-200 group-hover:scale-105">
+                          {bundle.label.slice(0, 2)}
+                        </span>
+                        <span className="font-mono text-2xl font-black tabular-nums text-[#f3f5f8]">{bundle.count}</span>
+                      </div>
+                      <p className="mt-3 truncate font-display text-sm font-bold capitalize text-[#f3f5f8]">{bundle.label}</p>
+                      <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
+                        {bundle.emails} emails · {bundle.people} people{bundle.averageScore !== null ? ` · ${bundle.averageScore} avg` : ""}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="rounded-[12px] border border-[#f3f5f8]/[0.1] bg-[#111319] p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative min-w-0 flex-1">
@@ -1118,8 +1313,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                     })}
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#f3f5f8]/[0.06]">
-                    {sortedResults.map(lead => {
+                  <div key={`lead-list-${industrySnapKey}-${filterCategory}`} className="divide-y divide-[#f3f5f8]/[0.06]">
+                    {sortedResults.map((lead, index) => {
                       const topContact = getTopContact(lead);
                       const selected = lead.id === selectedLead?.id;
                       const person = topContact?.fullName || topContact?.email || "Named contact pending";
@@ -1128,7 +1323,8 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                         <button
                           key={lead.id}
                           onClick={() => setSelectedLeadId(lead.id)}
-                          className={`group relative block w-full py-3.5 pl-5 pr-4 text-left transition-colors ${selected ? "bg-[#e8fb52]/[0.06]" : "hover:bg-[#f3f5f8]/[0.025]"}`}
+                          style={{ animationDelay: `${Math.min(index, 10) * 32}ms` }}
+                          className={`lead-row-snap group relative block w-full py-3.5 pl-5 pr-4 text-left transition-all duration-200 hover:translate-x-1 ${selected ? "bg-[#e8fb52]/[0.06]" : "hover:bg-[#f3f5f8]/[0.025]"}`}
                         >
                           <span className={`absolute inset-y-0 left-0 w-[3px] transition-colors ${selected ? "bg-[#e8fb52]" : "bg-transparent group-hover:bg-[#f3f5f8]/15"}`} />
                           <div className="flex items-start gap-3">
@@ -1202,7 +1398,11 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
               <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
                 {linkedInCount} with LinkedIn · {personNameCount} with person names
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button onClick={handleShareVisibleList} disabled={shareLoading || sortedResults.length === 0} className="inline-flex items-center gap-2 border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
+                  {shareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                  Share list
+                </button>
                 <button onClick={handleCopyEmails} disabled={emailCount === 0} className="border border-[#f3f5f8]/20 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-[#f3f5f8] hover:border-[#e8fb52] disabled:opacity-30">
                   {emailsCopied ? "Copied emails" : "Copy visible emails"}
                 </button>
@@ -1211,6 +1411,23 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
                 </button>
               </div>
             </div>
+            {shareUrl && (
+              <div className="flex flex-col gap-2 border border-[#e8fb52]/25 bg-[#e8fb52]/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Public preview ready</p>
+                  <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all font-mono text-xs text-[#f3f5f8] hover:text-[#e8fb52]">
+                    {shareUrl}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(shareUrl).then(() => toast({ title: "Copied", description: "Preview link copied again." }))}
+                  className="shrink-0 border border-[#e8fb52]/40 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52] hover:bg-[#e8fb52]/10"
+                >
+                  Copy link
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

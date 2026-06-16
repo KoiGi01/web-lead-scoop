@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bug, CheckCheck, CreditCard, Loader2, Settings } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Bug, CheckCheck, CreditCard, Loader2, Menu, Settings } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,12 +35,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 const isAppSubdomain = window.location.hostname.startsWith("app.");
 const devMode = import.meta.env.DEV;
 const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const isDemoPreview = devMode && isLocalHost && new URLSearchParams(window.location.search).get("demo") === "1";
+const demoParam = new URLSearchParams(window.location.search).get("demo") === "1";
+const demoPath = window.location.pathname === "/demo";
+const isDemoPreview = devMode && isLocalHost && (demoParam || demoPath);
 const productionAppUrl = "https://app.globaleads22.com";
+const pipelineSeenStorageKey = (userId: string) => `gl22:pipeline-last-seen-at:${userId}`;
 const demoUser = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "demo@globaleads22.local",
@@ -97,8 +101,10 @@ const AppPage = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [workspaceUpgradeOpen, setWorkspaceUpgradeOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<AppViewMode>("home");
+  const [viewMode, setViewMode] = useState<AppViewMode>(isDemoPreview ? "lead-inbox" : "home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [pipelineCount, setPipelineCount] = useState(0);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutConfirmation, setCheckoutConfirmation] = useState<CheckoutConfirmationState>({
@@ -137,11 +143,65 @@ const AppPage = () => {
   }, [loading, user]);
 
   useEffect(() => {
+    if (!user || isAppSubdomain || isLocalHost || devMode || isDemoPreview) {
+      return;
+    }
+
+    const target = new URL(productionAppUrl);
+    target.search = window.location.search;
+    target.hash = window.location.hash;
+    window.location.replace(target.toString());
+  }, [user]);
+
+  useEffect(() => {
     if (user && profileChecked && !hasProfile && !onboardingShown) {
       setOnboardingOpen(true);
       setOnboardingShown(true);
     }
   }, [user, profileChecked, hasProfile, onboardingShown]);
+
+  const refreshPipelineCount = useCallback(async () => {
+    if (!user?.id) {
+      setPipelineCount(0);
+      return;
+    }
+
+    if (isDemoPreview) return;
+
+    const storageKey = pipelineSeenStorageKey(user.id);
+    let lastSeenAt = window.localStorage.getItem(storageKey);
+    if (!lastSeenAt) {
+      lastSeenAt = new Date().toISOString();
+      window.localStorage.setItem(storageKey, lastSeenAt);
+      setPipelineCount(0);
+      return;
+    }
+
+    const { count, error } = await supabase
+      .from("saved_leads")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gt("created_at", lastSeenAt)
+      .neq("crm_status", "won")
+      .neq("crm_status", "lost");
+
+    if (error) {
+      console.error("Error loading unseen pipeline count:", error);
+      return;
+    }
+
+    setPipelineCount(count || 0);
+  }, [user?.id]);
+
+  useEffect(() => {
+    void refreshPipelineCount();
+  }, [refreshPipelineCount]);
+
+  const clearPipelineCount = useCallback(() => {
+    if (!user?.id) return;
+    window.localStorage.setItem(pipelineSeenStorageKey(user.id), new Date().toISOString());
+    setPipelineCount(0);
+  }, [user?.id]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -156,10 +216,13 @@ const AppPage = () => {
     }
 
     const bundleParam = params.get('bundle');
+    const checkoutTypeParam = params.get('checkoutType');
+    const checkoutType = checkoutTypeParam === "subscription" ? "subscription" : "topup";
     if (bundleParam && user && !checkoutLoading) {
-      handleBuyCredits(bundleParam);
+      handleBuyCredits(bundleParam, checkoutType);
       const newUrl = new URL(window.location);
       newUrl.searchParams.delete('bundle');
+      newUrl.searchParams.delete('checkoutType');
       window.history.replaceState({}, '', newUrl.pathname);
     }
   }, [user]);
@@ -235,8 +298,13 @@ const AppPage = () => {
     });
   }
 
-  const handleSearchComplete = async () => {
+  const handleSearchComplete = async (savedLeadCount = 0) => {
     await Promise.all([refetchCredits(), refetchHistory()]);
+    if (isDemoPreview) {
+      setPipelineCount(current => current + savedLeadCount);
+      return;
+    }
+    await refreshPipelineCount();
   };
 
   const handleSelectEntry = (entry: SearchHistoryEntry) => {
@@ -284,7 +352,15 @@ const AppPage = () => {
       setWorkspaceUpgradeOpen(true);
       return;
     }
+    if (view === "pipeline") {
+      clearPipelineCount();
+    }
     setViewMode(view);
+  };
+
+  const handleMobileNavigate = (view: AppSidebarView) => {
+    setMobileSidebarOpen(false);
+    handleNavigate(view);
   };
 
   const handleOnboardingClose = async () => {
@@ -352,29 +428,33 @@ const AppPage = () => {
     "Steps to reproduce:",
     "1. ",
   ].join("\n"))}`;
+  const sidebarProps = {
+    activeView: viewMode,
+    creditsUsed: Math.max(0, planCredits - creditsBalance),
+    creditsTotal: planCredits,
+    onViewAdmin: handleViewAdmin,
+    isAdmin,
+    onBuyCredits: () => setCreditsOpen(true),
+    userName: String(displayName),
+    planLabel: isAdmin ? "Admin" : paidBadgeLabel,
+    email: user?.email,
+    showPaidBadge,
+    paidBadgeLabel,
+    reportBugHref: bugReportHref,
+    pipelineCount,
+    onEditProfile: () => setEditProfileOpen(true),
+    onSignOut: signOut,
+  };
 
   return (
     <div className="app-theme app-dark dark relative flex h-screen overflow-hidden bg-[#08090c] text-[#f3f5f8]">
       {/* ── Full-height sidebar ── */}
       {user && (
         <AppSidebar
-          activeView={viewMode}
+          {...sidebarProps}
           onNavigate={handleNavigate}
-          creditsUsed={Math.max(0, planCredits - creditsBalance)}
-          creditsTotal={planCredits}
-          onViewAdmin={handleViewAdmin}
-          isAdmin={isAdmin}
-          onBuyCredits={() => setCreditsOpen(true)}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          userName={String(displayName)}
-          planLabel={isAdmin ? "Admin" : paidBadgeLabel}
-          email={user.email}
-          showPaidBadge={showPaidBadge}
-          paidBadgeLabel={paidBadgeLabel}
-          reportBugHref={bugReportHref}
-          onEditProfile={() => setEditProfileOpen(true)}
-          onSignOut={signOut}
         />
       )}
 
@@ -388,6 +468,22 @@ const AppPage = () => {
               <Button variant="accent" size="sm" className="whitespace-nowrap" onClick={() => setAuthOpen(true)}>
                 SIGN IN
               </Button>
+            </div>
+          </header>
+        )}
+        {user && (
+          <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-[#f3f5f8]/[0.07] bg-[#08090c] px-4 md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open navigation"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-[#f3f5f8]/10 text-[#f3f5f8] transition-colors hover:border-[#e8fb52]/40 hover:text-[#e8fb52]"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <GlobaLeadsLogo size="sm" theme="dark" />
+            <div className="ml-auto font-mono text-[10px] font-semibold uppercase tracking-widest text-[#e8fb52]">
+              {creditsBalance.toLocaleString()} credits
             </div>
           </header>
         )}
@@ -467,6 +563,21 @@ const AppPage = () => {
           </ErrorBoundary>
         </main>
       </div>
+
+      {user && (
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetContent side="left" className="w-[288px] border-[#f3f5f8]/10 bg-[#0b0d11] p-0 text-[#f3f5f8]">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SheetDescription className="sr-only">Workspace navigation and account controls</SheetDescription>
+            <AppSidebar
+              {...sidebarProps}
+              variant="mobile"
+              onNavigate={handleMobileNavigate}
+              collapsed={false}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
 
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <Dialog open={workspaceUpgradeOpen} onOpenChange={setWorkspaceUpgradeOpen}>

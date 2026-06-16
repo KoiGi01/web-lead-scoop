@@ -9,6 +9,7 @@ import { Loader2, Mail } from "lucide-react";
 interface AuthModalProps {
     open: boolean;
     onClose: () => void;
+    redirectTo?: string;
 }
 
 type Mode = "signin" | "signup";
@@ -21,7 +22,7 @@ const getAuthRedirectUrl = () => {
     return "https://app.globaleads22.com";
 };
 
-const AuthModal = ({ open, onClose }: AuthModalProps) => {
+const AuthModal = ({ open, onClose, redirectTo }: AuthModalProps) => {
     const [mode, setMode] = useState<Mode>("signin");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -54,7 +55,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                     email,
                     password,
                     options: {
-                        emailRedirectTo: getAuthRedirectUrl(),
+                        emailRedirectTo: redirectTo || getAuthRedirectUrl(),
                     },
                 });
                 if (error) throw error;
@@ -66,7 +67,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
                 if (error) throw error;
                 onClose();
                 reset();
-                if (!window.location.hostname.startsWith("app.")) {
+                if (!redirectTo && !window.location.hostname.startsWith("app.")) {
                     window.location.replace(getAuthRedirectUrl());
                 }
             }
@@ -83,7 +84,7 @@ const AuthModal = ({ open, onClose }: AuthModalProps) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: getAuthRedirectUrl(),
+                redirectTo: redirectTo || getAuthRedirectUrl(),
             },
         });
         if (error) {

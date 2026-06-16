@@ -1,16 +1,10 @@
 {
   "redirects": [
     {
-      "source": "/",
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "www.globaleads22.com" }],
-      "destination": "/landing.html",
-      "permanent": false
-    },
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "globaleads22.com" }],
-      "destination": "/landing.html",
-      "permanent": false
+      "destination": "https://globaleads22.com/$1",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -20,6 +14,8 @@
       "destination": "/index.html"
     },
     { "source": "/app",     "destination": "/index.html" },
+    { "source": "/demo",    "destination": "/index.html" },
+    { "source": "/preview/:token", "destination": "/index.html" },
     { "source": "/privacy", "destination": "/index.html" },
     { "source": "/terms",   "destination": "/index.html" },
     { "source": "/",        "destination": "/landing.html" }

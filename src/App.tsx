@@ -9,6 +9,7 @@ import CookieBanner from "@/components/CookieBanner";
 
 const Index = lazy(() => import("./pages/Index"));
 const AppPage = lazy(() => import("./pages/AppPage"));
+const LeadListPreview = lazy(() => import("./pages/LeadListPreview"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -34,7 +35,9 @@ const App = () => (
             ) : (
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/preview/:token" element={<LeadListPreview />} />
                 <Route path="/app" element={<AppPage />} />
+                <Route path="/demo" element={<AppPage />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="*" element={<NotFound />} />
