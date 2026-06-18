@@ -532,6 +532,8 @@ const AppPage = () => {
                 userId={user?.id}
                 userEmail={user?.email}
                 demoMode={isDemoPreview}
+                userProfile={profile}
+                onProfileUpdated={refetchProfile}
               />
             ) : viewMode === "saved-searches" ? (
               <SavedSearches

@@ -29,6 +29,7 @@ export type Database = {
           company_website: string | null
           phone: string | null
           pipeline_stage_prefs: Json | null
+          outreach_profile: Json | null
           created_at: string
         }
         Insert: {
@@ -45,6 +46,7 @@ export type Database = {
           company_website?: string | null
           phone?: string | null
           pipeline_stage_prefs?: Json | null
+          outreach_profile?: Json | null
           created_at?: string
         }
         Update: {
@@ -61,6 +63,7 @@ export type Database = {
           company_website?: string | null
           phone?: string | null
           pipeline_stage_prefs?: Json | null
+          outreach_profile?: Json | null
           created_at?: string
         }
       }

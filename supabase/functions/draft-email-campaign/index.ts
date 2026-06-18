@@ -39,6 +39,28 @@ interface DraftRequest {
   groupCriteria?: string;
 }
 
+interface OutreachProfile {
+  valueProp?: string;
+  proofPoint?: string;
+  ctaType?: "reply" | "book_call" | "send_audit" | "custom";
+  ctaDetail?: string;
+  tone?: "direct" | "warm" | "premium";
+}
+
+interface UserProfile {
+  full_name?: string | null;
+  role_title?: string | null;
+  company_name?: string | null;
+  company_website?: string | null;
+  service_type?: string | null;
+  service_other?: string | null;
+  client_type?: string | null;
+  pricing_tier?: string | null;
+  location?: string | null;
+  sells_online?: boolean | null;
+  outreach_profile?: OutreachProfile | null;
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -54,19 +76,42 @@ const parseGeminiJson = (value: string) => {
   }
 };
 
-const fallbackDraft = (request: DraftRequest) => {
+const normalizeOutreachProfile = (value: unknown): OutreachProfile => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return { ctaType: "reply", tone: "direct" };
+  const record = value as Record<string, unknown>;
+  const ctaType = record.ctaType;
+  const tone = record.tone;
+  return {
+    valueProp: typeof record.valueProp === "string" ? record.valueProp.slice(0, 500) : "",
+    proofPoint: typeof record.proofPoint === "string" ? record.proofPoint.slice(0, 300) : "",
+    ctaType: ctaType === "book_call" || ctaType === "send_audit" || ctaType === "custom" || ctaType === "reply" ? ctaType : "reply",
+    ctaDetail: typeof record.ctaDetail === "string" ? record.ctaDetail.slice(0, 300) : "",
+    tone: tone === "warm" || tone === "premium" || tone === "direct" ? tone : "direct",
+  };
+};
+
+const fallbackDraft = (request: DraftRequest, profile?: UserProfile | null) => {
   const service = request.service || request.leads?.[0]?.selectedService || "your service";
   const audience = request.groupLabel ? ` for ${request.groupLabel}` : "";
+  const outreach = normalizeOutreachProfile(profile?.outreach_profile);
+  const outcome = outreach.valueProp || `improve ${service.toLowerCase()}${audience} with clearer positioning and better conversion paths`;
+  const cta = outreach.ctaType === "book_call" && outreach.ctaDetail
+    ? `Worth a quick call? ${outreach.ctaDetail}`
+    : outreach.ctaType === "send_audit"
+      ? "Want me to send the quick gaps I noticed?"
+      : outreach.ctaType === "custom" && outreach.ctaDetail
+        ? outreach.ctaDetail
+        : "Worth a quick look?";
   return {
     subject: "Quick idea for {{company}}",
     body: `Hi {{firstName}},
 
 I came across {{company}} and noticed a few public signals that may be worth improving.
 
-We help teams improve ${service.toLowerCase()}${audience} with clearer positioning and better conversion paths.
+${outcome}
 
-Open to a quick look at what I found?`,
-    signature: request.signature || "Best,\n{{name}}",
+${cta}`,
+    signature: request.signature || `Best,\n${profile?.full_name || "{{name}}"}`,
   };
 };
 
@@ -87,6 +132,14 @@ const handler = async (req: Request): Promise<Response> => {
       return json({ error: "Invalid draft request" }, 400);
     }
 
+    const { data: profileRow } = await supabase
+      .from("user_profiles")
+      .select("full_name, role_title, company_name, company_website, service_type, service_other, client_type, pricing_tier, location, sells_online, outreach_profile")
+      .eq("id", request.userId)
+      .maybeSingle();
+    const profile = profileRow as UserProfile | null;
+    const outreachProfile = normalizeOutreachProfile(profile?.outreach_profile);
+
     const leads = (request.leads || []).slice(0, 12).map(lead => ({
       company: String(lead.name || "").slice(0, 120),
       category: String(lead.category || "").slice(0, 80),
@@ -103,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
       criteria: String(request.groupCriteria || "").slice(0, 160),
     } : null;
 
-    const fallback = fallbackDraft(request);
+    const fallback = fallbackDraft(request, profile);
     if (!geminiApiKey || leads.length === 0) {
       return json({ success: true, source: "fallback", draft: fallback });
     }
@@ -120,19 +173,45 @@ const handler = async (req: Request): Promise<Response> => {
             role: "user",
             parts: [
               {
-                text: `You write concise B2B prospecting emails for GlobaLeads22 users.
+                text: `You write concise plain-text B2B prospecting emails for GlobaLeads22 users.
 
 Return only JSON with subject, body, and signature.
 
 Rules:
-- Keep it specific but do not invent facts.
+- Write like a normal one-to-one inbox email, not a newsletter or marketing blast.
+- Use one clear idea: one relevant observation, one problem, one next step.
+- Reward the reader quickly with a useful, specific observation tied to the recipient segment or selected prospects.
+- Keep it specific but do not invent facts, metrics, customers, or research.
 - Use only these variables when personalization is needed: {{firstName}}, {{name}}, {{company}}, {{email}}.
 - Include {{firstName}} in the greeting when possible.
 - Include {{company}} in the first two lines.
-- Keep body under 130 words.
-- No spammy claims, pressure, fake familiarity, or guarantees.
+- Keep body under 160 words.
+- Use short paragraphs and plain text. Do not include images, HTML, markdown, or more than one link.
+- No spammy claims, pressure, fake familiarity, guarantees, hype, aggressive urgency, or money-heavy claims.
 - Do not mention AI, scraping, private data, or provider/tool names.
+- Match the CTA preference. Prefer a soft reply ask unless the profile explicitly asks for a booking link or custom CTA.
+- Include a short PS only if it adds concrete value; otherwise omit it.
 - Keep signature short.
+
+Sender profile:
+${JSON.stringify({
+  name: profile?.full_name || "",
+  role: profile?.role_title || "",
+  company: profile?.company_name || "",
+  website: profile?.company_website || "",
+  service: profile?.service_other || profile?.service_type || request.service || leads[0]?.service || "",
+  clientType: profile?.client_type || "",
+  pricingTier: profile?.pricing_tier || "",
+  market: profile?.location || "",
+  canWorkOutsideLocalArea: profile?.sells_online ?? true,
+  outreach: {
+    valueProp: outreachProfile.valueProp || "",
+    proofPoint: outreachProfile.proofPoint || "",
+    ctaType: outreachProfile.ctaType || "reply",
+    ctaDetail: outreachProfile.ctaDetail || "",
+    tone: outreachProfile.tone || "direct",
+  },
+}, null, 2)}
 
 Campaign name: ${request.campaignName || ""}
 Service being offered: ${request.service || leads[0]?.service || ""}

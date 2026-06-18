@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { parseOutreachProfile, serializeOutreachProfile, type OutreachCtaType, type OutreachTone } from "@/lib/outreachProfile";
 
 type UserProfile = Tables<"user_profiles">;
 
@@ -24,6 +25,19 @@ interface EditProfileModalProps {
 }
 
 const profileValue = (value: string | null | undefined) => value || "";
+
+const CTA_OPTIONS: Array<{ value: OutreachCtaType; label: string }> = [
+  { value: "reply", label: "Get a reply" },
+  { value: "book_call", label: "Book a call" },
+  { value: "send_audit", label: "Send an audit" },
+  { value: "custom", label: "Custom ask" },
+];
+
+const TONE_OPTIONS: Array<{ value: OutreachTone; label: string }> = [
+  { value: "direct", label: "Direct" },
+  { value: "warm", label: "Warm" },
+  { value: "premium", label: "Premium" },
+];
 
 const getAuthName = (user: User | null) => {
   const metadata = user?.user_metadata || {};
@@ -46,6 +60,11 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
   const [pricingTier, setPricingTier] = useState("");
   const [location, setLocation] = useState("");
   const [sellsOnline, setSellsOnline] = useState(true);
+  const [valueProp, setValueProp] = useState("");
+  const [proofPoint, setProofPoint] = useState("");
+  const [ctaType, setCtaType] = useState<OutreachCtaType>("reply");
+  const [ctaDetail, setCtaDetail] = useState("");
+  const [tone, setTone] = useState<OutreachTone>("direct");
 
   useEffect(() => {
     if (!open) return;
@@ -59,6 +78,12 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
     setPricingTier(profileValue(profile?.pricing_tier) || "mid_tier");
     setLocation(profileValue(profile?.location));
     setSellsOnline(profile?.sells_online ?? true);
+    const outreachProfile = parseOutreachProfile(profile?.outreach_profile);
+    setValueProp(outreachProfile.valueProp);
+    setProofPoint(outreachProfile.proofPoint || "");
+    setCtaType(outreachProfile.ctaType);
+    setCtaDetail(outreachProfile.ctaDetail || "");
+    setTone(outreachProfile.tone);
   }, [open, profile, user]);
 
   const handleSave = async () => {
@@ -78,6 +103,7 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
         pricing_tier: pricingTier.trim() || "mid_tier",
         location: location.trim() || null,
         sells_online: sellsOnline,
+        outreach_profile: serializeOutreachProfile({ valueProp, proofPoint, ctaType, ctaDetail, tone }),
       });
 
       if (error) throw error;
@@ -140,6 +166,39 @@ export default function EditProfileModal({ open, onClose, user, profile, onSaved
               />
               I can work with customers outside my local area
             </label>
+
+            <div className="border-t border-[#f3f5f8]/10 pt-4">
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">Email writing context</p>
+              <div className="grid gap-3">
+                <label className="grid gap-1.5">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">Outcome you create</span>
+                  <textarea
+                    value={valueProp}
+                    onChange={(event) => setValueProp(event.target.value)}
+                    placeholder="We help local clinics turn outdated websites into booking-focused pages."
+                    className="h-20 w-full resize-none border border-[#f3f5f8]/10 bg-[#0d0f13] p-3 text-sm leading-5 text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
+                  />
+                </label>
+                <Field label="Proof point" value={proofPoint} onChange={setProofPoint} placeholder="Built 30+ websites for local service businesses" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">Email CTA</span>
+                    <select value={ctaType} onChange={(event) => setCtaType(event.target.value as OutreachCtaType)} className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors focus:border-[#e8fb52]">
+                      {CTA_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">Tone</span>
+                    <select value={tone} onChange={(event) => setTone(event.target.value as OutreachTone)} className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors focus:border-[#e8fb52]">
+                      {TONE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                </div>
+                {(ctaType === "book_call" || ctaType === "custom") && (
+                  <Field label={ctaType === "book_call" ? "Booking link" : "Custom ask"} value={ctaDetail} onChange={setCtaDetail} />
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="mt-7 flex justify-end gap-3">

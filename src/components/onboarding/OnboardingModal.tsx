@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { serializeOutreachProfile, type OutreachCtaType, type OutreachTone } from "@/lib/outreachProfile";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -41,6 +42,19 @@ const PRICING_TIERS = [
   { value: "premium", label: "Premium", description: "High-value deals" },
 ];
 
+const CTA_OPTIONS: Array<{ value: OutreachCtaType; label: string; description: string }> = [
+  { value: "reply", label: "Get a reply", description: "Ask them to reply if they want the idea." },
+  { value: "book_call", label: "Book a call", description: "Point qualified prospects to a booking link." },
+  { value: "send_audit", label: "Send an audit", description: "Offer a short list of gaps or opportunities." },
+  { value: "custom", label: "Custom ask", description: "Use your own next step." },
+];
+
+const TONE_OPTIONS: Array<{ value: OutreachTone; label: string }> = [
+  { value: "direct", label: "Direct" },
+  { value: "warm", label: "Warm" },
+  { value: "premium", label: "Premium" },
+];
+
 export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
@@ -56,12 +70,17 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   const [pricingTier, setPricingTier] = useState("");
   const [location, setLocation] = useState("");
   const [sellsOnline, setSellsOnline] = useState(true);
+  const [valueProp, setValueProp] = useState("");
+  const [proofPoint, setProofPoint] = useState("");
+  const [ctaType, setCtaType] = useState<OutreachCtaType>("reply");
+  const [ctaDetail, setCtaDetail] = useState("");
+  const [tone, setTone] = useState<OutreachTone>("direct");
 
   const finalServiceType = serviceType === "Other" ? serviceOther.trim() : serviceType;
   const canContinue =
     (step === 1 && Boolean(finalServiceType)) ||
     (step === 2 && Boolean(clientType)) ||
-    (step === 3 && Boolean(pricingTier));
+    (step === 3 && Boolean(pricingTier) && Boolean(valueProp.trim()));
 
   useEffect(() => {
     if (!open) return;
@@ -101,6 +120,9 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         pricing_tier: skip ? "mid_tier" : pricingTier,
         location: location.trim() || null,
         sells_online: sellsOnline,
+        outreach_profile: skip
+          ? serializeOutreachProfile({ valueProp: "", proofPoint: "", ctaType: "reply", ctaDetail: "", tone: "direct" })
+          : serializeOutreachProfile({ valueProp, proofPoint, ctaType, ctaDetail, tone }),
       };
 
       if (!profile.service_type || !profile.client_type || !profile.pricing_tier) {
@@ -124,7 +146,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
   const handleNext = () => {
     if (!canContinue) {
-      setError("Choose one option to continue.");
+      setError(step === 3 ? "Choose a deal size and add the outcome you help clients get." : "Choose one option to continue.");
       return;
     }
 
@@ -355,6 +377,71 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 />
                 I can work with customers outside my local area
               </label>
+
+              <div className="border-t border-[#f3f5f8]/10 pt-5">
+                <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">Email writing context</p>
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-[#f3f5f8]">What outcome do you help clients get?</span>
+                    <textarea
+                      value={valueProp}
+                      onChange={(event) => setValueProp(event.target.value)}
+                      placeholder="Example: We help local clinics turn outdated websites into booking-focused pages that bring in more patient inquiries."
+                      className="h-20 w-full resize-none border border-[#f3f5f8]/10 bg-[#0d0f13] p-3 text-sm leading-5 text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-semibold text-[#f3f5f8]">Any proof we can mention? <span className="text-[#5d6675]">(optional)</span></span>
+                    <input
+                      type="text"
+                      value={proofPoint}
+                      onChange={(event) => setProofPoint(event.target.value)}
+                      placeholder="Example: Built 30+ websites for local service businesses"
+                      className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
+                    />
+                  </label>
+                  <div>
+                    <p className="mb-2 text-sm font-semibold text-[#f3f5f8]">What should emails ask for?</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {CTA_OPTIONS.map(option => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setCtaType(option.value);
+                            setError(null);
+                          }}
+                          className={`min-h-20 border p-3 text-left transition-colors ${ctaType === option.value ? "border-[#e8fb52] bg-[#e8fb52]/10" : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] hover:border-[#f3f5f8]/30"}`}
+                        >
+                          <span className="text-sm font-bold text-[#f3f5f8]">{option.label}</span>
+                          <span className="mt-1 block text-xs leading-5 text-[#9aa3b2]">{option.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {(ctaType === "book_call" || ctaType === "custom") && (
+                    <input
+                      type={ctaType === "book_call" ? "url" : "text"}
+                      value={ctaDetail}
+                      onChange={(event) => setCtaDetail(event.target.value)}
+                      placeholder={ctaType === "book_call" ? "Booking link" : "Example: Ask if they want a 3-point homepage teardown"}
+                      className="h-11 w-full border border-[#f3f5f8]/10 bg-[#0d0f13] px-3 text-sm text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
+                    />
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {TONE_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setTone(option.value)}
+                        className={`h-9 rounded-[8px] border px-3 text-xs font-semibold transition-colors ${tone === option.value ? "border-[#e8fb52] bg-[#e8fb52] text-black" : "border-[#f3f5f8]/10 bg-[#f3f5f8]/[0.03] text-[#9aa3b2] hover:text-[#f3f5f8]"}`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

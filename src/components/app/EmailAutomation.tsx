@@ -4,16 +4,20 @@ import { Briefcase, CheckCheck, Flag, Image, KanbanSquare, Loader2, Mail, Search
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { hasOutreachValueProp, parseOutreachProfile, serializeOutreachProfile, type OutreachCtaType, type OutreachTone } from "@/lib/outreachProfile";
 
 interface EmailAutomationProps {
   userId: string | undefined;
   userEmail?: string;
   demoMode?: boolean;
+  userProfile?: UserProfileRow | null;
+  onProfileUpdated?: () => Promise<void> | void;
 }
 
 type SavedLeadRow = Tables<"saved_leads">;
 type CampaignRow = Tables<"email_campaigns">;
 type RecipientRow = Tables<"email_campaign_recipients">;
+type UserProfileRow = Tables<"user_profiles">;
 
 interface LeadContact {
   email?: string;
@@ -91,6 +95,19 @@ const fontOptions = [
 ];
 
 type ComposerField = "subject" | "body" | "signature";
+
+const outreachCtaOptions: Array<{ value: OutreachCtaType; label: string }> = [
+  { value: "reply", label: "Get a reply" },
+  { value: "book_call", label: "Book a call" },
+  { value: "send_audit", label: "Send an audit" },
+  { value: "custom", label: "Custom ask" },
+];
+
+const outreachToneOptions: Array<{ value: OutreachTone; label: string }> = [
+  { value: "direct", label: "Direct" },
+  { value: "warm", label: "Warm" },
+  { value: "premium", label: "Premium" },
+];
 
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
 
@@ -202,7 +219,7 @@ const getEmailLead = (lead: SavedLeadRow): EmailLead | null => {
   };
 };
 
-const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomationProps) => {
+const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onProfileUpdated }: EmailAutomationProps) => {
   const [leads, setLeads] = useState<EmailLead[]>(demoMode ? demoLeads : []);
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(demoMode ? demoLeads.map(lead => lead.id) : []));
@@ -221,6 +238,13 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const [activeField, setActiveField] = useState<ComposerField>("body");
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOutreachSetup, setShowOutreachSetup] = useState(false);
+  const [savingOutreachSetup, setSavingOutreachSetup] = useState(false);
+  const [outreachValueProp, setOutreachValueProp] = useState("");
+  const [outreachProofPoint, setOutreachProofPoint] = useState("");
+  const [outreachCtaType, setOutreachCtaType] = useState<OutreachCtaType>("reply");
+  const [outreachCtaDetail, setOutreachCtaDetail] = useState("");
+  const [outreachTone, setOutreachTone] = useState<OutreachTone>("direct");
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const signatureRef = useRef<HTMLTextAreaElement>(null);
@@ -230,6 +254,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const previewBody = renderTemplate(body, previewLead);
   const previewSignature = renderTemplate(signature, previewLead);
   const sortedCampaigns = useMemo(() => [...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [campaigns]);
+  const outreachProfile = useMemo(() => parseOutreachProfile(userProfile?.outreach_profile), [userProfile]);
   const smartGroups = useMemo(() => {
     const groups = new Map<string, SmartGroup>();
     const addGroup = (type: SmartGroupType, value: string, label: string, criteria: string) => {
@@ -270,6 +295,14 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   useEffect(() => {
     if (userEmail && !replyTo) setReplyTo(userEmail);
   }, [replyTo, userEmail]);
+
+  useEffect(() => {
+    setOutreachValueProp(outreachProfile.valueProp);
+    setOutreachProofPoint(outreachProfile.proofPoint || "");
+    setOutreachCtaType(outreachProfile.ctaType);
+    setOutreachCtaDetail(outreachProfile.ctaDetail || "");
+    setOutreachTone(outreachProfile.tone);
+  }, [outreachProfile]);
 
   const summarizeCampaigns = (rows: CampaignRow[], recipients: RecipientRow[]): CampaignSummary[] => {
     const counts = new Map<string, Pick<CampaignSummary, "queuedCount" | "sentCount" | "failedCount">>();
@@ -458,7 +491,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     }
   };
 
-  const draftWithAi = async () => {
+  const runAiDraft = async () => {
     if (demoMode || !userId) {
       toast({ title: "Demo mode", description: "AI drafting is available after signing in." });
       return;
@@ -506,6 +539,62 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
       toast({ title: "AI draft failed", description: error instanceof Error ? error.message : "Could not generate a draft.", variant: "destructive" });
     } finally {
       setDrafting(false);
+    }
+  };
+
+  const draftWithAi = async () => {
+    if (!hasOutreachValueProp(outreachProfile)) {
+      setShowOutreachSetup(true);
+      toast({ title: "Add your email context", description: "Tell AI the outcome you help clients get before drafting." });
+      return;
+    }
+    await runAiDraft();
+  };
+
+  const saveOutreachSetup = async () => {
+    if (!userId || demoMode) return;
+    if (!outreachValueProp.trim()) {
+      toast({ title: "Add an outcome", description: "Tell AI what result your offer creates.", variant: "destructive" });
+      return;
+    }
+
+    setSavingOutreachSetup(true);
+    try {
+      const outreach_profile = serializeOutreachProfile({
+        valueProp: outreachValueProp,
+        proofPoint: outreachProofPoint,
+        ctaType: outreachCtaType,
+        ctaDetail: outreachCtaDetail,
+        tone: outreachTone,
+      });
+
+      const { error } = await supabase.from("user_profiles").upsert({
+        id: userId,
+        service_type: userProfile?.service_type || "Lead research",
+        service_other: userProfile?.service_other || null,
+        client_type: userProfile?.client_type || "any",
+        pricing_tier: userProfile?.pricing_tier || "mid_tier",
+        location: userProfile?.location || null,
+        sells_online: userProfile?.sells_online ?? true,
+        full_name: userProfile?.full_name || null,
+        company_name: userProfile?.company_name || null,
+        role_title: userProfile?.role_title || null,
+        company_website: userProfile?.company_website || null,
+        phone: userProfile?.phone || null,
+        pipeline_stage_prefs: userProfile?.pipeline_stage_prefs || null,
+        outreach_profile,
+      });
+      if (error) throw error;
+
+      await onProfileUpdated?.();
+      setShowOutreachSetup(false);
+      toast({ title: "Email context saved", description: "AI drafting will use this for future campaigns." });
+      await runAiDraft();
+    } catch (error) {
+      console.error("Error saving outreach profile:", error);
+      toast({ title: "Could not save context", description: error instanceof Error ? error.message : "Try again before drafting.", variant: "destructive" });
+    } finally {
+      setSavingOutreachSetup(false);
     }
   };
 
@@ -686,6 +775,53 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
               </div>
 
               <div className="space-y-4 p-4">
+                {showOutreachSetup && (
+                  <div className="rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.06] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-display text-sm font-bold text-[#f3f5f8]">Email writing context</p>
+                        <p className="mt-1 text-xs leading-5 text-[#9aa3b2]">Add the outcome you create so AI can write specific, human outreach.</p>
+                      </div>
+                      <button type="button" onClick={() => setShowOutreachSetup(false)} className="grid h-7 w-7 shrink-0 place-items-center rounded-[7px] border border-[#f3f5f8]/10 text-[#9aa3b2] hover:text-[#f3f5f8]">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      <textarea
+                        value={outreachValueProp}
+                        onChange={event => setOutreachValueProp(event.target.value)}
+                        placeholder="Example: We help local clinics turn outdated websites into booking-focused pages that bring in more patient inquiries."
+                        className="h-20 w-full resize-none rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-5 text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+                      />
+                      <input
+                        value={outreachProofPoint}
+                        onChange={event => setOutreachProofPoint(event.target.value)}
+                        placeholder="Proof point, optional"
+                        className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+                      />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <select value={outreachCtaType} onChange={event => setOutreachCtaType(event.target.value as OutreachCtaType)} className="h-10 rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                          {outreachCtaOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                        <select value={outreachTone} onChange={event => setOutreachTone(event.target.value as OutreachTone)} className="h-10 rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                          {outreachToneOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                      </div>
+                      {(outreachCtaType === "book_call" || outreachCtaType === "custom") && (
+                        <input
+                          value={outreachCtaDetail}
+                          onChange={event => setOutreachCtaDetail(event.target.value)}
+                          placeholder={outreachCtaType === "book_call" ? "Booking link" : "Custom ask"}
+                          className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+                        />
+                      )}
+                      <button type="button" onClick={() => void saveOutreachSetup()} disabled={savingOutreachSetup || !outreachValueProp.trim()} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] border border-[#e8fb52] bg-[#e8fb52] font-display text-sm font-bold text-black hover:bg-[#f3ff8a] disabled:opacity-40">
+                        {savingOutreachSetup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        Save and draft
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <label className="block">
                   <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Subject</span>
                   <input ref={subjectRef} value={subject} onFocus={() => setActiveField("subject")} onChange={event => setSubject(event.target.value)} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
