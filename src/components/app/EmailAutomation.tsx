@@ -116,6 +116,13 @@ const smartGroupTypeLabels: Record<SmartGroupType, string> = {
   service: "Service",
 };
 
+const smartGroupSections: Array<{ type: SmartGroupType; label: string }> = [
+  { type: "industry", label: "Industry" },
+  { type: "pipeline", label: "Stage" },
+  { type: "priority", label: "Priority" },
+  { type: "service", label: "Service" },
+];
+
 const smartGroupIcons: Record<SmartGroupType, typeof Users> = {
   industry: Users,
   pipeline: KanbanSquare,
@@ -534,40 +541,44 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
         ) : (
           <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_430px]">
             <div className="min-h-0 overflow-hidden rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#0b0d11]">
-              <div className="border-b border-[#f3f5f8]/[0.08] p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-sm font-bold">Smart groups</p>
-                    <p className="mt-0.5 text-xs text-[#5d6675]">Pick an audience to review, then choose who gets the email.</p>
-                  </div>
+              <div className="border-b border-[#f3f5f8]/[0.08] px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-display text-sm font-bold">Audience filters</p>
                   {activeGroup && (
-                    <button type="button" onClick={() => setActiveGroupId(null)} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#f3f5f8]/10 px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]">
+                    <button type="button" onClick={() => setActiveGroupId(null)} className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#f3f5f8]/10 px-2 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]">
                       <X className="h-3.5 w-3.5" />
-                      Clear group
+                      Clear
                     </button>
                   )}
                 </div>
-                <div className="mt-3 grid max-h-44 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-                  {smartGroups.map(group => {
-                    const Icon = smartGroupIcons[group.type];
-                    const active = activeGroupId === group.id;
+                <div className="mt-2 max-h-28 space-y-1.5 overflow-y-auto pr-1">
+                  {smartGroupSections.map(section => {
+                    const groups = smartGroups.filter(group => group.type === section.type);
+                    if (groups.length === 0) return null;
                     return (
-                      <button
-                        key={group.id}
-                        type="button"
-                        onClick={() => setActiveGroupId(group.id)}
-                        className={`group rounded-[10px] border p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#e8fb52]/45 hover:bg-[#f3f5f8]/[0.035] ${active ? "border-[#e8fb52]/70 bg-[#e8fb52]/[0.08]" : "border-[#f3f5f8]/10 bg-black/30"}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-[8px] border ${active ? "border-[#e8fb52]/50 bg-[#e8fb52] text-black" : "border-[#f3f5f8]/10 bg-[#111319] text-[#e8fb52]"}`}>
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span className="font-mono text-[10px] font-bold text-[#e8fb52]">{group.count}</span>
+                      <div key={section.type} className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{section.label}</span>
+                        <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                          {groups.map(group => {
+                            const Icon = smartGroupIcons[group.type];
+                            const active = activeGroupId === group.id;
+                            return (
+                              <button
+                                key={group.id}
+                                type="button"
+                                onClick={() => setActiveGroupId(group.id)}
+                                className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] border px-2.5 text-xs transition-all hover:border-[#e8fb52]/45 hover:bg-[#f3f5f8]/[0.035] ${active ? "border-[#e8fb52]/70 bg-[#e8fb52] font-bold text-black" : "border-[#f3f5f8]/10 bg-black/25 text-[#d7dde8]"}`}
+                                title={`${smartGroupTypeLabels[group.type]}: ${group.label}`}
+                              >
+                                <Icon className={`h-3.5 w-3.5 ${active ? "text-black" : "text-[#e8fb52]"}`} />
+                                <span className="max-w-36 truncate">{group.label}</span>
+                                <span className={`font-mono text-[10px] ${active ? "text-black/70" : "text-[#9aa3b2]"}`}>{group.count}</span>
+                                {group.selectedCount > 0 && <span className={`font-mono text-[10px] ${active ? "text-black" : "text-[#e8fb52]"}`}>{group.selectedCount} sel</span>}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <p className="mt-2 truncate font-display text-sm font-bold text-[#f3f5f8]">{group.label}</p>
-                        <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{smartGroupTypeLabels[group.type]}</p>
-                        {group.selectedCount > 0 && <p className="mt-2 text-xs text-[#9aa3b2]">{group.selectedCount} selected</p>}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -601,7 +612,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
                 </label>
               </div>
 
-              <div className="h-full max-h-[calc(100vh-390px)] overflow-y-auto">
+              <div className="h-full max-h-[calc(100vh-320px)] overflow-y-auto">
                 {leads.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
                     <Mail className="mb-4 h-9 w-9 text-[#5d6675]" />
