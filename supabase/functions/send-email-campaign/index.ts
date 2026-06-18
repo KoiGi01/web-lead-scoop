@@ -41,11 +41,32 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const renderHtml = (text: string) =>
-  `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111827;">${escapeHtml(text)
+const isSafeImageUrl = (value: string | null | undefined) => {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+};
+
+const renderParagraphs = (text: string) =>
+  escapeHtml(text)
     .split(/\n{2,}/)
     .map(paragraph => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
-    .join("")}</div>`;
+    .join("");
+
+const renderHtml = (bodyText: string, signatureText: string, fontFamily: string, imageUrl: string | null) => {
+  const safeFont = fontFamily || "Arial, sans-serif";
+  const image = isSafeImageUrl(imageUrl)
+    ? `<img src="${escapeHtml(imageUrl || "")}" alt="" style="display:block;width:100%;max-height:280px;object-fit:cover;border-radius:10px;margin:0 0 18px;" />`
+    : "";
+  const signature = signatureText
+    ? `<div style="margin-top:22px;padding-top:14px;border-top:1px solid #e5e7eb;color:#374151;">${renderParagraphs(signatureText)}</div>`
+    : "";
+  return `<div style="font-family:${escapeHtml(safeFont)};font-size:15px;line-height:1.6;color:#111827;">${image}${renderParagraphs(bodyText)}${signature}</div>`;
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -104,7 +125,9 @@ const handler = async (req: Request): Promise<Response> => {
         company: recipient.company_name || "",
         email: recipient.recipient_email,
       };
-      const text = renderTemplate(campaign.body, values);
+      const bodyText = renderTemplate(campaign.body, values);
+      const signatureText = renderTemplate(campaign.signature || "", values);
+      const text = signatureText ? `${bodyText}\n\n${signatureText}` : bodyText;
       const subject = renderTemplate(campaign.subject, values);
 
       const response = await fetch("https://api.resend.com/emails", {
@@ -119,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
           reply_to: campaign.reply_to || caller.user.email,
           subject,
           text,
-          html: renderHtml(text),
+          html: renderHtml(bodyText, signatureText, campaign.font_family || "Arial, sans-serif", campaign.image_url || null),
         }),
       });
 

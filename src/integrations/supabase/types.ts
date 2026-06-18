@@ -542,6 +542,9 @@ export type Database = {
           name: string
           subject: string
           body: string
+          signature: string
+          image_url: string | null
+          font_family: string
           from_name: string
           reply_to: string | null
           status: string
@@ -556,6 +559,9 @@ export type Database = {
           name: string
           subject: string
           body: string
+          signature?: string
+          image_url?: string | null
+          font_family?: string
           from_name?: string
           reply_to?: string | null
           status?: string
@@ -570,6 +576,9 @@ export type Database = {
           name?: string
           subject?: string
           body?: string
+          signature?: string
+          image_url?: string | null
+          font_family?: string
           from_name?: string
           reply_to?: string | null
           status?: string

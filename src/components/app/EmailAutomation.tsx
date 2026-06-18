@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { CheckCheck, Loader2, Mail, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { CheckCheck, Image, Loader2, Mail, Send, Type } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -55,7 +55,37 @@ We help teams turn those gaps into clearer conversion paths and better local vis
 
 Open to a quick look at what I found?`;
 
+const defaultSignature = `Best,
+{{name}}`;
+
+const templateVariables = [
+  { token: "{{firstName}}", label: "First name" },
+  { token: "{{name}}", label: "Full name" },
+  { token: "{{company}}", label: "Company" },
+  { token: "{{email}}", label: "Email" },
+];
+
+const fontOptions = [
+  { label: "Clean sans", value: "Arial, sans-serif" },
+  { label: "Modern", value: "Inter, Arial, sans-serif" },
+  { label: "Editorial", value: "Georgia, serif" },
+  { label: "Mono", value: "'IBM Plex Mono', monospace" },
+];
+
+type ComposerField = "subject" | "body" | "signature";
+
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
+
+const renderTemplate = (template: string, lead: EmailLead | null) => {
+  const personName = lead?.personName || "";
+  const values: Record<string, string> = {
+    firstName: personName.trim().split(/\s+/)[0] || "",
+    name: personName || lead?.name || "",
+    company: lead?.name || "",
+    email: lead?.email || "",
+  };
+  return template.replace(/\{\{\s*(firstName|name|company|email)\s*\}\}/g, (_match, key) => values[key] || "");
+};
 
 const getTopContact = (lead: SavedLeadRow): LeadContact | null =>
   asArray<LeadContact>(lead.contacts)
@@ -92,8 +122,18 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
   const [replyTo, setReplyTo] = useState(userEmail || "");
+  const [signature, setSignature] = useState(defaultSignature);
+  const [imageUrl, setImageUrl] = useState("");
+  const [fontFamily, setFontFamily] = useState(fontOptions[0].value);
+  const [activeField, setActiveField] = useState<ComposerField>("body");
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const signatureRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedLeads = useMemo(() => leads.filter(lead => selectedIds.has(lead.id)), [leads, selectedIds]);
+  const previewLead = selectedLeads[0] || leads[0] || null;
+  const previewBody = renderTemplate(body, previewLead);
+  const previewSignature = renderTemplate(signature, previewLead);
   const sortedCampaigns = useMemo(() => [...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [campaigns]);
 
   useEffect(() => {
@@ -147,6 +187,40 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     });
   };
 
+  const insertAtCursor = (
+    value: string,
+    current: string,
+    setter: (next: string) => void,
+    ref: RefObject<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const element = ref.current;
+    if (!element) {
+      setter(`${current}${value}`);
+      return;
+    }
+    const start = element.selectionStart ?? current.length;
+    const end = element.selectionEnd ?? start;
+    const next = `${current.slice(0, start)}${value}${current.slice(end)}`;
+    setter(next);
+    window.requestAnimationFrame(() => {
+      element.focus();
+      element.setSelectionRange(start + value.length, start + value.length);
+    });
+  };
+
+  const insertVariable = (token: string) => {
+    const value = `${token}`;
+    if (activeField === "subject") {
+      insertAtCursor(value, subject, setSubject, subjectRef);
+      return;
+    }
+    if (activeField === "signature") {
+      insertAtCursor(value, signature, setSignature, signatureRef);
+      return;
+    }
+    insertAtCursor(value, body, setBody, bodyRef);
+  };
+
   const saveCampaign = async (status: "draft" | "scheduled" = "draft") => {
     if (selectedLeads.length === 0) {
       toast({ title: "Select recipients", description: "Choose at least one prospect with an email.", variant: "destructive" });
@@ -167,6 +241,9 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
           name,
           subject,
           body,
+          signature,
+          image_url: imageUrl || null,
+          font_family: fontFamily,
           reply_to: replyTo || userEmail || null,
           status,
           updated_at: now,
@@ -342,22 +419,61 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
               <div className="space-y-4 p-4">
                 <label className="block">
                   <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Subject</span>
-                  <input value={subject} onChange={event => setSubject(event.target.value)} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
+                  <input ref={subjectRef} value={subject} onFocus={() => setActiveField("subject")} onChange={event => setSubject(event.target.value)} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Reply-to</span>
                   <input value={replyTo} onChange={event => setReplyTo(event.target.value)} placeholder={userEmail || "you@example.com"} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60" />
                 </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]"><Type className="h-3 w-3" /> Font</span>
+                    <select value={fontFamily} onChange={event => setFontFamily(event.target.value)} className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60">
+                      {fontOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]"><Image className="h-3 w-3" /> Image URL</span>
+                    <input value={imageUrl} onChange={event => setImageUrl(event.target.value)} placeholder="https://..." className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60" />
+                  </label>
+                </div>
                 <label className="block">
                   <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Message</span>
-                  <textarea value={body} onChange={event => setBody(event.target.value)} className="h-56 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
+                  <textarea ref={bodyRef} value={body} onFocus={() => setActiveField("body")} onChange={event => setBody(event.target.value)} className="h-44 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Signature</span>
+                  <textarea ref={signatureRef} value={signature} onFocus={() => setActiveField("signature")} onChange={event => setSignature(event.target.value)} className="h-24 w-full resize-none rounded-[10px] border border-[#f3f5f8]/[0.13] bg-black p-3 text-sm leading-6 text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
                 </label>
 
                 <div className="rounded-[10px] border border-[#f3f5f8]/10 bg-black/45 p-3">
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Variables</p>
-                  <p className="mt-2 text-xs leading-5 text-[#9aa3b2]">{"{{firstName}} · {{name}} · {{company}} · {{email}}"}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Variables</p>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">Insert into {activeField}</p>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {templateVariables.map(variable => (
+                      <button
+                        key={variable.token}
+                        type="button"
+                        onClick={() => insertVariable(variable.token)}
+                        className="rounded-[7px] border border-[#e8fb52]/35 bg-[#e8fb52]/10 px-2 py-1 font-mono text-[10px] font-bold text-[#e8fb52] transition-colors hover:bg-[#e8fb52] hover:text-black"
+                      >
+                        {variable.token}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
+                <div className="rounded-[10px] border border-[#f3f5f8]/10 bg-black/45 p-3">
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Preview</p>
+                  <div className="mt-3 rounded-[8px] bg-white p-4 text-[#111827]" style={{ fontFamily }}>
+                    {imageUrl && <img src={imageUrl} alt="" className="mb-3 max-h-32 w-full rounded-[6px] object-cover" />}
+                    <p className="text-sm font-bold">{renderTemplate(subject, previewLead)}</p>
+                    <div className="mt-3 whitespace-pre-wrap text-sm leading-6">{previewBody}</div>
+                    {previewSignature && <div className="mt-4 whitespace-pre-wrap border-t border-[#e5e7eb] pt-3 text-sm leading-6">{previewSignature}</div>}
+                  </div>
+                </div>
                 {setupError && (
                   <div className="rounded-[10px] border border-[#ffb23e]/30 bg-[#ffb23e]/10 p-3 text-xs leading-5 text-[#ffd39a]">
                     {setupError}
