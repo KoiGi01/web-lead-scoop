@@ -200,7 +200,7 @@ const getTopContact = (lead: SavedLeadRow): LeadContact | null =>
 const getEmailLead = (lead: SavedLeadRow): EmailLead | null => {
   const contact = getTopContact(lead);
   const emails = asArray<string>(lead.emails);
-  const email = contact?.email || emails[0] || "";
+  const email = emails[0] || contact?.email || "";
   if (!email) return null;
 
   const intelligence = (lead.intelligence || {}) as { opportunityScore?: number };

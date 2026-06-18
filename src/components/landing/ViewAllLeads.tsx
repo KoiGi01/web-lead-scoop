@@ -850,7 +850,10 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
   const renderDetail = (lead: SavedLead) => {
     const contact = getTopContact(lead);
     const email = lead.emails[0] || contact?.email || "";
-    const setEmail = (value: string) => ({ emails: value ? [value, ...lead.emails.slice(1)] : lead.emails.slice(1) });
+    const setEmail = (value: string) => ({
+      emails: value ? [value, ...lead.emails.slice(1)] : lead.emails.slice(1),
+      contacts: setContactField(lead, "email", value),
+    });
     return (
       <div className="flex min-h-full flex-col">
         <div className="border-b border-[#f3f5f8]/[0.07] p-5">
