@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.create-lead-list-preview]
 verify_jwt = false
+
+[functions.draft-email-campaign]
+verify_jwt = true

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CheckCheck, Image, Loader2, Mail, Send, Type } from "lucide-react";
+import { CheckCheck, Image, Loader2, Mail, Send, Sparkles, Type } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -116,6 +116,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(demoMode ? demoLeads.map(lead => lead.id) : []));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [sendingCampaignId, setSendingCampaignId] = useState<string | null>(null);
   const [setupError, setSetupError] = useState("");
   const [name, setName] = useState("Opportunity intro");
@@ -319,6 +320,52 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     }
   };
 
+  const draftWithAi = async () => {
+    if (demoMode || !userId) {
+      toast({ title: "Demo mode", description: "AI drafting is available after signing in." });
+      return;
+    }
+    if (selectedLeads.length === 0) {
+      toast({ title: "Select recipients", description: "Choose at least one prospect so AI can use real context.", variant: "destructive" });
+      return;
+    }
+
+    setDrafting(true);
+    try {
+      const service = selectedLeads.find(lead => lead.selectedService)?.selectedService || "";
+      const { data, error } = await supabase.functions.invoke("draft-email-campaign", {
+        body: {
+          userId,
+          campaignName: name,
+          service,
+          subject,
+          body,
+          signature,
+          leads: selectedLeads.slice(0, 12).map(lead => ({
+            name: lead.name,
+            category: lead.category,
+            selectedService: lead.selectedService,
+            personName: lead.personName,
+            email: lead.email,
+          })),
+        },
+      });
+      if (error) throw error;
+      const result = data as { success?: boolean; source?: string; draft?: { subject?: string; body?: string; signature?: string }; error?: string };
+      if (result.error || !result.draft) throw new Error(result.error || "No draft returned");
+      if (result.draft.subject) setSubject(result.draft.subject);
+      if (result.draft.body) setBody(result.draft.body);
+      if (result.draft.signature) setSignature(result.draft.signature);
+      setActiveField("body");
+      toast({ title: "AI draft ready", description: result.source === "gemini" ? "Subject, message, and signature were drafted from selected recipients." : "Used a fallback draft because AI was unavailable." });
+    } catch (error) {
+      console.error("Error drafting email campaign:", error);
+      toast({ title: "AI draft failed", description: error instanceof Error ? error.message : "Could not generate a draft.", variant: "destructive" });
+    } finally {
+      setDrafting(false);
+    }
+  };
+
   const handleSendNow = async () => {
     const campaign = await saveCampaign("draft");
     if (campaign) await sendCampaign(campaign);
@@ -412,7 +459,18 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
 
             <aside className="min-h-0 overflow-y-auto rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#111319]">
               <div className="border-b border-[#f3f5f8]/[0.08] p-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#e8fb52]">Campaign</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-[#e8fb52]">Campaign</p>
+                  <button
+                    type="button"
+                    onClick={() => void draftWithAi()}
+                    disabled={drafting || selectedLeads.length === 0}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#e8fb52]/40 bg-[#e8fb52]/10 px-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#e8fb52] hover:bg-[#e8fb52] hover:text-black disabled:opacity-40"
+                  >
+                    {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    AI draft
+                  </button>
+                </div>
                 <input value={name} onChange={event => setName(event.target.value)} className="mt-3 h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 text-sm text-[#f3f5f8] outline-none focus:border-[#e8fb52]/60" />
               </div>
 
