@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-const defaultFromEmail = Deno.env.get("OUTREACH_FROM_EMAIL") || "contact@globaleads22.com";
+const resendApiKey = Deno.env.get("RESEND_API_KEY")?.trim();
+const defaultFromEmail = Deno.env.get("OUTREACH_FROM_EMAIL")?.trim() || "contact@globaleads22.com";
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error("Missing required Supabase environment variables");
@@ -27,6 +27,9 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const errorJson = (error: string, status: number, details?: Record<string, unknown>) =>
+  json({ error, status, ...details }, status);
 
 const renderTemplate = (template: string, values: Record<string, string>) =>
   template.replace(/\{\{\s*(firstName|name|company|email)\s*\}\}/g, (_match, key) => values[key] || "");
@@ -70,23 +73,23 @@ const renderHtml = (bodyText: string, signatureText: string, fontFamily: string,
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return errorJson("Method not allowed", 405);
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader) return errorJson("Unauthorized", 401);
 
     const token = authHeader.replace(/^Bearer\s+/i, "");
     const { data: caller, error: callerError } = await supabase.auth.getUser(token);
-    if (callerError || !caller.user) return json({ error: "Unauthorized" }, 401);
+    if (callerError || !caller.user) return errorJson("Unauthorized", 401);
 
     const { campaignId, userId } = (await req.json()) as SendCampaignRequest;
     if (!campaignId || !userId || caller.user.id !== userId) {
-      return json({ error: "Invalid campaign request" }, 400);
+      return errorJson("Invalid campaign request", 400);
     }
 
     if (!resendApiKey) {
-      return json({ error: "RESEND_API_KEY is not configured" }, 500);
+      return errorJson("RESEND_API_KEY is not configured", 500);
     }
 
     const { data: campaign, error: campaignError } = await supabase
@@ -96,9 +99,9 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("user_id", userId)
       .single();
 
-    if (campaignError || !campaign) return json({ error: "Campaign not found" }, 404);
+    if (campaignError || !campaign) return errorJson("Campaign not found", 404);
     if (!["draft", "scheduled", "failed"].includes(campaign.status)) {
-      return json({ error: `Campaign cannot be sent from ${campaign.status}` }, 409);
+      return errorJson(`Campaign cannot be sent from ${campaign.status}`, 409, { campaignStatus: campaign.status });
     }
 
     const { data: recipients, error: recipientsError } = await supabase
@@ -108,13 +111,14 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("user_id", userId)
       .in("status", ["queued", "failed"]);
 
-    if (recipientsError) return json({ error: "Failed to load recipients" }, 500);
-    if (!recipients?.length) return json({ error: "No queued recipients" }, 400);
+    if (recipientsError) return errorJson("Failed to load recipients", 500, { details: recipientsError.message });
+    if (!recipients?.length) return errorJson("No queued recipients", 400, { campaignStatus: campaign.status });
 
     await supabase.from("email_campaigns").update({ status: "sending", updated_at: new Date().toISOString() }).eq("id", campaignId).eq("user_id", userId);
 
     let sent = 0;
     let failed = 0;
+    const providerErrors: string[] = [];
 
     for (const recipient of recipients) {
       await supabase.from("email_campaign_recipients").update({ status: "sending", error_message: null }).eq("id", recipient.id).eq("user_id", userId);
@@ -157,6 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
       } else {
         failed += 1;
         const providerError = result.message || result.error || result.name || `Resend error ${response.status}`;
+        providerErrors.push(String(providerError));
         await supabase
           .from("email_campaign_recipients")
           .update({ status: "failed", error_message: providerError })
@@ -172,10 +177,19 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", campaignId)
       .eq("user_id", userId);
 
+    if (sent === 0 && failed > 0) {
+      return errorJson(providerErrors[0] || "All recipients failed to send", 502, {
+        sent,
+        failed,
+        providerErrors: [...new Set(providerErrors)].slice(0, 5),
+        from: defaultFromEmail,
+      });
+    }
+
     return json({ sent, failed });
   } catch (error) {
     console.error("send-email-campaign error:", error);
-    return json({ error: "Internal server error" }, 500);
+    return errorJson(error instanceof Error ? error.message : "Internal server error", 500);
   }
 };
 

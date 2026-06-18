@@ -453,8 +453,13 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onP
     const response = typeof error === "object" && error && "context" in error ? (error as { context?: Response }).context : null;
     if (response) {
       try {
-        const payload = await response.json();
-        if (payload?.error) return String(payload.error);
+        const payload = await response.clone().json();
+        if (payload?.error) {
+          const providerErrors = Array.isArray(payload.providerErrors) && payload.providerErrors.length
+            ? ` Provider: ${payload.providerErrors.join("; ")}`
+            : "";
+          return `${String(payload.error)}${providerErrors}`;
+        }
       } catch {
         // Fall through to the regular error message.
       }
@@ -477,15 +482,24 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onP
       if (error) throw error;
       const result = data as { sent?: number; failed?: number; error?: string };
       if (result.error) throw new Error(result.error);
-      toast({ title: "Campaign sent", description: `${result.sent || 0} sent · ${result.failed || 0} failed.` });
+      if ((result.sent || 0) === 0 && (result.failed || 0) > 0) {
+        throw new Error(`${result.failed || 0} recipient(s) failed to send.`);
+      }
+      toast({
+        title: (result.failed || 0) > 0 ? "Campaign partially sent" : "Campaign sent",
+        description: `${result.sent || 0} sent / ${result.failed || 0} failed.`,
+      });
       await loadData();
     } catch (error) {
       console.error("Error sending campaign:", error);
       const message = await getFunctionErrorMessage(error);
       if (message.includes("RESEND_API_KEY")) {
         setSetupError("Email delivery is not connected yet. Add RESEND_API_KEY in Supabase secrets, then send again.");
+      } else if (message.toLowerCase().includes("domain") || message.toLowerCase().includes("from")) {
+        setSetupError(`Email delivery rejected the sender address. Current sender is configured in OUTREACH_FROM_EMAIL. ${message}`);
       }
       toast({ title: "Send failed", description: message, variant: "destructive" });
+      await loadData();
     } finally {
       setSendingCampaignId(null);
     }
