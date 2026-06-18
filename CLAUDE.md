@@ -13,7 +13,7 @@ Current product surface:
 - Maps-first business discovery.
 - Public website contact extraction.
 - Optional decision-maker enrichment.
-- Saved leads, pipeline, follow-ups, exports, and CRM-style organization.
+- Saved leads, pipeline, email automations, exports, and CRM-style organization.
 - Credit-based billing.
 - Admin usage and cost accounting.
 
@@ -52,6 +52,8 @@ npx.cmd supabase functions deploy search-places
 npx.cmd supabase functions deploy extract-contacts
 npx.cmd supabase functions deploy stripe-webhook
 npx.cmd supabase functions deploy create-checkout-session
+npx.cmd supabase functions deploy create-lead-list-preview
+npx.cmd supabase functions deploy send-email-campaign
 ```
 
 Vercel deploys from `master`.
@@ -62,13 +64,16 @@ Vercel deploys from `master`.
 
 `vercel.json` routes:
 
+- `globaleads22.com/*` redirects to `https://www.globaleads22.com/*`.
 - `app.globaleads22.com/*` to the React app (`index.html`).
-- `/app`, `/privacy`, `/terms` to the React app.
+- `/app`, `/demo`, `/preview/:token`, `/privacy`, `/terms` to the React app.
 - `/` to `public/landing.html`.
 
 If the React app handles `/`, `src/pages/Index.tsx` embeds `/landing.html` in an iframe so the user keeps the root URL instead of being redirected to `/landing.html`.
 
 Do not break `app.globaleads22.com`; it must always render `AppPage`.
+
+Public share links should use `https://www.globaleads22.com/preview/:token`. Avoid reintroducing a `www` -> apex redirect; that previously caused `ERR_TOO_MANY_REDIRECTS` when the platform/domain config redirected apex back to `www`.
 
 ---
 
@@ -298,7 +303,7 @@ Verified vendor pricing vs the code defaults (2026-06-07):
 
 - `FIRECRAWL_CREDIT_COST_USD` default `0.00083` — **accurate** (Firecrawl Standard, $83 / 100k pages = 1 credit/page; cheaper at higher tiers). Firecrawl credits reset monthly and do not roll over.
 - `GOOGLE_TEXT_SEARCH_ENTERPRISE_COST_USD` default `0.035` — **accurate** (Text Search Enterprise ~$35/1k; first 1,000 calls/month free). Billed per `search-places` call, not per lead; a search makes several (pagination/shards).
-- `HUNTER_CREDIT_COST_USD` default `0.034` — **OVERSTATES reality.** Hunter list is ~$0.0149–0.0245/credit, and Hunter only bills when an email is found (a real search billed 6 of 10 domain lookups). Real Hunter COGS is lower than the admin dashboard shows.
+- `HUNTER_CREDIT_COST_USD` default `0.02` — midpoint estimate for Hunter's real ~$0.0149–0.0245/credit range. Hunter only bills when an email is found (a real search billed 6 of 10 domain lookups).
 
 AI providers (both legacy, not in the main flow, and NOT cost-logged): `analyze-lead` uses Claude Haiku 4.5 ($1/1M input, $5/1M output); `plan-lead-search` uses Gemini 2.5 Flash. Neither writes `api_usage_events`. **Phase 6 must add an AI cost constant + usage logging before AI scoring ships**, or AI spend will be invisible in admin COGS.
 
@@ -316,6 +321,34 @@ Measured per-lead vendor COGS (2026-06-07): Normal search ~$0.005–0.01/lead; E
 - `public/og-image.png`: older PNG preview kept for compatibility.
 
 Root and landing metadata should use friendly product wording, not provider/tool names.
+
+---
+
+## Shareable Lead Previews And Email Automations
+
+Shipped on branch `feat/phase4-signal-diagnostics`, commit `518783a`:
+
+- The former Follow-ups workspace is now **Email automations**.
+- `src/components/app/EmailAutomation.tsx` builds simple send-now campaigns from saved leads that have email addresses.
+- Campaign data lives in `email_campaigns` and `email_campaign_recipients` (`supabase/migrations/20260617110000_add_email_campaigns.sql`).
+- `supabase/functions/send-email-campaign` verifies the logged-in user and sends queued recipients through Resend.
+- Required function secret: `RESEND_API_KEY`. Optional/expected sender secret: `OUTREACH_FROM_EMAIL`.
+- Template variables currently supported: `{{firstName}}`, `{{name}}`, `{{company}}`, `{{email}}`.
+
+Share list behavior:
+
+- Search results and lead-list views can create public `/preview/:token` demo pages.
+- Signed-in users insert directly into `lead_list_previews`.
+- Demo mode uses `supabase/functions/create-lead-list-preview` with `verify_jwt = false`; the function writes an ownerless public preview via the service role and expires it after 30 days.
+- Preview pages let visitors click **Add to Pipeline**. If logged out, the auth modal opens; after sign-in, the preview imports into `saved_leads`.
+
+Deployment checklist for this feature:
+
+- Apply migration `20260617110000_add_email_campaigns.sql`.
+- Deploy `create-lead-list-preview`.
+- Deploy `send-email-campaign`.
+- Set `RESEND_API_KEY` and `OUTREACH_FROM_EMAIL` Supabase secrets.
+- Confirm Vercel/domain redirect is apex -> `www`, not `www` -> apex.
 
 Public copy should avoid:
 
