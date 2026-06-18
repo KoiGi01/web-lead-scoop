@@ -5,11 +5,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronUp,
-  Clock,
   CreditCard,
   Home,
   KanbanSquare,
   LogOut,
+  Mail,
   Plus,
   Settings,
   ShieldCheck,
@@ -96,7 +96,7 @@ const AppSidebar = ({
     { label: "New scan", view: "search", icon: Plus, accent: true },
     { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount },
     { label: "Pipeline", view: "pipeline", icon: KanbanSquare },
-    { label: "Follow-ups", view: "follow-ups", icon: Clock, badge: followupsCount },
+    { label: "Email automations", view: "follow-ups", icon: Mail, badge: followupsCount },
   ];
   const library: NavItem[] = [
     { label: "Saved scans", view: "saved-searches", icon: Bookmark },

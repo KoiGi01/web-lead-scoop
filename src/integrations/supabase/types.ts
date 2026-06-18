@@ -535,6 +535,94 @@ export type Database = {
           created_at?: string
         }
       }
+      email_campaigns: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          subject: string
+          body: string
+          from_name: string
+          reply_to: string | null
+          status: string
+          scheduled_at: string | null
+          sent_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          subject: string
+          body: string
+          from_name?: string
+          reply_to?: string | null
+          status?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          subject?: string
+          body?: string
+          from_name?: string
+          reply_to?: string | null
+          status?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      email_campaign_recipients: {
+        Row: {
+          id: string
+          campaign_id: string
+          user_id: string
+          lead_id: string | null
+          recipient_email: string
+          recipient_name: string | null
+          company_name: string | null
+          status: string
+          provider_message_id: string | null
+          error_message: string | null
+          sent_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          campaign_id: string
+          user_id: string
+          lead_id?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          company_name?: string | null
+          status?: string
+          provider_message_id?: string | null
+          error_message?: string | null
+          sent_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          campaign_id?: string
+          user_id?: string
+          lead_id?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          company_name?: string | null
+          status?: string
+          provider_message_id?: string | null
+          error_message?: string | null
+          sent_at?: string | null
+          created_at?: string
+        }
+      }
       saved_leads: {
         Row: {
           id: string

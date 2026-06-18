@@ -24,6 +24,7 @@ import type { AppSidebarView } from "@/components/app/AppSidebar";
 import AdminDashboard from "@/components/app/AdminDashboard";
 import SavedSearches from "@/components/app/SavedSearches";
 import SettingsCredits from "@/components/app/SettingsCredits";
+import EmailAutomation from "@/components/app/EmailAutomation";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
@@ -527,9 +528,9 @@ const AppPage = () => {
                 demoMode={isDemoPreview}
               />
             ) : viewMode === "follow-ups" ? (
-              <ViewAllLeads
+              <EmailAutomation
                 userId={user?.id}
-                mode="follow-ups"
+                userEmail={user?.email}
                 demoMode={isDemoPreview}
               />
             ) : viewMode === "saved-searches" ? (
@@ -587,7 +588,7 @@ const AppPage = () => {
               Unlock the sales workspace
             </DialogTitle>
             <DialogDescription className="text-sm leading-6 text-[#9aa3b2]">
-              Lead Inbox, Pipeline, Follow-ups, and Saved Searches are available on Starter and Growth.
+              Lead Inbox, Pipeline, Email Automations, and Saved Searches are available on Starter and Growth.
               Upgrade to organize leads, track outreach, and close more deals.
             </DialogDescription>
           </DialogHeader>
@@ -597,7 +598,7 @@ const AppPage = () => {
               Starter and Growth unlock all current app capabilities
             </p>
             <p className="mt-2 text-sm text-[#f3f5f8]">
-              Full search quality, lead inbox, pipeline, follow-ups, saved searches, and exports.
+              Full search quality, lead inbox, pipeline, email automations, saved searches, and exports.
             </p>
           </div>
 

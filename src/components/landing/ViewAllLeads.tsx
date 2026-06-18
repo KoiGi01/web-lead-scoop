@@ -707,16 +707,13 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
       return window.location.origin;
     }
 
-    return "https://globaleads22.com";
+    return "https://www.globaleads22.com";
   };
 
   const handleShareVisibleList = async () => {
     if (!sortedResults.length || shareLoading) return;
-    if (!userId || demoMode) {
-      toast({
-        title: "Share is disabled in demo",
-        description: "Sign in with a real account to create public preview links.",
-      });
+    if (!userId && !demoMode) {
+      toast({ title: "Sign in required", description: "Sign in to create public preview links.", variant: "destructive" });
       return;
     }
 
@@ -744,9 +741,9 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
         quality_reason: lead.intelligence?.positioning || lead.intelligence?.opportunitySummary || null,
       }));
 
-      const { error } = await supabase.from("lead_list_previews").insert({
+      const previewPayload = {
         token,
-        created_by: userId,
+        created_by: userId || null,
         title,
         description: `Preview list from GlobaLeads22 with ${sortedResults.length} visible lead(s) from ${industryLabel}.`,
         search_config: {
@@ -759,9 +756,17 @@ const ViewAllLeads = ({ userId, onBackToSearch, mode = "inbox", demoMode = false
         },
         leads: previewLeads,
         lead_count: previewLeads.length,
-      });
+        created_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
+      if (demoMode) {
+        const { error } = await supabase.functions.invoke("create-lead-list-preview", { body: previewPayload });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("lead_list_previews").insert(previewPayload);
+        if (error) throw error;
+      }
+
 
       const url = `${getPreviewBaseUrl()}/preview/${token}`;
       setShareUrl(url);

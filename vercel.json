@@ -2,8 +2,8 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "www.globaleads22.com" }],
-      "destination": "https://globaleads22.com/$1",
+      "has": [{ "type": "host", "value": "globaleads22.com" }],
+      "destination": "https://www.globaleads22.com/$1",
       "permanent": true
     }
   ],

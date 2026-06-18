@@ -60,8 +60,19 @@ interface LeadListPreviewRow {
 const appUrl = "https://app.globaleads22.com";
 
 const getPendingImportKey = (token: string) => `gl22:pending-preview-import:${token}`;
+const getLocalPreviewKey = (token: string) => `gl22:local-preview:${token}`;
 
 const asPreviewLeads = (value: unknown): PreviewLead[] => (Array.isArray(value) ? value as PreviewLead[] : []);
+
+const getLocalPreview = (token: string): LeadListPreviewRow | null => {
+  try {
+    const rawPreview = window.localStorage.getItem(getLocalPreviewKey(token));
+    return rawPreview ? JSON.parse(rawPreview) as LeadListPreviewRow : null;
+  } catch (error) {
+    console.error("Error reading local preview:", error);
+    return null;
+  }
+};
 
 const compactUrl = (url = "") => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
@@ -99,7 +110,11 @@ const LeadListPreview = () => {
         toast({ title: "Preview unavailable", description: "This shared list could not be loaded.", variant: "destructive" });
       }
 
-      setPreview(data as LeadListPreviewRow | null);
+      if (data) {
+        setPreview(data as LeadListPreviewRow);
+      } else {
+        setPreview(getLocalPreview(token));
+      }
       setLoading(false);
     };
 

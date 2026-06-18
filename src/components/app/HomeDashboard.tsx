@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, Clock, Plus, Search, TrendingUp, Users } from "lucide-react";
+import { Mail, Plus, Search, TrendingUp, Users } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer } from "recharts";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -7,8 +7,8 @@ import type { SearchHistoryEntry } from "@/hooks/useSearchHistory";
 
 /**
  * HomeDashboard — the workspace landing surface (redesign Section 2).
- * Wired to real data today: saved_leads (prospects, pipeline, follow-ups, email
- * presence) + search history + credits. In demo mode it shows sample data so the
+ * Wired to real data today: saved_leads (prospects, pipeline, email-ready
+ * leads) + search history + credits. In demo mode it shows sample data so the
  * layout can be reviewed fully populated.
  */
 
@@ -29,7 +29,6 @@ interface DashLead {
   emailed: boolean;
   created: number;
   stage: string;
-  followUp: number | null;
   name: string;
   category: string;
 }
@@ -155,7 +154,6 @@ const HomeDashboard = ({
             emailed: emails.length > 0,
             created: new Date((r.created_at as string) || Date.now()).getTime(),
             stage: String(r.crm_status || "new"),
-            followUp: r.next_follow_up_at ? new Date(r.next_follow_up_at as string).getTime() : null,
             name: String(r.name || "Unknown business"),
             category: String(r.category || ""),
           };
@@ -171,10 +169,9 @@ const HomeDashboard = ({
   const now = Date.now();
   const real = useMemo(() => {
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
     const scansMonth = searchHistory.filter(s => s.timestamp >= monthStart.getTime()).length;
     const newWeek = leads.filter(l => l.created >= now - WEEK).length;
-    const dueLeads = leads.filter(l => l.followUp && l.followUp <= todayEnd.getTime());
+    const emailReadyLeads = leads.filter(l => l.emailed);
     // 8 week buckets
     const weeks: [number, number][] = Array.from({ length: 8 }, () => [0, 0]);
     leads.forEach(l => {
@@ -189,20 +186,27 @@ const HomeDashboard = ({
       else if (l.stage !== "lost") pipeline.new++;
     });
     return {
-      leadsTotal: leads.length, scansMonth, newWeek, followDue: dueLeads.length,
+      leadsTotal: leads.length, scansMonth, newWeek, followDue: emailReadyLeads.length,
       weeks, pipeline,
       scansList: searchHistory.slice(0, 3).map(s => ({
         title: `${s.keyword}${s.location ? ` · ${s.location}` : ""}`,
         sub: `${s.leadCount} prospects · ${s.emailCount} emails`,
         when: relTime(s.timestamp),
       })),
-      dueList: dueLeads.slice(0, 3).map(l => ({
-        name: l.name, sub: l.category || "Follow-up", tag: l.followUp! < now ? "Overdue" : "Due", kind: "due" as const,
+      dueList: emailReadyLeads.slice(0, 3).map(l => ({
+        name: l.name, sub: l.category || "Email-ready prospect", tag: l.stage === "won" ? "Won" : "Ready", kind: l.stage === "won" ? "won" as const : "due" as const,
       })),
     };
   }, [leads, searchHistory, now]);
 
-  const d = demoMode ? SAMPLE : real;
+  const d = demoMode ? {
+    ...SAMPLE,
+    dueList: [
+      { name: "Bright Smile Dental", sub: "Dr. Sofia Almeida", tag: "Ready", kind: "due" as const },
+      { name: "Lakeway Dental Studio", sub: "Owner contact found", tag: "Ready", kind: "due" as const },
+      { name: "Cedar Park Family", sub: "Proposal sent", tag: "Won", kind: "won" as const },
+    ],
+  } : real;
   const pipelineMax = Math.max(1, d.pipeline.new, d.pipeline.contacted, d.pipeline.qualified, d.pipeline.won);
   const pipelineTotal = d.pipeline.new + d.pipeline.contacted + d.pipeline.qualified + d.pipeline.won;
   const weekMax = Math.max(1, ...d.weeks.map(w => w[0] + w[1]));
@@ -220,7 +224,7 @@ const HomeDashboard = ({
     { label: "Prospects saved", value: d.leadsTotal, spark: sparks.leads, icon: Users, delta: demoMode ? "18" : undefined, deltaUp: true },
     { label: "Scans this month", value: d.scansMonth, accent: true, spark: sparks.scans, icon: Search, delta: demoMode ? "9" : undefined, deltaUp: true },
     { label: "New this week", value: d.newWeek, spark: sparks.week, icon: TrendingUp, delta: demoMode ? "12" : undefined, deltaUp: true },
-    { label: "Follow-ups due", value: d.followDue, spark: sparks.follow, icon: Clock, delta: demoMode ? "3" : undefined, deltaUp: true },
+    { label: "Email-ready leads", value: d.followDue, spark: sparks.follow, icon: Mail, delta: demoMode ? "3" : undefined, deltaUp: true },
   ];
 
   const firstName = (userName || "there").split(" ")[0];
@@ -235,7 +239,7 @@ const HomeDashboard = ({
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#e8fb52]">{today}</div>
           <h1 className="mt-2 font-display text-[28px] font-bold tracking-[-0.025em]">Welcome back, {firstName}</h1>
           <p className="mt-1.5 max-w-[46ch] text-sm leading-relaxed text-[#98a0af]">
-            You have <b className="text-[#f3f5f8]">{d.followDue} follow-up{d.followDue === 1 ? "" : "s"} due</b> today and{" "}
+            You have <b className="text-[#f3f5f8]">{d.followDue} email-ready lead{d.followDue === 1 ? "" : "s"}</b> and{" "}
             <b className="text-[#f3f5f8]">{d.newWeek} new prospect{d.newWeek === 1 ? "" : "s"}</b> this week. Ready to find the next one?
           </p>
         </div>
@@ -309,8 +313,8 @@ const HomeDashboard = ({
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <ListPanel title="Recent scans" items={d.scansList.map(s => ({ icon: <Search className="h-4 w-4" />, title: s.title, sub: s.sub, right: <Tag>{s.when}</Tag> }))}
           empty="No scans yet — run your first one." cta="View all scans →" onCta={onViewScans} />
-        <ListPanel title="Due today" items={d.dueList.map(s => ({ icon: <Clock className="h-4 w-4" />, title: s.name, sub: s.sub, right: <Tag kind={s.kind}>{s.tag}</Tag> }))}
-          empty="Nothing due today. Nice and clear." cta="Open follow-ups →" onCta={onViewFollowups} />
+        <ListPanel title="Email-ready prospects" items={d.dueList.map(s => ({ icon: <Mail className="h-4 w-4" />, title: s.name, sub: s.sub, right: <Tag kind={s.kind}>{s.tag}</Tag> }))}
+          empty="No email-ready prospects yet." cta="Open email automations ->" onCta={onViewFollowups} />
       </div>
     </div>
   );
@@ -325,10 +329,13 @@ function Tag({ children, kind }: { children: React.ReactNode; kind?: "due" | "wo
 }
 interface ListItem { icon: React.ReactNode; title: string; sub: string; right: React.ReactNode; }
 function ListPanel({ title, items, empty, cta, onCta }: { title: string; items: ListItem[]; empty: string; cta: string; onCta: () => void }) {
+  const isEmailPanel = title === "Email-ready prospects";
+  const emptyText = isEmailPanel ? "No email-ready prospects yet." : empty;
+  const ctaText = isEmailPanel ? "Open email automations ->" : cta;
   return (
     <div className="rounded-[16px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-[18px_20px]">
       <h3 className="mb-4 font-display text-[15px] font-semibold tracking-[-0.01em]">{title}</h3>
-      {items.length === 0 ? <EmptyHint text={empty} /> : items.map((it, i) => (
+      {items.length === 0 ? <EmptyHint text={emptyText} /> : items.map((it, i) => (
         <div key={i} className="flex items-center gap-3.5 border-b border-[#f3f5f8]/[0.07] py-3 last:border-0">
           <span className="grid h-[34px] w-[34px] flex-shrink-0 place-items-center rounded-[9px] bg-[#14171d] text-[#98a0af] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.07)]">{it.icon}</span>
           <div className="min-w-0">
@@ -338,7 +345,7 @@ function ListPanel({ title, items, empty, cta, onCta }: { title: string; items: 
           <div className="ml-auto">{it.right}</div>
         </div>
       ))}
-      <button type="button" onClick={onCta} className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.06em] text-[#5b6472] transition-colors hover:text-[#e8fb52]">{cta}</button>
+      <button type="button" onClick={onCta} className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.06em] text-[#5b6472] transition-colors hover:text-[#e8fb52]">{ctaText}</button>
     </div>
   );
 }

@@ -1261,11 +1261,15 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
       return window.location.origin;
     }
 
-    return "https://globaleads22.com";
+    return "https://www.globaleads22.com";
   };
 
   const handleShareList = async () => {
-    if (!sortedResults?.length || !user?.id || shareLoading) return;
+    if (!sortedResults?.length || shareLoading) return;
+    if (!user?.id && !demoMode) {
+      toast({ title: "Sign in required", description: "Sign in to create public preview links.", variant: "destructive" });
+      return;
+    }
     setShareLoading(true);
 
     try {
@@ -1290,9 +1294,9 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         quality_reason: lead.leadQualityReason || summarizeOpportunityCard(lead.detectedSignals, searchConfig.selectedService).whyText || null,
       }));
 
-      const { error } = await supabase.from("lead_list_previews").insert({
+      const previewPayload = {
         token,
-        created_by: user.id,
+        created_by: user?.id || null,
         title,
         description: `Preview list from a GlobaLeads22 search for ${searchConfig.industry} in ${searchConfig.location}.`,
         search_config: {
@@ -1305,9 +1309,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         },
         leads: previewLeads,
         lead_count: previewLeads.length,
-      });
+        created_at: new Date().toISOString(),
+      };
 
-      if (error) throw error;
+      if (demoMode) {
+        const { error } = await supabase.functions.invoke("create-lead-list-preview", { body: previewPayload });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("lead_list_previews").insert(previewPayload);
+        if (error) throw error;
+      }
 
       const url = `${getPreviewBaseUrl()}/preview/${token}`;
       setShareUrl(url);
