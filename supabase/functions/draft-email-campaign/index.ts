@@ -20,6 +20,8 @@ interface DraftLead {
   name?: string;
   category?: string;
   selectedService?: string;
+  crmStatus?: string;
+  crmPriority?: string;
   personName?: string;
   email?: string;
 }
@@ -32,6 +34,9 @@ interface DraftRequest {
   body?: string;
   signature?: string;
   leads?: DraftLead[];
+  groupLabel?: string;
+  groupType?: string;
+  groupCriteria?: string;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -51,13 +56,14 @@ const parseGeminiJson = (value: string) => {
 
 const fallbackDraft = (request: DraftRequest) => {
   const service = request.service || request.leads?.[0]?.selectedService || "your service";
+  const audience = request.groupLabel ? ` for ${request.groupLabel}` : "";
   return {
     subject: "Quick idea for {{company}}",
     body: `Hi {{firstName}},
 
 I came across {{company}} and noticed a few public signals that may be worth improving.
 
-We help teams improve ${service.toLowerCase()} with clearer positioning and better conversion paths.
+We help teams improve ${service.toLowerCase()}${audience} with clearer positioning and better conversion paths.
 
 Open to a quick look at what I found?`,
     signature: request.signature || "Best,\n{{name}}",
@@ -85,9 +91,17 @@ const handler = async (req: Request): Promise<Response> => {
       company: String(lead.name || "").slice(0, 120),
       category: String(lead.category || "").slice(0, 80),
       service: String(lead.selectedService || "").slice(0, 80),
+      pipelineStage: String(lead.crmStatus || "").slice(0, 80),
+      priority: String(lead.crmPriority || "").slice(0, 80),
       contact: String(lead.personName || "").slice(0, 120),
       email: String(lead.email || "").slice(0, 160),
     }));
+
+    const groupContext = request.groupLabel ? {
+      label: String(request.groupLabel || "").slice(0, 120),
+      type: String(request.groupType || "").slice(0, 80),
+      criteria: String(request.groupCriteria || "").slice(0, 160),
+    } : null;
 
     const fallback = fallbackDraft(request);
     if (!geminiApiKey || leads.length === 0) {
@@ -122,6 +136,7 @@ Rules:
 
 Campaign name: ${request.campaignName || ""}
 Service being offered: ${request.service || leads[0]?.service || ""}
+Active recipient group: ${groupContext ? JSON.stringify(groupContext, null, 2) : "None"}
 Current subject: ${request.subject || ""}
 Current body: ${request.body || ""}
 Current signature: ${request.signature || ""}

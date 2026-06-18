@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CheckCheck, Image, Loader2, Mail, Send, Sparkles, Type } from "lucide-react";
+import { Briefcase, CheckCheck, Flag, Image, KanbanSquare, Loader2, Mail, Search, Send, Sparkles, Type, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -29,9 +29,24 @@ interface EmailLead {
   name: string;
   category: string;
   selectedService: string;
+  crmStatus: string;
+  crmPriority: string;
+  createdAt: string;
   email: string;
   personName: string;
   score: number | null;
+}
+
+type SmartGroupType = "industry" | "pipeline" | "priority" | "service";
+
+interface SmartGroup {
+  id: string;
+  type: SmartGroupType;
+  label: string;
+  value: string;
+  count: number;
+  selectedCount: number;
+  criteria: string;
 }
 
 interface CampaignSummary extends CampaignRow {
@@ -41,9 +56,12 @@ interface CampaignSummary extends CampaignRow {
 }
 
 const demoLeads: EmailLead[] = [
-  { id: "demo-1", name: "BrightSmile Dental Clinic", category: "dental clinic", selectedService: "Web design", email: "sofia@brightsmile.example", personName: "Dr. Sofia Almeida", score: 92 },
-  { id: "demo-2", name: "Austin Cosmetic Dentistry", category: "cosmetic dentist", selectedService: "Web design", email: "mark@austincosmetic.example", personName: "Mark Collins", score: 81 },
-  { id: "demo-3", name: "Zilker Dental Co", category: "dental clinic", selectedService: "Web design", email: "elena@zilkerdental.example", personName: "Dr. Elena Cruz", score: 88 },
+  { id: "demo-1", name: "BrightSmile Dental Clinic", category: "dental clinic", selectedService: "Web design", crmStatus: "new", crmPriority: "high", createdAt: "2026-06-16T12:00:00Z", email: "sofia@brightsmile.example", personName: "Dr. Sofia Almeida", score: 92 },
+  { id: "demo-2", name: "Austin Cosmetic Dentistry", category: "cosmetic dentist", selectedService: "Web design", crmStatus: "contacted", crmPriority: "normal", createdAt: "2026-06-15T12:00:00Z", email: "mark@austincosmetic.example", personName: "Mark Collins", score: 81 },
+  { id: "demo-3", name: "Zilker Dental Co", category: "dental clinic", selectedService: "Web design", crmStatus: "qualified", crmPriority: "high", createdAt: "2026-06-14T12:00:00Z", email: "elena@zilkerdental.example", personName: "Dr. Elena Cruz", score: 88 },
+  { id: "demo-4", name: "Skyline Roofing", category: "roofing contractor", selectedService: "SEO", crmStatus: "new", crmPriority: "high", createdAt: "2026-06-13T12:00:00Z", email: "ryan@skylineroofing.example", personName: "Ryan Park", score: 86 },
+  { id: "demo-5", name: "North Loop Roof Repair", category: "roofer", selectedService: "SEO", crmStatus: "proposal", crmPriority: "normal", createdAt: "2026-06-12T12:00:00Z", email: "maya@northlooproof.example", personName: "Maya Reeves", score: 79 },
+  { id: "demo-6", name: "Willow Med Spa", category: "med spa", selectedService: "Paid ads", crmStatus: "contacted", crmPriority: "high", createdAt: "2026-06-11T12:00:00Z", email: "nina@willowmedspa.example", personName: "Nina Brooks", score: 84 },
 ];
 
 const defaultSubject = "Quick idea for {{company}}";
@@ -76,6 +94,70 @@ type ComposerField = "subject" | "body" | "signature";
 
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
 
+const stageLabels: Record<string, string> = {
+  new: "New leads",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  proposal: "Proposal",
+  won: "Won",
+  lost: "Lost",
+};
+
+const priorityLabels: Record<string, string> = {
+  high: "High priority",
+  normal: "Normal priority",
+  low: "Low priority",
+};
+
+const smartGroupTypeLabels: Record<SmartGroupType, string> = {
+  industry: "Industry",
+  pipeline: "Pipeline",
+  priority: "Priority",
+  service: "Service",
+};
+
+const smartGroupIcons: Record<SmartGroupType, typeof Users> = {
+  industry: Users,
+  pipeline: KanbanSquare,
+  priority: Flag,
+  service: Briefcase,
+};
+
+const titleCase = (value: string) =>
+  value
+    .replace(/[_-]/g, " ")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+
+const normalizeGroupValue = (value: string | null | undefined, fallback: string) => value?.trim() || fallback;
+
+const getStageLabel = (value: string) => stageLabels[value.toLowerCase()] || titleCase(value);
+
+const getPriorityLabel = (value: string) => priorityLabels[value.toLowerCase()] || titleCase(value);
+
+const matchesSmartGroup = (lead: EmailLead, group: SmartGroup | null) => {
+  if (!group) return true;
+  if (group.type === "industry") return lead.category === group.value;
+  if (group.type === "pipeline") return lead.crmStatus === group.value;
+  if (group.type === "priority") return lead.crmPriority === group.value;
+  return lead.selectedService === group.value;
+};
+
+const matchesSearch = (lead: EmailLead, query: string) => {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+  return [
+    lead.name,
+    lead.personName,
+    lead.email,
+    lead.category,
+    lead.selectedService,
+    getStageLabel(lead.crmStatus),
+    getPriorityLabel(lead.crmPriority),
+  ].some(value => value.toLowerCase().includes(normalized));
+};
+
 const renderTemplate = (template: string, lead: EmailLead | null) => {
   const personName = lead?.personName || "";
   const values: Record<string, string> = {
@@ -104,6 +186,9 @@ const getEmailLead = (lead: SavedLeadRow): EmailLead | null => {
     name: lead.name || "Unnamed company",
     category: lead.category || "Uncategorized",
     selectedService: lead.selected_service || "",
+    crmStatus: normalizeGroupValue(lead.crm_status, "new"),
+    crmPriority: normalizeGroupValue(lead.crm_priority, "normal"),
+    createdAt: lead.created_at || "",
     email,
     personName,
     score: typeof intelligence.opportunityScore === "number" ? intelligence.opportunityScore : null,
@@ -127,6 +212,8 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const [imageUrl, setImageUrl] = useState("");
   const [fontFamily, setFontFamily] = useState(fontOptions[0].value);
   const [activeField, setActiveField] = useState<ComposerField>("body");
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const signatureRef = useRef<HTMLTextAreaElement>(null);
@@ -136,6 +223,42 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const previewBody = renderTemplate(body, previewLead);
   const previewSignature = renderTemplate(signature, previewLead);
   const sortedCampaigns = useMemo(() => [...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [campaigns]);
+  const smartGroups = useMemo(() => {
+    const groups = new Map<string, SmartGroup>();
+    const addGroup = (type: SmartGroupType, value: string, label: string, criteria: string) => {
+      const key = `${type}:${value}`;
+      const existing = groups.get(key);
+      groups.set(key, {
+        id: key,
+        type,
+        label,
+        value,
+        count: (existing?.count || 0) + 1,
+        selectedCount: existing?.selectedCount || 0,
+        criteria,
+      });
+    };
+
+    leads.forEach(lead => {
+      addGroup("industry", normalizeGroupValue(lead.category, "Uncategorized"), titleCase(normalizeGroupValue(lead.category, "Uncategorized")), `Industry is ${titleCase(normalizeGroupValue(lead.category, "Uncategorized"))}`);
+      addGroup("pipeline", normalizeGroupValue(lead.crmStatus, "new"), getStageLabel(normalizeGroupValue(lead.crmStatus, "new")), `Pipeline stage is ${getStageLabel(normalizeGroupValue(lead.crmStatus, "new"))}`);
+      addGroup("priority", normalizeGroupValue(lead.crmPriority, "normal"), getPriorityLabel(normalizeGroupValue(lead.crmPriority, "normal")), `Priority is ${getPriorityLabel(normalizeGroupValue(lead.crmPriority, "normal"))}`);
+      if (lead.selectedService) addGroup("service", lead.selectedService, titleCase(lead.selectedService), `Service is ${titleCase(lead.selectedService)}`);
+    });
+
+    groups.forEach(group => {
+      group.selectedCount = leads.filter(lead => selectedIds.has(lead.id) && matchesSmartGroup(lead, group)).length;
+    });
+
+    const typeOrder: Record<SmartGroupType, number> = { industry: 0, pipeline: 1, priority: 2, service: 3 };
+    return [...groups.values()].sort((a, b) => typeOrder[a.type] - typeOrder[b.type] || b.count - a.count || a.label.localeCompare(b.label));
+  }, [leads, selectedIds]);
+  const activeGroup = useMemo(() => smartGroups.find(group => group.id === activeGroupId) || null, [activeGroupId, smartGroups]);
+  const visibleLeads = useMemo(
+    () => leads.filter(lead => matchesSmartGroup(lead, activeGroup) && matchesSearch(lead, searchQuery)),
+    [activeGroup, leads, searchQuery],
+  );
+  const visibleSelectedCount = useMemo(() => visibleLeads.filter(lead => selectedIds.has(lead.id)).length, [selectedIds, visibleLeads]);
 
   useEffect(() => {
     if (userEmail && !replyTo) setReplyTo(userEmail);
@@ -184,6 +307,14 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     setSelectedIds(current => {
       const next = new Set(current);
       if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectVisibleLeads = () => {
+    setSelectedIds(current => {
+      const next = new Set(current);
+      visibleLeads.forEach(lead => next.add(lead.id));
       return next;
     });
   };
@@ -345,9 +476,14 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
             name: lead.name,
             category: lead.category,
             selectedService: lead.selectedService,
+            crmStatus: lead.crmStatus,
+            crmPriority: lead.crmPriority,
             personName: lead.personName,
             email: lead.email,
           })),
+          groupLabel: activeGroup?.label,
+          groupType: activeGroup?.type,
+          groupCriteria: activeGroup?.criteria,
         },
       });
       if (error) throw error;
@@ -398,31 +534,89 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
         ) : (
           <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_430px]">
             <div className="min-h-0 overflow-hidden rounded-[14px] border border-[#f3f5f8]/[0.1] bg-[#0b0d11]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f3f5f8]/[0.08] p-3">
-                <div>
-                  <p className="font-display text-sm font-bold">Recipients</p>
-                  <p className="mt-0.5 text-xs text-[#5d6675]">Prospects with at least one email address.</p>
+              <div className="border-b border-[#f3f5f8]/[0.08] p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-display text-sm font-bold">Smart groups</p>
+                    <p className="mt-0.5 text-xs text-[#5d6675]">Pick an audience to review, then choose who gets the email.</p>
+                  </div>
+                  {activeGroup && (
+                    <button type="button" onClick={() => setActiveGroupId(null)} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-[#f3f5f8]/10 px-2.5 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]">
+                      <X className="h-3.5 w-3.5" />
+                      Clear group
+                    </button>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setSelectedIds(new Set(leads.map(lead => lead.id)))} className="rounded-[8px] border border-[#f3f5f8]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8]">
-                    Select all
-                  </button>
-                  <button type="button" onClick={() => setSelectedIds(new Set())} className="rounded-[8px] border border-[#f3f5f8]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#ff5c49]/50 hover:text-[#ff7a68]">
-                    Clear
-                  </button>
+                <div className="mt-3 grid max-h-44 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+                  {smartGroups.map(group => {
+                    const Icon = smartGroupIcons[group.type];
+                    const active = activeGroupId === group.id;
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        onClick={() => setActiveGroupId(group.id)}
+                        className={`group rounded-[10px] border p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#e8fb52]/45 hover:bg-[#f3f5f8]/[0.035] ${active ? "border-[#e8fb52]/70 bg-[#e8fb52]/[0.08]" : "border-[#f3f5f8]/10 bg-black/30"}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-[8px] border ${active ? "border-[#e8fb52]/50 bg-[#e8fb52] text-black" : "border-[#f3f5f8]/10 bg-[#111319] text-[#e8fb52]"}`}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span className="font-mono text-[10px] font-bold text-[#e8fb52]">{group.count}</span>
+                        </div>
+                        <p className="mt-2 truncate font-display text-sm font-bold text-[#f3f5f8]">{group.label}</p>
+                        <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{smartGroupTypeLabels[group.type]}</p>
+                        {group.selectedCount > 0 && <p className="mt-2 text-xs text-[#9aa3b2]">{group.selectedCount} selected</p>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="h-full max-h-[calc(100vh-230px)] overflow-y-auto">
+              <div className="border-b border-[#f3f5f8]/[0.08] p-3">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-sm font-bold">{activeGroup?.label || "All email-ready leads"}</p>
+                    <p className="mt-0.5 text-xs text-[#5d6675]">
+                      {visibleLeads.length} recipients visible / {visibleSelectedCount} visible selected / {selectedLeads.length} total selected
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={selectVisibleLeads} disabled={visibleLeads.length === 0} className="rounded-[8px] border border-[#e8fb52]/45 bg-[#e8fb52]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52] hover:bg-[#e8fb52] hover:text-black disabled:opacity-40">
+                      {activeGroup ? "Select all in this group" : "Select visible"}
+                    </button>
+                    <button type="button" onClick={() => setSelectedIds(new Set())} disabled={selectedLeads.length === 0} className="rounded-[8px] border border-[#f3f5f8]/10 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#ff5c49]/50 hover:text-[#ff7a68] disabled:opacity-40">
+                      Clear selected
+                    </button>
+                  </div>
+                </div>
+                <label className="relative mt-3 block">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5d6675]" />
+                  <input
+                    value={searchQuery}
+                    onChange={event => setSearchQuery(event.target.value)}
+                    placeholder="Search company, person, email, industry, service, or stage"
+                    className="h-10 w-full rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black pl-9 pr-3 text-sm text-[#f3f5f8] outline-none placeholder:text-[#5d6675] focus:border-[#e8fb52]/60"
+                  />
+                </label>
+              </div>
+
+              <div className="h-full max-h-[calc(100vh-390px)] overflow-y-auto">
                 {leads.length === 0 ? (
                   <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
                     <Mail className="mb-4 h-9 w-9 text-[#5d6675]" />
                     <p className="font-display text-xl font-bold">No email-ready prospects yet.</p>
                     <p className="mt-2 text-sm text-[#9aa3b2]">Run a search with public emails or enrich contacts first.</p>
                   </div>
+                ) : visibleLeads.length === 0 ? (
+                  <div className="flex min-h-[300px] flex-col items-center justify-center px-6 text-center">
+                    <Search className="mb-4 h-9 w-9 text-[#5d6675]" />
+                    <p className="font-display text-xl font-bold">No matching recipients.</p>
+                    <p className="mt-2 text-sm text-[#9aa3b2]">Clear the group or search to return to all email-ready leads.</p>
+                  </div>
                 ) : (
                   <div className="divide-y divide-[#f3f5f8]/[0.06]">
-                    {leads.map(lead => {
+                    {visibleLeads.map(lead => {
                       const selected = selectedIds.has(lead.id);
                       return (
                         <button
@@ -444,10 +638,16 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
                               <Mail className="h-3 w-3 text-[#e8fb52]" />
                               {lead.email}
                             </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <span className="rounded-[6px] border border-[#f3f5f8]/10 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2]">{titleCase(lead.category)}</span>
+                              <span className="rounded-[6px] border border-[#f3f5f8]/10 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[#9aa3b2]">{getStageLabel(lead.crmStatus)}</span>
+                              <span className={`rounded-[6px] border px-2 py-1 font-mono text-[9px] uppercase tracking-widest ${lead.crmPriority.toLowerCase() === "high" ? "border-[#e8fb52]/30 text-[#e8fb52]" : "border-[#f3f5f8]/10 text-[#9aa3b2]"}`}>{getPriorityLabel(lead.crmPriority)}</span>
+                              {lead.selectedService && <span className="rounded-[6px] border border-[#5fe3a1]/20 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[#5fe3a1]">{lead.selectedService}</span>}
+                            </div>
                           </div>
                           <div className="hidden text-right sm:block">
-                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{lead.category.replace(/_/g, " ")}</p>
-                            {lead.selectedService && <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">{lead.selectedService}</p>}
+                            <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{getStageLabel(lead.crmStatus)}</p>
+                            <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-[#e8fb52]">{getPriorityLabel(lead.crmPriority)}</p>
                           </div>
                         </button>
                       );
