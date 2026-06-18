@@ -33,6 +33,20 @@ const renderTemplate = (template: string, values: Record<string, string>) =>
 
 const getFirstName = (name = "") => name.trim().split(/\s+/)[0] || "";
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const renderHtml = (text: string) =>
+  `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111827;">${escapeHtml(text)
+    .split(/\n{2,}/)
+    .map(paragraph => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
+    .join("")}</div>`;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -91,6 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
         email: recipient.recipient_email,
       };
       const text = renderTemplate(campaign.body, values);
+      const subject = renderTemplate(campaign.subject, values);
 
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -102,8 +117,9 @@ const handler = async (req: Request): Promise<Response> => {
           from: `${campaign.from_name || "GlobaLeads22"} <${defaultFromEmail}>`,
           to: [recipient.recipient_email],
           reply_to: campaign.reply_to || caller.user.email,
-          subject: renderTemplate(campaign.subject, values),
+          subject,
           text,
+          html: renderHtml(text),
         }),
       });
 
@@ -117,9 +133,10 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("user_id", userId);
       } else {
         failed += 1;
+        const providerError = result.message || result.error || result.name || `Resend error ${response.status}`;
         await supabase
           .from("email_campaign_recipients")
-          .update({ status: "failed", error_message: result.message || `Resend error ${response.status}` })
+          .update({ status: "failed", error_message: providerError })
           .eq("id", recipient.id)
           .eq("user_id", userId);
       }

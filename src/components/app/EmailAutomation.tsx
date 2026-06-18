@@ -13,6 +13,7 @@ interface EmailAutomationProps {
 
 type SavedLeadRow = Tables<"saved_leads">;
 type CampaignRow = Tables<"email_campaigns">;
+type RecipientRow = Tables<"email_campaign_recipients">;
 
 interface LeadContact {
   email?: string;
@@ -31,6 +32,12 @@ interface EmailLead {
   email: string;
   personName: string;
   score: number | null;
+}
+
+interface CampaignSummary extends CampaignRow {
+  queuedCount: number;
+  sentCount: number;
+  failedCount: number;
 }
 
 const demoLeads: EmailLead[] = [
@@ -75,11 +82,12 @@ const getEmailLead = (lead: SavedLeadRow): EmailLead | null => {
 
 const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomationProps) => {
   const [leads, setLeads] = useState<EmailLead[]>(demoMode ? demoLeads : []);
-  const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(demoMode ? demoLeads.map(lead => lead.id) : []));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendingCampaignId, setSendingCampaignId] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState("");
   const [name, setName] = useState("Opportunity intro");
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
@@ -88,18 +96,36 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
   const selectedLeads = useMemo(() => leads.filter(lead => selectedIds.has(lead.id)), [leads, selectedIds]);
   const sortedCampaigns = useMemo(() => [...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), [campaigns]);
 
+  useEffect(() => {
+    if (userEmail && !replyTo) setReplyTo(userEmail);
+  }, [replyTo, userEmail]);
+
+  const summarizeCampaigns = (rows: CampaignRow[], recipients: RecipientRow[]): CampaignSummary[] => {
+    const counts = new Map<string, Pick<CampaignSummary, "queuedCount" | "sentCount" | "failedCount">>();
+    recipients.forEach(recipient => {
+      const current = counts.get(recipient.campaign_id) || { queuedCount: 0, sentCount: 0, failedCount: 0 };
+      if (["queued", "sending"].includes(recipient.status)) current.queuedCount += 1;
+      if (recipient.status === "sent") current.sentCount += 1;
+      if (recipient.status === "failed") current.failedCount += 1;
+      counts.set(recipient.campaign_id, current);
+    });
+    return rows.map(row => ({ ...row, ...(counts.get(row.id) || { queuedCount: 0, sentCount: 0, failedCount: 0 }) }));
+  };
+
   const loadData = async () => {
     if (demoMode || !userId) return;
     setLoading(true);
     try {
-      const [{ data: leadRows, error: leadError }, { data: campaignRows, error: campaignError }] = await Promise.all([
+      const [{ data: leadRows, error: leadError }, { data: campaignRows, error: campaignError }, { data: recipientRows, error: recipientError }] = await Promise.all([
         supabase.from("saved_leads").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
         supabase.from("email_campaigns").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("email_campaign_recipients").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1000),
       ]);
       if (leadError) throw leadError;
       if (campaignError) throw campaignError;
+      if (recipientError) throw recipientError;
       setLeads((leadRows || []).map(getEmailLead).filter((lead): lead is EmailLead => Boolean(lead)));
-      setCampaigns(campaignRows || []);
+      setCampaigns(summarizeCampaigns(campaignRows || [], recipientRows || []));
     } catch (error) {
       console.error("Error loading email automation data:", error);
       toast({ title: "Could not load email automation", description: "Try refreshing the workspace.", variant: "destructive" });
@@ -162,7 +188,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
       const { error: recipientError } = await supabase.from("email_campaign_recipients").insert(recipients);
       if (recipientError) throw recipientError;
 
-      setCampaigns(current => [campaign, ...current]);
+      setCampaigns(current => [{ ...campaign, queuedCount: recipients.length, sentCount: 0, failedCount: 0 }, ...current]);
       toast({ title: "Campaign saved", description: `${selectedLeads.length} recipient(s) queued.` });
       return campaign;
     } catch (error) {
@@ -174,6 +200,19 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     }
   };
 
+  const getFunctionErrorMessage = async (error: unknown) => {
+    const response = typeof error === "object" && error && "context" in error ? (error as { context?: Response }).context : null;
+    if (response) {
+      try {
+        const payload = await response.json();
+        if (payload?.error) return String(payload.error);
+      } catch {
+        // Fall through to the regular error message.
+      }
+    }
+    return error instanceof Error ? error.message : "Could not send campaign.";
+  };
+
   const sendCampaign = async (campaign: CampaignRow) => {
     if (!userId || demoMode) {
       toast({ title: "Demo mode", description: "Email sending is disabled in demo." });
@@ -181,6 +220,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
     }
 
     setSendingCampaignId(campaign.id);
+    setSetupError("");
     try {
       const { data, error } = await supabase.functions.invoke("send-email-campaign", {
         body: { campaignId: campaign.id, userId },
@@ -192,7 +232,11 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
       await loadData();
     } catch (error) {
       console.error("Error sending campaign:", error);
-      toast({ title: "Send failed", description: error instanceof Error ? error.message : "Could not send campaign.", variant: "destructive" });
+      const message = await getFunctionErrorMessage(error);
+      if (message.includes("RESEND_API_KEY")) {
+        setSetupError("Email delivery is not connected yet. Add RESEND_API_KEY in Supabase secrets, then send again.");
+      }
+      toast({ title: "Send failed", description: message, variant: "destructive" });
     } finally {
       setSendingCampaignId(null);
     }
@@ -314,6 +358,12 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
                   <p className="mt-2 text-xs leading-5 text-[#9aa3b2]">{"{{firstName}} · {{name}} · {{company}} · {{email}}"}</p>
                 </div>
 
+                {setupError && (
+                  <div className="rounded-[10px] border border-[#ffb23e]/30 bg-[#ffb23e]/10 p-3 text-xs leading-5 text-[#ffd39a]">
+                    {setupError}
+                  </div>
+                )}
+
                 <div className="grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => void saveCampaign("draft")} disabled={saving || selectedLeads.length === 0} className="inline-flex h-11 items-center justify-center gap-2 rounded-[9px] border border-[#f3f5f8]/15 font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2] hover:border-[#e8fb52]/50 hover:text-[#f3f5f8] disabled:opacity-40">
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
@@ -340,7 +390,12 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false }: EmailAutomatio
                         </div>
                         <span className="rounded-[6px] border border-[#f3f5f8]/10 px-2 py-1 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">{campaign.status}</span>
                       </div>
-                      {["draft", "failed"].includes(campaign.status) && (
+                      <div className="mt-3 flex flex-wrap gap-2 font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">
+                        <span className="rounded-[6px] border border-[#f3f5f8]/10 px-2 py-1">{campaign.queuedCount} queued</span>
+                        <span className="rounded-[6px] border border-[#5fe3a1]/20 px-2 py-1 text-[#5fe3a1]">{campaign.sentCount} sent</span>
+                        <span className="rounded-[6px] border border-[#ff5c49]/20 px-2 py-1 text-[#ff7a68]">{campaign.failedCount} failed</span>
+                      </div>
+                      {["draft", "failed"].includes(campaign.status) && campaign.queuedCount + campaign.failedCount > 0 && (
                         <button type="button" onClick={() => void sendCampaign(campaign)} disabled={sendingCampaignId === campaign.id} className="mt-3 inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#e8fb52]/40 px-3 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52] hover:bg-[#e8fb52]/10">
                           {sendingCampaignId === campaign.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                           Send
