@@ -407,17 +407,17 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 {step === 0 && (
                   <div>
                     <h1 className="max-w-4xl font-display text-[58px] font-bold leading-[0.92] tracking-[-0.045em] text-[#f3f5f8] sm:text-[88px] lg:text-[112px]">
-                      Set your lead engine.
+                      Let’s set up your searches.
                     </h1>
                     <p className="mt-8 max-w-2xl text-xl leading-8 text-[#e8fb52]">
-                      Simple inputs. Sharper leads. Emails that know what you sell.
+                      Tell us what you sell, who you want to reach, and how emails should sound.
                     </p>
                   </div>
                 )}
 
                 {step === 1 && (
                   <div>
-                    <QuestionTitle eyebrow="Start">Choose a starting point.</QuestionTitle>
+                    <QuestionTitle eyebrow="Start">What kind of prospects do you want first?</QuestionTitle>
                     <div className="mt-10 grid gap-3">
                       {SETUP_PRESETS.map(preset => {
                         const Icon = preset.icon;
@@ -453,7 +453,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 {step === 2 && (
                   <SingleInput
                     eyebrow="Identity"
-                    question="Who is sending the outreach?"
+                    question="What name should emails come from?"
                     value={fullName}
                     onChange={setFullName}
                     placeholder="Your name"
@@ -463,7 +463,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 3 && (
                   <div>
-                    <QuestionTitle eyebrow="Company">What company should prospects see?</QuestionTitle>
+                    <QuestionTitle eyebrow="Company">What company are you selling from?</QuestionTitle>
                     <div className="mt-9 grid max-w-3xl gap-4">
                       <TechInput label="Company name" value={companyName} onChange={setCompanyName} placeholder="Your company" autoFocus />
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -477,7 +477,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 4 && (
                   <div>
-                    <QuestionTitle eyebrow="Offer">What are you selling right now?</QuestionTitle>
+                    <QuestionTitle eyebrow="Offer">What service are you selling?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {SERVICE_TYPES.map(service => (
                         <OptionButton
@@ -510,7 +510,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 5 && (
                   <div>
-                    <QuestionTitle eyebrow="Audience">Who should we find for you?</QuestionTitle>
+                    <QuestionTitle eyebrow="Audience">Who do you want as customers?</QuestionTitle>
                     <div className="mt-9 max-w-4xl">
                       <TechInput
                         value={targetCustomer}
@@ -544,7 +544,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   <div>
                     <SingleInput
                       eyebrow="Market"
-                      question="Where should we search first?"
+                      question="Where should we look for them?"
                       value={location}
                       onChange={setLocation}
                       placeholder="United States, Miami, Mexico..."
@@ -570,7 +570,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 7 && (
                   <div>
-                    <QuestionTitle eyebrow="Promise">What outcome do you create?</QuestionTitle>
+                    <QuestionTitle eyebrow="Result">What problem do you solve for them?</QuestionTitle>
                     <textarea
                       autoFocus
                       value={valueProp}
@@ -587,7 +587,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 8 && (
                   <div>
-                    <QuestionTitle eyebrow="Ask">What should the first email ask for?</QuestionTitle>
+                    <QuestionTitle eyebrow="Email">What should the email ask them to do?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2">
                       {CTA_OPTIONS.map(option => (
                         <OptionButton
@@ -618,7 +618,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 9 && (
                   <div>
-                    <QuestionTitle eyebrow="Deal fit">Which deals are worth your time?</QuestionTitle>
+                    <QuestionTitle eyebrow="Deal size">What size of client do you want?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-3">
                       {PRICING_TIERS.map(tier => (
                         <OptionButton
@@ -661,7 +661,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 10 && (
                   <div>
-                    <QuestionTitle eyebrow="Ready">Ready to search.</QuestionTitle>
+                    <QuestionTitle eyebrow="Ready">You’re ready to find leads.</QuestionTitle>
                     <p className="mt-6 max-w-3xl text-xl leading-8 text-[#e8fb52]">
                       We’ll use this quietly in the background to rank leads and write better outreach.
                     </p>
