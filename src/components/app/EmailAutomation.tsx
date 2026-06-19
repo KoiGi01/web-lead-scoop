@@ -95,6 +95,7 @@ const fontOptions = [
 ];
 
 type ComposerField = "subject" | "body" | "signature";
+type EmailIntent = "discovery" | "follow_up" | "audit_offer" | "re_engage" | "breakup";
 
 const outreachCtaOptions: Array<{ value: OutreachCtaType; label: string }> = [
   { value: "reply", label: "Get a reply" },
@@ -107,6 +108,14 @@ const outreachToneOptions: Array<{ value: OutreachTone; label: string }> = [
   { value: "direct", label: "Direct" },
   { value: "warm", label: "Warm" },
   { value: "premium", label: "Premium" },
+];
+
+const emailIntentOptions: Array<{ value: EmailIntent; label: string; description: string }> = [
+  { value: "discovery", label: "Discovery", description: "First-touch email that opens a useful conversation." },
+  { value: "follow_up", label: "Follow-up", description: "Polite continuation after a prior touch or saved pipeline note." },
+  { value: "audit_offer", label: "Quick audit", description: "Offer to send a few specific gaps or opportunities." },
+  { value: "re_engage", label: "Re-engage", description: "Restart a quiet conversation without sounding pushy." },
+  { value: "breakup", label: "Last check", description: "Short final nudge that makes it easy to say no." },
 ];
 
 const asArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
@@ -233,6 +242,7 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onP
   const [body, setBody] = useState(defaultBody);
   const [replyTo, setReplyTo] = useState(userEmail || "");
   const [signature, setSignature] = useState(defaultSignature);
+  const [emailIntent, setEmailIntent] = useState<EmailIntent>("discovery");
   const [imageUrl, setImageUrl] = useState("");
   const [fontFamily, setFontFamily] = useState(fontOptions[0].value);
   const [activeField, setActiveField] = useState<ComposerField>("body");
@@ -526,6 +536,9 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onP
           subject,
           body,
           signature,
+          emailIntent,
+          emailIntentLabel: emailIntentOptions.find(option => option.value === emailIntent)?.label || "Discovery",
+          emailIntentGuidance: emailIntentOptions.find(option => option.value === emailIntent)?.description || "",
           leads: selectedLeads.slice(0, 12).map(lead => ({
             name: lead.name,
             category: lead.category,
@@ -789,6 +802,28 @@ const EmailAutomation = ({ userId, userEmail, demoMode = false, userProfile, onP
               </div>
 
               <div className="space-y-4 p-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Email type</span>
+                    <span className="text-xs text-[#5d6675]">Guides AI draft</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {emailIntentOptions.map(option => {
+                      const selected = emailIntent === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setEmailIntent(option.value)}
+                          className={`rounded-[9px] border p-2.5 text-left transition-colors ${selected ? "border-[#e8fb52]/70 bg-[#e8fb52]/10" : "border-[#f3f5f8]/10 bg-black/35 hover:border-[#f3f5f8]/25"}`}
+                        >
+                          <span className={`block font-display text-sm font-bold ${selected ? "text-[#e8fb52]" : "text-[#f3f5f8]"}`}>{option.label}</span>
+                          <span className="mt-1 block text-xs leading-4 text-[#9aa3b2]">{option.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 {showOutreachSetup && (
                   <div className="rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.06] p-3">
                     <div className="flex items-start justify-between gap-3">

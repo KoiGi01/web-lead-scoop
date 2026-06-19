@@ -33,6 +33,9 @@ interface DraftRequest {
   subject?: string;
   body?: string;
   signature?: string;
+  emailIntent?: "discovery" | "follow_up" | "audit_offer" | "re_engage" | "breakup";
+  emailIntentLabel?: string;
+  emailIntentGuidance?: string;
   leads?: DraftLead[];
   groupLabel?: string;
   groupType?: string;
@@ -90,10 +93,19 @@ const normalizeOutreachProfile = (value: unknown): OutreachProfile => {
   };
 };
 
+const intentInstructions = {
+  discovery: "Write a first-touch discovery email. Open with a useful observation, introduce the relevant problem lightly, and ask for a low-friction reply.",
+  follow_up: "Write a follow-up email. Assume there may have been a previous touch, avoid repeating a full pitch, and make the next step feel easy.",
+  audit_offer: "Write an audit-offer email. Offer to send 2-3 specific gaps or opportunities, but do not claim the audit is already complete unless provided.",
+  re_engage: "Write a re-engagement email. Keep it brief, acknowledge timing may not be right, and offer one useful next step.",
+  breakup: "Write a last-check email. Make it short, polite, and easy for the recipient to say no or point you to the right person.",
+} as const;
+
 const fallbackDraft = (request: DraftRequest, profile?: UserProfile | null) => {
   const service = request.service || request.leads?.[0]?.selectedService || "your service";
   const audience = request.groupLabel ? ` for ${request.groupLabel}` : "";
   const outreach = normalizeOutreachProfile(profile?.outreach_profile);
+  const intent = request.emailIntent || "discovery";
   const outcome = outreach.valueProp || `improve ${service.toLowerCase()}${audience} with clearer positioning and better conversion paths`;
   const cta = outreach.ctaType === "book_call" && outreach.ctaDetail
     ? `Worth a quick call? ${outreach.ctaDetail}`
@@ -101,9 +113,13 @@ const fallbackDraft = (request: DraftRequest, profile?: UserProfile | null) => {
       ? "Want me to send the quick gaps I noticed?"
       : outreach.ctaType === "custom" && outreach.ctaDetail
         ? outreach.ctaDetail
-        : "Worth a quick look?";
+        : intent === "breakup"
+          ? "Should I close the loop?"
+          : intent === "follow_up" || intent === "re_engage"
+            ? "Still worth a quick look?"
+            : "Worth a quick look?";
   return {
-    subject: "Quick idea for {{company}}",
+    subject: intent === "breakup" ? "Should I close the loop?" : "Quick idea for {{company}}",
     body: `Hi {{firstName}},
 
 I came across {{company}} and noticed a few public signals that may be worth improving.
@@ -212,6 +228,9 @@ ${JSON.stringify({
     tone: outreachProfile.tone || "direct",
   },
 }, null, 2)}
+
+Email type: ${request.emailIntentLabel || request.emailIntent || "Discovery"}
+Email type guidance: ${request.emailIntentGuidance || intentInstructions[request.emailIntent || "discovery"]}
 
 Campaign name: ${request.campaignName || ""}
 Service being offered: ${request.service || leads[0]?.service || ""}
