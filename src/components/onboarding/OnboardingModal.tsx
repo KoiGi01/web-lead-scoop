@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   Building2,
@@ -11,7 +12,6 @@ import {
   Search,
   Sparkles,
   Target,
-  TerminalSquare,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -215,8 +215,6 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     valueProp,
   ]);
 
-  const previewJson = useMemo(() => JSON.stringify(setupProfile, null, 2), [setupProfile]);
-
   const applyPreset = (preset: SetupPreset) => {
     setSelectedPreset(preset.id);
     setServiceType(preset.serviceType);
@@ -333,28 +331,44 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-[#08090c] text-[#f3f5f8]">
-      <div
-        className="absolute inset-0 opacity-[0.18]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(243,245,248,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(243,245,248,.08) 1px, transparent 1px)",
-          backgroundSize: "42px 42px",
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{ backgroundImage: "radial-gradient(1000px 560px at 85% 12%, rgba(232,251,82,.08), transparent 55%)" }}
-      />
+      <style>{`
+        @keyframes glStepIn {
+          from { opacity: 0; transform: translateY(26px) scale(.985); filter: blur(10px); }
+          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @keyframes glWave {
+          0% { transform: translate3d(-34px, 0, 0); opacity: .18; }
+          50% { transform: translate3d(12px, -16px, 0); opacity: .42; }
+          100% { transform: translate3d(42px, 8px, 0); opacity: .22; }
+        }
+        @keyframes glPulseLine {
+          0%, 100% { transform: scaleX(.18); opacity: .45; }
+          50% { transform: scaleX(1); opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .gl-step, .gl-wave, .gl-pulse-line { animation: none !important; }
+        }
+        .gl-step { animation: glStepIn .54s cubic-bezier(.16, 1, .3, 1) both; }
+        .gl-wave { animation: glWave 7s ease-in-out infinite alternate; transform-origin: center; }
+        .gl-wave:nth-child(2) { animation-duration: 9s; animation-delay: -2s; }
+        .gl-wave:nth-child(3) { animation-duration: 11s; animation-delay: -4s; }
+        .gl-pulse-line { animation: glPulseLine 1.2s ease-in-out both; transform-origin: left center; }
+      `}</style>
+
+      <svg className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] w-full text-[#e8fb52]" viewBox="0 0 1440 420" preserveAspectRatio="none" aria-hidden="true">
+        <path className="gl-wave" d="M-80 280 C 180 120, 360 380, 650 220 S 1090 110, 1520 260" fill="none" stroke="currentColor" strokeWidth="2" opacity=".32" />
+        <path className="gl-wave" d="M-80 340 C 220 190, 420 410, 710 280 S 1110 180, 1520 330" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".22" />
+        <path className="gl-wave" d="M-80 210 C 240 70, 430 300, 760 160 S 1120 80, 1520 190" fill="none" stroke="currentColor" strokeWidth=".9" opacity=".16" />
+      </svg>
 
       <div className="relative flex h-screen flex-col">
-        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#f3f5f8]/[0.07] px-5 sm:px-7">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="" aria-hidden="true" className="h-8 w-8 rounded-[8px] object-contain" />
+            <img src="/logo.png" alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
             <div>
               <p className="font-display text-[16px] font-bold tracking-[-0.02em]">
                 GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
               </p>
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Workspace calibration</p>
             </div>
           </div>
           <button
@@ -367,28 +381,28 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
           </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <main className="flex min-h-0 flex-col px-5 py-5 sm:px-8 lg:px-12">
+        <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 py-5 sm:px-8 lg:px-12">
             <div className="flex items-center justify-between gap-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">
+              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
                 {stepLabels[step]} <span className="text-[#e8fb52]">{progress}%</span>
               </div>
-              <div className="h-px flex-1 bg-[#f3f5f8]/[0.07]" />
-              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">
+              <div className="h-px flex-1 bg-[#e8fb52]/20">
+                <div key={step} className="gl-pulse-line h-px bg-[#e8fb52]" style={{ width: `${Math.max(8, progress)}%` }} />
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
                 {String(step + 1).padStart(2, "0")} / {stepLabels.length}
               </div>
             </div>
 
-            <div className="mt-16 flex min-h-0 flex-1 items-center">
-              <QuestionFrame step={step} selectedPreset={selectedPreset}>
+            <div className="flex min-h-0 flex-1 items-center py-10 sm:py-14">
+              <QuestionFrame key={step}>
                 {step === 0 && (
                   <div>
-                    <Kicker icon={TerminalSquare}>First run</Kicker>
-                    <h1 className="max-w-4xl font-display text-[54px] font-bold leading-[0.95] tracking-[-0.04em] text-[#f3f5f8] sm:text-[76px] lg:text-[92px]">
-                      Calibrate the machine before it searches.
+                    <h1 className="max-w-4xl font-display text-[58px] font-bold leading-[0.92] tracking-[-0.045em] text-[#f3f5f8] sm:text-[88px] lg:text-[112px]">
+                      Let’s tune your workspace.
                     </h1>
-                    <p className="mt-7 max-w-2xl text-lg leading-8 text-[#98a0af]">
-                      One answer at a time. We use this to rank leads, draft outreach, and store your setup as JSON.
+                    <p className="mt-8 max-w-2xl text-xl leading-8 text-[#e8fb52]">
+                      A few simple answers. Better searches. Better emails.
                     </p>
                   </div>
                 )}
@@ -396,7 +410,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 {step === 1 && (
                   <div>
                     <QuestionTitle eyebrow="Mode">What kind of engine are we tuning?</QuestionTitle>
-                    <div className="mt-9 grid gap-3">
+                    <div className="mt-10 grid gap-3">
                       {SETUP_PRESETS.map(preset => {
                         const Icon = preset.icon;
                         const selected = selectedPreset === preset.id;
@@ -405,20 +419,20 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                             key={preset.id}
                             type="button"
                             onClick={() => applyPreset(preset)}
-                            className={`group grid gap-4 border p-5 text-left transition-all sm:grid-cols-[42px_minmax(0,1fr)_auto] ${
+                            className={`group grid gap-4 border p-5 text-left transition-all hover:-translate-y-1 sm:grid-cols-[42px_minmax(0,1fr)_auto] ${
                               selected
-                                ? "border-[#e8fb52] bg-[#e8fb52]/[0.06] text-[#f3f5f8]"
-                                : "border-[#f3f5f8]/[0.08] bg-[#0f1115] text-[#98a0af] hover:border-[#f3f5f8]/20 hover:text-[#f3f5f8]"
+                                ? "border-[#e8fb52] bg-[#e8fb52] text-[#08090c]"
+                                : "border-[#e8fb52]/20 bg-[#08090c] text-[#f3f5f8] hover:border-[#e8fb52]"
                             }`}
                           >
-                            <span className={`grid h-10 w-10 place-items-center rounded-[10px] ${selected ? "bg-[#e8fb52] text-[#08090c]" : "bg-[#14171d] text-[#e8fb52]"}`}>
+                            <span className={`grid h-10 w-10 place-items-center ${selected ? "bg-[#08090c] text-[#e8fb52]" : "bg-[#e8fb52] text-[#08090c]"}`}>
                               <Icon className="h-4 w-4" />
                             </span>
                             <span>
-                              <span className="block font-display text-2xl font-bold tracking-[-0.03em] text-[#f3f5f8]">{preset.label}</span>
-                              <span className="mt-1 block max-w-2xl text-sm leading-6">{preset.description}</span>
+                              <span className={`block font-display text-2xl font-bold tracking-[-0.03em] ${selected ? "text-[#08090c]" : "text-[#f3f5f8]"}`}>{preset.label}</span>
+                              <span className="mt-1 block max-w-2xl text-sm leading-6 opacity-70">{preset.description}</span>
                             </span>
-                            <span className="self-center font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">
+                            <span className="self-center font-mono text-[10px] uppercase tracking-[0.16em] opacity-70">
                               {selected ? "Selected" : "Apply"}
                             </span>
                           </button>
@@ -441,7 +455,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 3 && (
                   <div>
-                    <QuestionTitle eyebrow="Company">What are you building from?</QuestionTitle>
+                    <QuestionTitle eyebrow="Company">What company is this for?</QuestionTitle>
                     <div className="mt-9 grid max-w-3xl gap-4">
                       <TechInput label="Company name" value={companyName} onChange={setCompanyName} placeholder="Your company" autoFocus />
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -628,9 +642,9 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 10 && (
                   <div>
-                    <QuestionTitle eyebrow="Commit">This is the profile we save.</QuestionTitle>
-                    <p className="mt-5 max-w-3xl text-lg leading-8 text-[#98a0af]">
-                      The JSON snapshot becomes your setup source of truth. Existing profile columns stay synced so the app keeps working everywhere else.
+                    <QuestionTitle eyebrow="Ready">Everything is set.</QuestionTitle>
+                    <p className="mt-6 max-w-3xl text-xl leading-8 text-[#e8fb52]">
+                      We’ll use this quietly in the background to rank leads and write better outreach.
                     </p>
                     <div className="mt-8 grid max-w-4xl gap-3 sm:grid-cols-3">
                       <Signal label="Preset" value={selectedPreset || "custom"} />
@@ -648,13 +662,13 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
               </div>
             )}
 
-            <footer className="mt-6 flex flex-shrink-0 items-center justify-between border-t border-[#f3f5f8]/[0.07] pt-5">
+            <footer className="flex flex-shrink-0 items-center justify-between pb-2">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleBack}
                 disabled={step === 0 || saving}
-                className="border-[#f3f5f8]/10 bg-[#0f1115] text-[#98a0af] hover:border-[#f3f5f8]/25 hover:bg-[#14171d] hover:text-[#f3f5f8]"
+                className="border-[#e8fb52]/20 bg-[#08090c] text-[#e8fb52] hover:border-[#e8fb52] hover:bg-[#08090c]"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back
@@ -665,7 +679,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 variant="accent"
                 onClick={handleNext}
                 disabled={saving}
-                className="min-w-44 bg-[#e8fb52] text-[#08090c] hover:bg-white"
+                className="min-w-44 bg-[#e8fb52] text-[#08090c] hover:bg-[#f3ff8a]"
               >
                 {saving ? (
                   <>
@@ -686,17 +700,6 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
               </Button>
             </footer>
           </main>
-
-          <aside className="hidden min-h-0 border-l border-[#f3f5f8]/[0.07] bg-[#0b0d11] lg:flex lg:flex-col">
-            <div className="border-b border-[#f3f5f8]/[0.07] p-5">
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">setup_profile.json</p>
-              <p className="mt-2 text-sm leading-6 text-[#98a0af]">Live config. No decoration. This is what gets stored.</p>
-            </div>
-            <pre className="min-h-0 flex-1 overflow-auto p-5 font-mono text-[11px] leading-5 text-[#98a0af]">
-              {previewJson}
-            </pre>
-          </aside>
-        </div>
       </div>
     </div>
   );
@@ -704,30 +707,12 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
 const QuestionFrame = ({
   children,
-  step,
-  selectedPreset,
 }: {
-  children: React.ReactNode;
-  step: Step;
-  selectedPreset: string;
+  children: ReactNode;
 }) => (
-  <section className="w-full">
-    <div className="mb-8 flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">
-      <span className="text-[#e8fb52]">GL22</span>
-      <span>/</span>
-      <span>{stepLabels[step]}</span>
-      <span>/</span>
-      <span>{selectedPreset || "manual"}</span>
-    </div>
+  <section className="gl-step w-full">
     {children}
   </section>
-);
-
-const Kicker = ({ children, icon: Icon }: { children: string; icon: LucideIcon }) => (
-  <div className="mb-6 inline-flex items-center gap-2 border border-[#e8fb52]/30 bg-[#e8fb52]/[0.06] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
-    <Icon className="h-3.5 w-3.5" />
-    {children}
-  </div>
 );
 
 const QuestionTitle = ({ children, eyebrow }: { children: string; eyebrow: string }) => (
