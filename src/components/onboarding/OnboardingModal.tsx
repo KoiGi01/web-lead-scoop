@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ArrowRight,
-  Building2,
   Check,
   ChevronLeft,
   Globe2,
@@ -11,7 +10,6 @@ import {
   MapPin,
   Search,
   Sparkles,
-  Target,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -27,117 +25,81 @@ interface OnboardingModalProps {
   userId: string;
 }
 
-type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+type Step = 1 | 2 | 3 | 4 | 5;
 
-interface SetupPreset {
-  id: string;
+interface HelperPreset {
   label: string;
-  description: string;
   serviceType: string;
+  targetCustomer: string;
   clientType: string;
-  pricingTier: string;
   valueProp: string;
   ctaType: OutreachCtaType;
   tone: OutreachTone;
-  icon: LucideIcon;
 }
 
-const SERVICE_TYPES = ["Marketing", "Web Design", "SEO", "Lead Generation", "Automation", "Consulting"];
+const SERVICE_TYPES = ["Web Design", "SEO", "Marketing", "Lead Generation", "Automation", "Consulting"];
 
-const SETUP_PRESETS: SetupPreset[] = [
+const HELPER_PRESETS: HelperPreset[] = [
   {
-    id: "local-growth",
-    label: "Local service growth",
-    description: "Dentists, roofers, med spas, clinics, and other local operators with visible gaps.",
+    label: "Websites for local businesses",
     serviceType: "Web Design",
+    targetCustomer: "Dentists, med spas, roofers, and local clinics",
     clientType: "local_businesses",
-    pricingTier: "mid_tier",
     valueProp: "We help local service businesses turn weak websites into booking-focused pages that generate more qualified inquiries.",
     ctaType: "send_audit",
     tone: "direct",
-    icon: MapPin,
   },
   {
-    id: "market-scan",
-    label: "Opportunity scan",
-    description: "Flexible prospecting across industries, scored around urgency and sales-readiness.",
-    serviceType: "Lead Generation",
-    clientType: "any",
-    pricingTier: "premium",
-    valueProp: "We help growing businesses identify missed revenue opportunities and turn them into practical outreach campaigns.",
-    ctaType: "book_call",
-    tone: "premium",
-    icon: Search,
+    label: "SEO for service companies",
+    serviceType: "SEO",
+    targetCustomer: "Local service businesses that need more visibility",
+    clientType: "local_businesses",
+    valueProp: "We help local service businesses improve their search visibility and turn more nearby buyers into inquiries.",
+    ctaType: "reply",
+    tone: "direct",
   },
   {
-    id: "commerce-audit",
-    label: "Commerce audit",
-    description: "Online stores with conversion, SEO, trust, or contact gaps worth a quick teardown.",
+    label: "Audits for online stores",
     serviceType: "Marketing",
+    targetCustomer: "Online stores with visible conversion gaps",
     clientType: "ecommerce",
-    pricingTier: "mid_tier",
     valueProp: "We help ecommerce teams find the simple website and funnel gaps that keep shoppers from becoming customers.",
     ctaType: "send_audit",
     tone: "warm",
-    icon: Globe2,
   },
 ];
 
 const CLIENT_TYPES = [
-  { value: "local_businesses", label: "Local businesses", detail: "Clinics, contractors, restaurants, studios.", icon: Building2 },
-  { value: "ecommerce", label: "Online stores", detail: "Shops, DTC brands, marketplace sellers.", icon: Globe2 },
-  { value: "agencies", label: "Agencies", detail: "Partners, fulfillment teams, white-label buyers.", icon: Target },
-  { value: "any", label: "Best signal wins", detail: "Keep the search flexible.", icon: Sparkles },
-];
-
-const PRICING_TIERS = [
-  { value: "budget", label: "Starter", detail: "Smaller jobs, fast wins." },
-  { value: "mid_tier", label: "Growth", detail: "Projects with room for strategy." },
-  { value: "premium", label: "Premium", detail: "Higher-trust, higher-value deals." },
+  { value: "local_businesses", label: "Local businesses" },
+  { value: "ecommerce", label: "Online stores" },
+  { value: "agencies", label: "Agencies" },
+  { value: "any", label: "Any good fit" },
 ];
 
 const CTA_OPTIONS: Array<{ value: OutreachCtaType; label: string; detail: string }> = [
-  { value: "reply", label: "Ask for a reply", detail: "Soft interest check." },
-  { value: "book_call", label: "Book a call", detail: "Use a scheduling link." },
-  { value: "send_audit", label: "Offer an audit", detail: "Lead with useful observations." },
-  { value: "custom", label: "Custom ask", detail: "Write your own next step." },
+  { value: "reply", label: "Reply if interested", detail: "Low-friction interest check." },
+  { value: "book_call", label: "Book a call", detail: "Send qualified leads to a link." },
+  { value: "send_audit", label: "Receive a quick audit", detail: "Offer useful observations first." },
+  { value: "custom", label: "Custom ask", detail: "Use your own next step." },
 ];
 
-const TONE_OPTIONS: Array<{ value: OutreachTone; label: string; detail: string }> = [
-  { value: "direct", label: "Direct", detail: "Plain, sharp, no fluff." },
-  { value: "warm", label: "Warm", detail: "A little more human." },
-  { value: "premium", label: "Premium", detail: "Selective and polished." },
+const TONE_OPTIONS: Array<{ value: OutreachTone; label: string }> = [
+  { value: "direct", label: "Direct" },
+  { value: "warm", label: "Warm" },
+  { value: "premium", label: "Premium" },
 ];
 
-const stepLabels = [
-  "Start",
-  "Mode",
-  "Name",
-  "Company",
-  "Offer",
-  "Audience",
-  "Market",
-  "Outcome",
-  "Ask",
-  "Deal",
-  "Commit",
-] as const;
+const stepLabels = ["Offer", "Market", "Problem", "Email", "Sender"] as const;
 
 export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps) {
-  const [step, setStep] = useState<Step>(0);
+  const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPreset, setSelectedPreset] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [serviceOther, setServiceOther] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [roleTitle, setRoleTitle] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyWebsite, setCompanyWebsite] = useState("");
-  const [phone, setPhone] = useState("");
-  const [clientType, setClientType] = useState("");
   const [targetCustomer, setTargetCustomer] = useState("");
-  const [pricingTier, setPricingTier] = useState("");
+  const [clientType, setClientType] = useState("any");
   const [location, setLocation] = useState("");
   const [sellsOnline, setSellsOnline] = useState(true);
   const [valueProp, setValueProp] = useState("");
@@ -145,9 +107,13 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   const [ctaType, setCtaType] = useState<OutreachCtaType>("reply");
   const [ctaDetail, setCtaDetail] = useState("");
   const [tone, setTone] = useState<OutreachTone>("direct");
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [roleTitle, setRoleTitle] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
 
   const finalServiceType = serviceType === "Other" ? serviceOther.trim() : serviceType;
-  const progress = Math.round((step / 10) * 100);
+  const progress = Math.round((step / 5) * 100);
 
   useEffect(() => {
     if (!open) return;
@@ -173,22 +139,21 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     const outreachProfile = serializeOutreachProfile({ valueProp, proofPoint, ctaType, ctaDetail, tone });
 
     return {
-      version: 2,
+      version: 3,
       preset: selectedPreset || "custom",
       business: {
         fullName: fullName.trim(),
         roleTitle: roleTitle.trim(),
         companyName: companyName.trim(),
         companyWebsite: companyWebsite.trim(),
-        phone: phone.trim(),
       },
       offer: {
         serviceType: finalServiceType,
         serviceOther: serviceType === "Other" ? serviceOther.trim() : "",
-        pricingTier,
+        pricingTier: "mid_tier",
       },
       audience: {
-        clientType,
+        clientType: clientType || "any",
         targetCustomer: targetCustomer.trim(),
         location: location.trim(),
         sellsOnline,
@@ -205,8 +170,6 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     finalServiceType,
     fullName,
     location,
-    phone,
-    pricingTier,
     proofPoint,
     roleTitle,
     selectedPreset,
@@ -218,17 +181,14 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     valueProp,
   ]);
 
-  const applyPreset = (preset: SetupPreset) => {
-    setSelectedPreset(preset.id);
+  const applyPreset = (preset: HelperPreset) => {
+    setSelectedPreset(preset.label);
     setServiceType(preset.serviceType);
     setServiceOther("");
+    setTargetCustomer(preset.targetCustomer);
     setClientType(preset.clientType);
-    setTargetCustomer(preset.id === "local-growth" ? "Dentists, med spas, roofers, and local clinics" : preset.id === "commerce-audit" ? "Online stores with visible conversion gaps" : "Businesses with clear growth or website gaps");
-    setPricingTier(preset.pricingTier);
     setValueProp(preset.valueProp);
-    setProofPoint("");
     setCtaType(preset.ctaType);
-    setCtaDetail("");
     setTone(preset.tone);
     setError(null);
   };
@@ -238,15 +198,15 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
       setSaving(true);
       setError(null);
 
+      const skippedOutreach = serializeOutreachProfile({ valueProp: "", proofPoint: "", ctaType: "reply", ctaDetail: "", tone: "direct" });
       const skippedSetupProfile = {
-        version: 2,
+        version: 3,
         preset: "skipped",
         business: {
           fullName: fullName.trim(),
           roleTitle: roleTitle.trim(),
           companyName: companyName.trim(),
           companyWebsite: companyWebsite.trim(),
-          phone: phone.trim(),
         },
         offer: {
           serviceType: "Lead research",
@@ -259,7 +219,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
           location: location.trim(),
           sellsOnline,
         },
-        outreachProfile: serializeOutreachProfile({ valueProp: "", proofPoint: "", ctaType: "reply", ctaDetail: "", tone: "direct" }),
+        outreachProfile: skippedOutreach,
         skipped: true,
         completedAt: new Date().toISOString(),
       };
@@ -272,13 +232,13 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         role_title: roleTitle.trim() || null,
         company_name: companyName.trim() || null,
         company_website: companyWebsite.trim() || null,
-        phone: phone.trim() || null,
-        client_type: skip ? "any" : clientType,
-        pricing_tier: skip ? "mid_tier" : pricingTier,
+        phone: null,
+        client_type: skip ? "any" : clientType || "any",
+        pricing_tier: "mid_tier",
         location: location.trim() || null,
         sells_online: sellsOnline,
         outreach_profile: skip
-          ? serializeOutreachProfile({ valueProp: "", proofPoint: "", ctaType: "reply", ctaDetail: "", tone: "direct" })
+          ? skippedOutreach
           : serializeOutreachProfile({ valueProp, proofPoint, ctaType, ctaDetail, tone }),
         setup_profile: (skip ? skippedSetupProfile : setupProfile) as Json,
       };
@@ -303,23 +263,22 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   };
 
   const validateStep = () => {
-    const checks: Partial<Record<Step, [boolean, string]>> = {
-      2: [Boolean(fullName.trim()), "Add your name."],
-      3: [Boolean(companyName.trim()), "Add your company name."],
-      4: [Boolean(finalServiceType), "Choose what you sell."],
-      5: [Boolean(clientType) || Boolean(targetCustomer.trim()), "Choose who you want to find."],
-      7: [Boolean(valueProp.trim()), "Write the outcome you help clients create."],
-      9: [Boolean(pricingTier), "Choose the deal size worth prioritizing."],
+    const checks: Record<Step, [boolean, string]> = {
+      1: [Boolean(finalServiceType && targetCustomer.trim()), "Describe what you sell and who you want as customers."],
+      2: [Boolean(location.trim()), "Add the market or location you usually care about."],
+      3: [Boolean(valueProp.trim()), "Describe the problem you solve."],
+      4: [Boolean(ctaType), "Choose what the first email should ask for."],
+      5: [Boolean(fullName.trim() && companyName.trim()), "Add the sender name and company."],
     };
     const result = checks[step];
-    if (!result || result[0]) return true;
+    if (result[0]) return true;
     setError(result[1]);
     return false;
   };
 
   const handleNext = () => {
     if (!validateStep()) return;
-    if (step < 10) {
+    if (step < 5) {
       setStep((step + 1) as Step);
       setError(null);
       return;
@@ -328,7 +287,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   };
 
   const handleBack = () => {
-    setStep((current) => Math.max(0, current - 1) as Step);
+    setStep((current) => Math.max(1, current - 1) as Step);
     setError(null);
   };
 
@@ -373,11 +332,9 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         <header className="flex h-16 flex-shrink-0 items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="" aria-hidden="true" className="h-8 w-8 object-contain" />
-            <div>
-              <p className="font-display text-[16px] font-bold tracking-[-0.02em]">
-                GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
-              </p>
-            </div>
+            <p className="font-display text-[16px] font-bold tracking-[-0.02em]">
+              GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
+            </p>
           </div>
           <button
             type="button"
@@ -390,345 +347,257 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         </header>
 
         <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 py-5 sm:px-8 lg:px-12">
-            <div className="flex items-center justify-between gap-4">
-              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
-                {stepLabels[step]} <span className="text-[#e8fb52]">{progress}%</span>
-              </div>
-              <div className="h-px flex-1 bg-[#e8fb52]/20">
-                <div key={step} className="gl-pulse-line h-px bg-[#e8fb52]" style={{ width: `${Math.max(8, progress)}%` }} />
-              </div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
-                {String(step + 1).padStart(2, "0")} / {stepLabels.length}
-              </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
+              {stepLabels[step - 1]} <span>{progress}%</span>
             </div>
+            <div className="h-px flex-1 bg-[#e8fb52]/20">
+              <div key={step} className="gl-pulse-line h-px bg-[#e8fb52]" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">
+              {String(step).padStart(2, "0")} / 05
+            </div>
+          </div>
 
-            <div className="flex min-h-0 flex-1 items-center py-10 sm:py-14">
-              <QuestionFrame key={step}>
-                {step === 0 && (
-                  <div>
-                    <h1 className="max-w-4xl font-display text-[58px] font-bold leading-[0.92] tracking-[-0.045em] text-[#f3f5f8] sm:text-[88px] lg:text-[112px]">
-                      Let’s set up your searches.
-                    </h1>
-                    <p className="mt-8 max-w-2xl text-xl leading-8 text-[#e8fb52]">
-                      Tell us what you sell, who you want to reach, and how emails should sound.
-                    </p>
+          <div className="flex min-h-0 flex-1 items-center py-10 sm:py-14">
+            <QuestionFrame key={step}>
+              {step === 1 && (
+                <div>
+                  <QuestionTitle eyebrow="Offer">Describe what you sell and who your ideal customer is.</QuestionTitle>
+                  <div className="mt-8 flex max-w-4xl flex-wrap gap-2">
+                    {HELPER_PRESETS.map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => applyPreset(preset)}
+                        className={`border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${
+                          selectedPreset === preset.label
+                            ? "border-[#e8fb52] bg-[#e8fb52] text-[#08090c]"
+                            : "border-[#e8fb52]/20 text-[#e8fb52] hover:border-[#e8fb52]"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
                   </div>
-                )}
-
-                {step === 1 && (
-                  <div>
-                    <QuestionTitle eyebrow="Start">What kind of prospects do you want first?</QuestionTitle>
-                    <div className="mt-10 grid gap-3">
-                      {SETUP_PRESETS.map(preset => {
-                        const Icon = preset.icon;
-                        const selected = selectedPreset === preset.id;
-                        return (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            onClick={() => applyPreset(preset)}
-                            className={`group grid gap-4 border p-5 text-left transition-all hover:-translate-y-1 sm:grid-cols-[42px_minmax(0,1fr)_auto] ${
-                              selected
-                                ? "border-[#e8fb52] bg-[#e8fb52] text-[#08090c]"
-                                : "border-[#e8fb52]/20 bg-[#08090c] text-[#f3f5f8] hover:border-[#e8fb52]"
-                            }`}
-                          >
-                            <span className={`grid h-10 w-10 place-items-center ${selected ? "bg-[#08090c] text-[#e8fb52]" : "bg-[#e8fb52] text-[#08090c]"}`}>
-                              <Icon className="h-4 w-4" />
-                            </span>
-                            <span>
-                              <span className={`block font-display text-2xl font-bold tracking-[-0.03em] ${selected ? "text-[#08090c]" : "text-[#f3f5f8]"}`}>{preset.label}</span>
-                              <span className="mt-1 block max-w-2xl text-sm leading-6 opacity-70">{preset.description}</span>
-                            </span>
-                            <span className="self-center font-mono text-[10px] uppercase tracking-[0.16em] opacity-70">
-                              {selected ? "Selected" : "Apply"}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {step === 2 && (
-                  <SingleInput
-                    eyebrow="Identity"
-                    question="What name should emails come from?"
-                    value={fullName}
-                    onChange={setFullName}
-                    placeholder="Your name"
-                    icon={UserRound}
-                  />
-                )}
-
-                {step === 3 && (
-                  <div>
-                    <QuestionTitle eyebrow="Company">What company are you selling from?</QuestionTitle>
-                    <div className="mt-9 grid max-w-3xl gap-4">
-                      <TechInput label="Company name" value={companyName} onChange={setCompanyName} placeholder="Your company" autoFocus />
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <TechInput label="Your role" value={roleTitle} onChange={setRoleTitle} placeholder="Founder, Sales lead..." />
-                        <TechInput label="Website" value={companyWebsite} onChange={setCompanyWebsite} placeholder="https://example.com" />
-                      </div>
-                      <TechInput label="Phone" value={phone} onChange={setPhone} placeholder="Optional" />
-                    </div>
-                  </div>
-                )}
-
-                {step === 4 && (
-                  <div>
-                    <QuestionTitle eyebrow="Offer">What service are you selling?</QuestionTitle>
-                    <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {SERVICE_TYPES.map(service => (
+                  <div className="mt-8 grid max-w-4xl gap-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
+                    <div>
+                      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">What you sell</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {SERVICE_TYPES.map(service => (
+                          <OptionButton
+                            key={service}
+                            selected={serviceType === service}
+                            label={service}
+                            compact
+                            onClick={() => {
+                              setServiceType(service);
+                              setServiceOther("");
+                              setSelectedPreset("custom");
+                            }}
+                          />
+                        ))}
                         <OptionButton
-                          key={service}
-                          selected={serviceType === service}
-                          label={service}
+                          selected={serviceType === "Other"}
+                          label="Something else"
+                          compact
                           onClick={() => {
-                            setServiceType(service);
-                            setServiceOther("");
-                            setSelectedPreset(current => current && service !== SETUP_PRESETS.find(preset => preset.id === current)?.serviceType ? "custom" : current);
+                            setServiceType("Other");
+                            setSelectedPreset("custom");
                           }}
                         />
-                      ))}
-                      <OptionButton
-                        selected={serviceType === "Other"}
-                        label="Something else"
-                        onClick={() => {
-                          setServiceType("Other");
-                          setSelectedPreset("custom");
-                        }}
-                      />
-                    </div>
-                    {serviceType === "Other" && (
-                      <div className="mt-5 max-w-3xl">
-                        <TechInput value={serviceOther} onChange={setServiceOther} placeholder="Commercial cleaning, recruiting, software..." autoFocus />
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {step === 5 && (
-                  <div>
-                    <QuestionTitle eyebrow="Audience">Who do you want as customers?</QuestionTitle>
-                    <div className="mt-9 max-w-4xl">
+                      {serviceType === "Other" && (
+                        <TechInput value={serviceOther} onChange={setServiceOther} placeholder="Describe the service" autoFocus />
+                      )}
+                    </div>
+                    <div>
                       <TechInput
+                        label="Ideal customer"
                         value={targetCustomer}
                         onChange={(value) => {
                           setTargetCustomer(value);
                           setSelectedPreset("custom");
                         }}
-                        placeholder="Example: dentists, roofers, med spas, SaaS agencies..."
+                        placeholder="Dentists, roofers, med spas, SaaS agencies..."
                         autoFocus
                       />
-                    </div>
-                    <div className="mt-5 grid max-w-4xl gap-3 sm:grid-cols-2">
-                      {CLIENT_TYPES.map(option => (
-                        <OptionButton
-                          key={option.value}
-                          selected={clientType === option.value}
-                          label={option.label}
-                          detail={option.detail}
-                          icon={option.icon}
-                          onClick={() => {
-                            setClientType(option.value);
-                            setSelectedPreset("custom");
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {step === 6 && (
-                  <div>
-                    <SingleInput
-                      eyebrow="Market"
-                      question="Where should we look for them?"
-                      value={location}
-                      onChange={setLocation}
-                      placeholder="United States, Miami, Mexico..."
-                      icon={MapPin}
-                      optional
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setSellsOnline(current => !current)}
-                      className={`mt-7 inline-flex items-center gap-3 border px-5 py-3 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                        sellsOnline
-                          ? "border-[#e8fb52] bg-[#e8fb52]/[0.08] text-[#e8fb52]"
-                          : "border-[#f3f5f8]/[0.1] bg-[#0f1115] text-[#98a0af] hover:text-[#f3f5f8]"
-                      }`}
-                    >
-                      <span className={`grid h-4 w-4 place-items-center border ${sellsOnline ? "border-[#e8fb52]" : "border-[#5b6472]"}`}>
-                        {sellsOnline && <Check className="h-3 w-3" />}
-                      </span>
-                      I can sell outside this market
-                    </button>
-                  </div>
-                )}
-
-                {step === 7 && (
-                  <div>
-                    <QuestionTitle eyebrow="Result">What problem do you solve for them?</QuestionTitle>
-                    <textarea
-                      autoFocus
-                      value={valueProp}
-                      onChange={(event) => {
-                        setValueProp(event.target.value);
-                        setSelectedPreset("custom");
-                      }}
-                      placeholder="Example: We help local clinics turn weak websites into booking-focused pages that generate more qualified inquiries."
-                      className="mt-9 h-40 w-full max-w-4xl resize-none border border-[#f3f5f8]/[0.1] bg-[#0f1115] p-5 text-xl leading-8 text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5b6472] focus:border-[#e8fb52]"
-                    />
-                    <TechInput label="Proof we can mention" value={proofPoint} onChange={setProofPoint} placeholder="Optional: 30+ sites built, $1M managed, 12 clinics served..." />
-                  </div>
-                )}
-
-                {step === 8 && (
-                  <div>
-                    <QuestionTitle eyebrow="Email">What should the email ask them to do?</QuestionTitle>
-                    <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2">
-                      {CTA_OPTIONS.map(option => (
-                        <OptionButton
-                          key={option.value}
-                          selected={ctaType === option.value}
-                          label={option.label}
-                          detail={option.detail}
-                          icon={Mail}
-                          onClick={() => {
-                            setCtaType(option.value);
-                            setSelectedPreset("custom");
-                          }}
-                        />
-                      ))}
-                    </div>
-                    {(ctaType === "book_call" || ctaType === "custom") && (
-                      <div className="mt-5 max-w-4xl">
-                        <TechInput
-                          label={ctaType === "book_call" ? "Booking link" : "Custom ask"}
-                          value={ctaDetail}
-                          onChange={setCtaDetail}
-                          placeholder={ctaType === "book_call" ? "https://calendly.com/..." : "Ask if they want a 3-point homepage teardown"}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {step === 9 && (
-                  <div>
-                    <QuestionTitle eyebrow="Deal size">What size of client do you want?</QuestionTitle>
-                    <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-3">
-                      {PRICING_TIERS.map(tier => (
-                        <OptionButton
-                          key={tier.value}
-                          selected={pricingTier === tier.value}
-                          label={tier.label}
-                          detail={tier.detail}
-                          onClick={() => {
-                            setPricingTier(tier.value);
-                            setSelectedPreset("custom");
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-8">
-                      <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Writing tone</p>
-                      <div className="flex max-w-4xl flex-wrap gap-3">
-                        {TONE_OPTIONS.map(option => (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {CLIENT_TYPES.map(option => (
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() => {
-                              setTone(option.value);
-                              setSelectedPreset("custom");
-                            }}
-                            className={`border px-4 py-3 text-left transition-colors ${
-                              tone === option.value
-                                ? "border-[#e8fb52] bg-[#e8fb52]/[0.08]"
-                                : "border-[#f3f5f8]/[0.1] bg-[#0f1115] hover:border-[#f3f5f8]/25"
+                            onClick={() => setClientType(option.value)}
+                            className={`border px-3 py-2 text-xs font-semibold transition-colors ${
+                              clientType === option.value
+                                ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                                : "border-[#f3f5f8]/10 text-[#98a0af] hover:text-[#f3f5f8]"
                             }`}
                           >
-                            <span className="block text-sm font-bold text-[#f3f5f8]">{option.label}</span>
-                            <span className="mt-1 block text-xs text-[#98a0af]">{option.detail}</span>
+                            {option.label}
                           </button>
                         ))}
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {step === 10 && (
-                  <div>
-                    <QuestionTitle eyebrow="Ready">You’re ready to find leads.</QuestionTitle>
-                    <p className="mt-6 max-w-3xl text-xl leading-8 text-[#e8fb52]">
-                      We’ll use this quietly in the background to rank leads and write better outreach.
-                    </p>
-                    <div className="mt-8 grid max-w-4xl gap-3 sm:grid-cols-3">
-                      <Signal label="Preset" value={selectedPreset || "custom"} />
-                      <Signal label="Offer" value={finalServiceType || "unset"} />
-                      <Signal label="Audience" value={clientType || "unset"} />
-                    </div>
+              {step === 2 && (
+                <div>
+                  <SingleInput
+                    eyebrow="Market"
+                    question="Where do you usually want to find customers?"
+                    value={location}
+                    onChange={setLocation}
+                    placeholder="United States, Miami, Mexico..."
+                    icon={MapPin}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSellsOnline(current => !current)}
+                    className={`mt-7 inline-flex items-center gap-3 border px-5 py-3 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
+                      sellsOnline
+                        ? "border-[#e8fb52] bg-[#e8fb52]/[0.08] text-[#e8fb52]"
+                        : "border-[#f3f5f8]/[0.1] bg-[#0f1115] text-[#98a0af] hover:text-[#f3f5f8]"
+                    }`}
+                  >
+                    <span className={`grid h-4 w-4 place-items-center border ${sellsOnline ? "border-[#e8fb52]" : "border-[#5b6472]"}`}>
+                      {sellsOnline && <Check className="h-3 w-3" />}
+                    </span>
+                    I can sell outside this market
+                  </button>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <QuestionTitle eyebrow="Problem">What problem do you solve for them?</QuestionTitle>
+                  <textarea
+                    autoFocus
+                    value={valueProp}
+                    onChange={(event) => {
+                      setValueProp(event.target.value);
+                      setSelectedPreset("custom");
+                    }}
+                    placeholder="Example: We help clinics turn outdated websites into pages that bring in more qualified bookings."
+                    className="mt-9 h-40 w-full max-w-4xl resize-none border border-[#f3f5f8]/[0.1] bg-[#0f1115] p-5 text-xl leading-8 text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5b6472] focus:border-[#e8fb52]"
+                  />
+                  <TechInput label="Proof we can mention" value={proofPoint} onChange={setProofPoint} placeholder="Optional: 30+ sites built, 12 clinics served, 4.9-star clients..." />
+                </div>
+              )}
+
+              {step === 4 && (
+                <div>
+                  <QuestionTitle eyebrow="Email">What should the first email ask them to do?</QuestionTitle>
+                  <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2">
+                    {CTA_OPTIONS.map(option => (
+                      <OptionButton
+                        key={option.value}
+                        selected={ctaType === option.value}
+                        label={option.label}
+                        detail={option.detail}
+                        icon={Mail}
+                        onClick={() => {
+                          setCtaType(option.value);
+                          setSelectedPreset("custom");
+                        }}
+                      />
+                    ))}
                   </div>
-                )}
-              </QuestionFrame>
+                  {(ctaType === "book_call" || ctaType === "custom") && (
+                    <div className="mt-5 max-w-4xl">
+                      <TechInput
+                        label={ctaType === "book_call" ? "Booking link" : "Custom ask"}
+                        value={ctaDetail}
+                        onChange={setCtaDetail}
+                        placeholder={ctaType === "book_call" ? "https://calendly.com/..." : "Ask if they want a 3-point homepage teardown"}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-7 flex max-w-4xl flex-wrap gap-3">
+                    {TONE_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setTone(option.value)}
+                        className={`border px-4 py-3 text-sm font-bold transition-colors ${
+                          tone === option.value
+                            ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
+                            : "border-[#f3f5f8]/10 text-[#98a0af] hover:text-[#f3f5f8]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 5 && (
+                <div>
+                  <QuestionTitle eyebrow="Sender">What name and company should emails come from?</QuestionTitle>
+                  <div className="mt-9 grid max-w-4xl gap-4 sm:grid-cols-2">
+                    <TechInput label="Your name" value={fullName} onChange={setFullName} placeholder="Your name" autoFocus icon={UserRound} />
+                    <TechInput label="Company" value={companyName} onChange={setCompanyName} placeholder="Company name" />
+                    <TechInput label="Role" value={roleTitle} onChange={setRoleTitle} placeholder="Optional" />
+                    <TechInput label="Website" value={companyWebsite} onChange={setCompanyWebsite} placeholder="Optional" icon={Globe2} />
+                  </div>
+                </div>
+              )}
+            </QuestionFrame>
+          </div>
+
+          {error && (
+            <div className="mt-5 border border-[#ff5c49]/30 bg-[#ff5c49]/10 px-4 py-3 text-sm text-[#ff8a7c]">
+              {error}
             </div>
+          )}
 
-            {error && (
-              <div className="mt-5 border border-[#ff5c49]/30 bg-[#ff5c49]/10 px-4 py-3 text-sm text-[#ff8a7c]">
-                {error}
-              </div>
-            )}
+          <footer className="flex flex-shrink-0 items-center justify-between pb-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleBack}
+              disabled={step === 1 || saving}
+              className="border-[#e8fb52]/20 bg-[#08090c] text-[#e8fb52] hover:border-[#e8fb52] hover:bg-[#08090c]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </Button>
 
-            <footer className="flex flex-shrink-0 items-center justify-between pb-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleBack}
-                disabled={step === 0 || saving}
-                className="border-[#e8fb52]/20 bg-[#08090c] text-[#e8fb52] hover:border-[#e8fb52] hover:bg-[#08090c]"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back
-              </Button>
-
-              <Button
-                type="button"
-                variant="accent"
-                onClick={handleNext}
-                disabled={saving}
-                className="min-w-44 bg-[#e8fb52] text-[#08090c] hover:bg-[#f3ff8a]"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving
-                  </>
-                ) : step === 10 ? (
-                  <>
-                    <Search className="h-4 w-4" />
-                    Start searching
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </footer>
-          </main>
+            <Button
+              type="button"
+              variant="accent"
+              onClick={handleNext}
+              disabled={saving}
+              className="min-w-44 bg-[#e8fb52] text-[#08090c] hover:bg-[#f3ff8a]"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving
+                </>
+              ) : step === 5 ? (
+                <>
+                  <Search className="h-4 w-4" />
+                  Start searching
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </footer>
+        </main>
       </div>
     </div>
   );
 }
 
-const QuestionFrame = ({
-  children,
-}: {
-  children: ReactNode;
-}) => (
+const QuestionFrame = ({ children }: { children: ReactNode }) => (
   <section className="gl-step w-full">
     {children}
   </section>
@@ -737,7 +606,7 @@ const QuestionFrame = ({
 const QuestionTitle = ({ children, eyebrow }: { children: string; eyebrow: string }) => (
   <div>
     <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">{eyebrow}</p>
-    <h1 className="mt-4 max-w-4xl font-display text-[46px] font-bold leading-[0.98] tracking-[-0.04em] text-[#f3f5f8] sm:text-[64px]">
+    <h1 className="mt-4 max-w-4xl font-display text-[42px] font-bold leading-[0.98] tracking-[-0.04em] text-[#f3f5f8] sm:text-[62px]">
       {children}
     </h1>
   </div>
@@ -750,7 +619,6 @@ const SingleInput = ({
   onChange,
   placeholder,
   icon: Icon,
-  optional,
 }: {
   eyebrow: string;
   question: string;
@@ -758,10 +626,9 @@ const SingleInput = ({
   onChange: (value: string) => void;
   placeholder: string;
   icon: LucideIcon;
-  optional?: boolean;
 }) => (
   <div>
-    <QuestionTitle eyebrow={optional ? `${eyebrow} / optional` : eyebrow}>{question}</QuestionTitle>
+    <QuestionTitle eyebrow={eyebrow}>{question}</QuestionTitle>
     <div className="mt-10 flex max-w-4xl items-center gap-4 border-b border-[#f3f5f8]/[0.16] pb-4 focus-within:border-[#e8fb52]">
       <Icon className="h-6 w-6 shrink-0 text-[#e8fb52]" />
       <input
@@ -781,22 +648,27 @@ const TechInput = ({
   onChange,
   placeholder,
   autoFocus,
+  icon: Icon,
 }: {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   autoFocus?: boolean;
+  icon?: LucideIcon;
 }) => (
   <label className="block">
     {label && <span className="mb-2 block font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">{label}</span>}
-    <input
-      autoFocus={autoFocus}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      placeholder={placeholder}
-      className="h-14 w-full border border-[#f3f5f8]/[0.1] bg-[#0f1115] px-4 text-base text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5b6472] focus:border-[#e8fb52]"
-    />
+    <span className="flex h-14 w-full items-center gap-3 border border-[#f3f5f8]/[0.1] bg-[#0f1115] px-4 transition-colors focus-within:border-[#e8fb52]">
+      {Icon && <Icon className="h-4 w-4 shrink-0 text-[#e8fb52]" />}
+      <input
+        autoFocus={autoFocus}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-full min-w-0 flex-1 bg-transparent text-base text-[#f3f5f8] outline-none placeholder:text-[#5b6472]"
+      />
+    </span>
   </label>
 );
 
@@ -805,18 +677,22 @@ const OptionButton = ({
   label,
   detail,
   icon: Icon,
+  compact,
   onClick,
 }: {
   selected: boolean;
   label: string;
   detail?: string;
   icon?: LucideIcon;
+  compact?: boolean;
   onClick: () => void;
 }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`group min-h-24 border p-4 text-left transition-all hover:-translate-y-0.5 ${
+    className={`group border p-4 text-left transition-all hover:-translate-y-0.5 ${
+      compact ? "min-h-14" : "min-h-24"
+    } ${
       selected
         ? "border-[#e8fb52] bg-[#e8fb52]/[0.07] shadow-[0_0_0_1px_rgba(232,251,82,.16)]"
         : "border-[#f3f5f8]/[0.1] bg-[#0f1115] hover:border-[#f3f5f8]/25"
@@ -825,19 +701,14 @@ const OptionButton = ({
     <span className="flex items-start justify-between gap-4">
       <span>
         {Icon && <Icon className={`mb-4 h-5 w-5 ${selected ? "text-[#e8fb52]" : "text-[#5b6472] group-hover:text-[#98a0af]"}`} />}
-        <span className="block font-display text-2xl font-bold tracking-[-0.03em] text-[#f3f5f8]">{label}</span>
+        <span className={`block font-display font-bold tracking-[-0.03em] text-[#f3f5f8] ${compact ? "text-lg" : "text-2xl"}`}>
+          {label}
+        </span>
         {detail && <span className="mt-2 block text-sm leading-6 text-[#98a0af]">{detail}</span>}
       </span>
       {selected && <Check className="h-5 w-5 text-[#e8fb52]" />}
     </span>
   </button>
-);
-
-const Signal = ({ label, value }: { label: string; value: string }) => (
-  <div className="border border-[#f3f5f8]/[0.1] bg-[#0f1115] p-4">
-    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">{label}</p>
-    <p className="mt-3 truncate font-display text-2xl font-bold tracking-[-0.03em] text-[#f3f5f8]">{value}</p>
-  </div>
 );
 
 export default OnboardingModal;
