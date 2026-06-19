@@ -21,6 +21,8 @@ import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import HomeDashboard from "@/components/app/HomeDashboard";
 import AppSidebar from "@/components/app/AppSidebar";
 import type { AppSidebarView } from "@/components/app/AppSidebar";
+import ScanStatusDock from "@/components/app/ScanStatusDock";
+import type { ScanStatus } from "@/components/app/ScanStatusDock";
 import AdminDashboard from "@/components/app/AdminDashboard";
 import SavedSearches from "@/components/app/SavedSearches";
 import SettingsCredits from "@/components/app/SettingsCredits";
@@ -106,6 +108,8 @@ const AppPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pipelineCount, setPipelineCount] = useState(0);
+  const [newProspects, setNewProspects] = useState(0);
+  const [scanStatus, setScanStatus] = useState<ScanStatus | null>(null);
   const [onboardingShown, setOnboardingShown] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutConfirmation, setCheckoutConfirmation] = useState<CheckoutConfirmationState>({
@@ -300,6 +304,7 @@ const AppPage = () => {
   }
 
   const handleSearchComplete = async (savedLeadCount = 0) => {
+    if (savedLeadCount > 0) setNewProspects(current => current + savedLeadCount);
     await Promise.all([refetchCredits(), refetchHistory()]);
     if (isDemoPreview) {
       setPipelineCount(current => current + savedLeadCount);
@@ -355,6 +360,9 @@ const AppPage = () => {
     }
     if (view === "pipeline") {
       clearPipelineCount();
+    }
+    if (view === "lead-inbox") {
+      setNewProspects(0);
     }
     setViewMode(view);
   };
@@ -443,6 +451,7 @@ const AppPage = () => {
     paidBadgeLabel,
     reportBugHref: bugReportHref,
     pipelineCount,
+    prospectsCount: newProspects,
     onEditProfile: () => setEditProfileOpen(true),
     onSignOut: signOut,
   };
@@ -491,10 +500,13 @@ const AppPage = () => {
 
         <main className="flex-1 overflow-y-auto">
           <ErrorBoundary>
-            {viewMode === "search" ? (
+            {/* Search stays mounted (hidden when inactive) so an in-progress
+                scan keeps running while the user navigates other views. */}
+            <div className={viewMode === "search" ? "h-full" : "hidden"} aria-hidden={viewMode !== "search"}>
               <LeadGeneratorSection
                 onOpenAuth={() => setAuthOpen(true)}
                 onSearchComplete={handleSearchComplete}
+                onScanStateChange={setScanStatus}
                 onBuyCredits={() => setCreditsOpen(true)}
                 viewMode="search"
                 isAdmin={isAdmin}
@@ -502,7 +514,8 @@ const AppPage = () => {
                 demoMode={isDemoPreview}
                 opportunityModeEnabled={opportunityModeEnabled}
               />
-            ) : viewMode === "home" ? (
+            </div>
+            {viewMode === "home" ? (
               <HomeDashboard
                 userId={user?.id}
                 demoMode={isDemoPreview}
@@ -554,7 +567,7 @@ const AppPage = () => {
                 onBuyCredits={() => setCreditsOpen(true)}
                 onSignOut={signOut}
               />
-            ) : (
+            ) : viewMode === "admin" ? (
               <AdminDashboard
                 onBackToSearch={() => setViewMode("search")}
                 onUserCreditsChanged={() => {
@@ -562,10 +575,17 @@ const AppPage = () => {
                   entitlements.refetch();
                 }}
               />
-            )}
+            ) : null}
           </ErrorBoundary>
         </main>
       </div>
+
+      {user && (
+        <ScanStatusDock
+          status={viewMode === "search" ? null : scanStatus}
+          onOpen={() => setViewMode("search")}
+        />
+      )}
 
       {user && (
         <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>

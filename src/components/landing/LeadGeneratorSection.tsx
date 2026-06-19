@@ -190,6 +190,7 @@ interface FreeSearchPlannerResponse {
 interface LeadGeneratorSectionProps {
   onOpenAuth?: () => void;
   onSearchComplete?: (savedLeadCount?: number) => void;
+  onScanStateChange?: (status: { active: boolean; progress: number; label: string }) => void;
   onBuyCredits?: () => void;
   viewMode?: "search" | "all-leads";
   onToggleViewMode?: (mode: "search" | "all-leads") => void;
@@ -916,7 +917,7 @@ const SegmentedCircularProgress = ({ value, label }: { value: number; label: str
   );
 };
 
-const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free", demoMode = false, opportunityModeEnabled = false }: LeadGeneratorSectionProps) => {
+const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange, onBuyCredits, viewMode = "search", isAdmin = false, effectivePlan = "free", demoMode = false, opportunityModeEnabled = false }: LeadGeneratorSectionProps) => {
   const opportunityModeOn = demoMode || opportunityModeEnabled || isOpportunityModeEnabled();
   const { user: authUser, loading: rawAuthLoading } = useAuth();
   const demoUser = demoMode ? { id: "00000000-0000-4000-8000-000000000001", email: "demo@globaleads22.local" } : null;
@@ -1103,6 +1104,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     return () => window.clearInterval(interval);
   }, [isProcessing, progress, stage]);
 
+  // Report scan status up so AppPage can keep a persistent progress dock alive
+  // while the user navigates to other views.
+  useEffect(() => {
+    onScanStateChange?.({ active: isProcessing, progress: displayProgress, label: progressLabels[stage] });
+  }, [isProcessing, displayProgress, stage, onScanStateChange]);
+
   const filteredResults = useMemo(() => {
     if (!results) return null;
     const q = filterText.trim().toLowerCase();
@@ -1162,7 +1169,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
 
   const selectService = (value: string) => {
     setSelectedService(value);
-    if (!opportunityModeOn || opportunitySignals.length > 0) return;
+    if (opportunitySignals.length > 0) return;
     const nextService = value === customServiceValue ? customService : value;
     setOpportunitySignals(getServiceRecommendedSignalKeys(nextService).slice(0, 3));
   };
@@ -1745,7 +1752,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
         savedLeads: qualityFiltered.length,
         rejectedNoPerson: deduped.filter(lead => lead.name?.trim() && !hasPersonName(lead)).length,
         rejectedNoCompany,
-        signals: opportunityModeOn && config.opportunitySignals?.length
+        signals: config.opportunitySignals?.length
           ? computeSignalDiagnostics(deduped, config.opportunitySignals)
           : undefined,
       };
@@ -1982,7 +1989,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
     <section
       id="tool"
       data-opportunity-mode={opportunityModeOn ? "on" : "off"}
-      className={`h-full w-full bg-black text-[#f3f5f8] ${(searchMode === "manual" || searchMode === "free") && !isProcessing && !results ? "overflow-hidden" : "overflow-auto"}`}
+      className={`h-full w-full bg-black text-[#f3f5f8] ${searchMode === "free" && !isProcessing && !results ? "overflow-hidden" : "overflow-auto"}`}
     >
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6">
         {authLoading && (
@@ -2115,7 +2122,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                   depth,
                   strategy: intel.strategy,
                   queries: canStart ? buildQueryVariants(searchConfig).slice(0, 5) : [],
-                  signals: intel.opportunitySignals,
+                  signals: opportunitySignals.length ? opportunitySignals : intel.opportunitySignals,
                   scanTargets: intel.scanTargets,
                   canStart,
                   onStart: () => handleGenerate(searchConfig),
@@ -2140,9 +2147,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               const cost = getSearchCost(view.depth, mode === "free" ? true : enrichMode);
               const sm = sizeMeta[view.depth];
 
-              const cardClass = "rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#111319] px-4 py-3.5";
-              const cardLabel = "mb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5d6675]";
-              const inputClass = "dark-autofill w-full rounded-[9px] border bg-black px-3.5 py-2.5 text-[13.5px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50 disabled:opacity-50";
+              const sectionWrap = "border-t border-[#f3f5f8]/[0.06] px-6 py-4 first:border-t-0";
+              const cardLabel = "font-mono text-[10px] uppercase tracking-[0.2em] text-[#6b7584]";
+              const chipBase = "rounded-[8px] border px-4 py-2.5 text-[13px] font-semibold tracking-[-0.01em] transition-all";
+              const chipOn = "border-[#e8fb52] bg-[#e8fb52] text-[#08090c] shadow-[0_0_24px_-6px_rgba(232,251,82,0.55)]";
+              const chipOff = "border-[#f3f5f8]/[0.08] bg-[#14171d] text-[#c4ccd8] hover:border-[#f3f5f8]/25 hover:bg-[#191d25] hover:text-[#f3f5f8]";
+              const inputClass = "dark-autofill w-full rounded-[10px] border bg-[#0f1217] px-4 py-3 text-[17px] font-semibold tracking-[-0.01em] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#454d5a] focus:border-[#e8fb52] disabled:opacity-50";
               const scanSizes: Array<{ depth: Depth; name: string; count: string }> = [
                 { depth: "simple", name: "Quick", count: "~20" },
                 { depth: "normal", name: "Standard", count: "~40" },
@@ -2155,34 +2165,41 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
               ];
 
               return (
-                <div className="flex h-[calc(100vh-7.5rem)] min-h-[600px] flex-col">
-                  <div className="mb-4 flex shrink-0 items-start justify-between gap-5">
+                <div className={`flex w-full flex-col ${mode === "free" ? "h-[calc(100vh-7.5rem)] min-h-[600px]" : "max-w-[1240px]"}`}>
+                  <style>{`
+                    @keyframes glRailScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+                    @keyframes glGlow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+                    .gl-rail-scan { animation: glRailScan 3.4s cubic-bezier(.4,0,.2,1) infinite; }
+                    .gl-glow { animation: glGlow 2.6s ease-in-out infinite; }
+                    @media (prefers-reduced-motion: reduce) { .gl-rail-scan, .gl-glow { animation: none !important; } }
+                  `}</style>
+                  <div className="mb-5 flex shrink-0 items-start justify-between gap-5">
                     <div className="min-w-0">
-                      <h1 className="font-display text-[25px] font-bold leading-none tracking-[-0.025em] text-[#f3f5f8]">New scan</h1>
-                      <p className="mt-1.5 max-w-[52ch] text-[13px] leading-relaxed text-[#9aa3b2]">
+                      <h1 className="font-display text-[30px] font-extrabold leading-none tracking-[-0.03em] text-[#f3f5f8]">New scan</h1>
+                      <p className="mt-2 max-w-[54ch] text-[13px] leading-relaxed text-[#9aa3b2]">
                         {mode === "manual"
-                          ? "Set what you sell and who to target. The plan on the right updates as you go — start when it looks right."
-                          : "Describe who you want in plain language. The agent fills the plan on the right before any credits are spent."}
+                          ? "Tell us what you sell and who to find. The plan on the right updates as you go."
+                          : "Describe who you want in plain language. The agent builds the plan before any credits are spent."}
                       </p>
                     </div>
-                    <div className="inline-flex shrink-0 gap-[3px] rounded-[10px] border border-[#f3f5f8]/[0.07] bg-[#111319] p-[3px]">
-                      <button type="button" onClick={() => setSearchMode("manual")} aria-pressed={mode === "manual"} className={`inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${mode === "manual" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
-                        <SlidersHorizontal className={`h-3.5 w-3.5 ${mode === "manual" ? "text-[#e8fb52]" : ""}`} /> Manual
+                    <div className="inline-flex shrink-0 border border-[#f3f5f8]/[0.12] bg-[#0b0c10]">
+                      <button type="button" onClick={() => setSearchMode("manual")} aria-pressed={mode === "manual"} className={`inline-flex items-center gap-1.5 px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${mode === "manual" ? "bg-[#e8fb52] text-[#08090c]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                        <SlidersHorizontal className="h-3.5 w-3.5" /> Manual
                       </button>
-                      <button type="button" onClick={() => setSearchMode("free")} aria-pressed={mode === "free"} className={`inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${mode === "free" ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
-                        <Sparkles className={`h-3.5 w-3.5 ${mode === "free" ? "text-[#e8fb52]" : ""}`} /> AI assisted
+                      <button type="button" onClick={() => setSearchMode("free")} aria-pressed={mode === "free"} className={`inline-flex items-center gap-1.5 px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors ${mode === "free" ? "bg-[#e8fb52] text-[#08090c]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"}`}>
+                        <Sparkles className="h-3.5 w-3.5" /> AI assisted
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid min-h-0 flex-1 gap-3.5 lg:grid-cols-[minmax(0,1fr)_388px]">
+                  <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
                     {/* LEFT PANE — input (form or chat) */}
-                    <div className="flex min-h-0 flex-col overflow-hidden rounded-[16px] border border-[#f3f5f8]/[0.07] bg-[#0f1115]">
+                    <div className="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-[#f3f5f8]/[0.08] bg-gradient-to-b from-[#101319] to-[#0a0b0e] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                       {mode === "manual" ? (
-                        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-                          <div className={cardClass}>
-                            <p className={cardLabel}>What do you sell?</p>
-                            <div className="flex flex-wrap gap-2">
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                          <div className={sectionWrap}>
+                            <p className={cardLabel}>What do you sell</p>
+                            <div className="mt-3.5 flex flex-wrap gap-2">
                               {serviceOptions.map(option => {
                                 const active = selectedService === option.value;
                                 return (
@@ -2191,11 +2208,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                     type="button"
                                     onClick={() => selectService(option.value)}
                                     aria-pressed={active}
-                                    className={`rounded-[9px] border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
-                                      active
-                                        ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
-                                        : "border-[#f3f5f8]/[0.13] bg-black text-[#9aa3b2] hover:text-[#f3f5f8]"
-                                    }`}
+                                    className={`${chipBase} ${active ? chipOn : chipOff}`}
                                   >
                                     {option.label}
                                   </button>
@@ -2207,26 +2220,26 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                 value={customService}
                                 onChange={event => {
                                   setCustomService(event.target.value);
-                                  if (opportunityModeOn && selectedService === customServiceValue && opportunitySignals.length === 0) {
+                                  if (opportunitySignals.length === 0) {
                                     setOpportunitySignals(getServiceRecommendedSignalKeys(event.target.value).slice(0, 3));
                                   }
                                 }}
                                 placeholder="Describe your service"
-                                className={`mt-3 ${inputClass} ${fieldErrors.selectedService ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
+                                className={`mt-4 ${inputClass} ${fieldErrors.selectedService ? "border-[#ffb4ab]" : "border-[#f3f5f8]/15"}`}
                               />
                             )}
-                            {fieldErrors.selectedService && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
+                            {fieldErrors.selectedService && <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#ffb4ab]">{fieldErrors.selectedService}</p>}
                           </div>
 
-                          {opportunityModeOn && selectedService && (() => {
+                          {selectedService && (() => {
                             const effectiveService = selectedService === customServiceValue ? customService : selectedService;
                             const signalKeys = getServiceSignalKeys(effectiveService);
                             if (!signalKeys.length) return null;
                             return (
-                              <div className={cardClass}>
+                              <div className={sectionWrap}>
                                 <p className={cardLabel}>Opportunity signals</p>
-                                <p className="mb-2 text-[12px] leading-5 text-[#5d6675]">The gaps to look for — tuned to what you sell. Toggle what matters.</p>
-                                <div className="flex flex-wrap gap-2">
+                                <p className="mt-2 text-[12px] leading-5 text-[#5d6675]">The gaps to look for — tuned to what you sell. Toggle what matters.</p>
+                                <div className="mt-3.5 flex flex-wrap gap-2">
                                   {signalKeys.map(key => {
                                     const active = opportunitySignals.includes(key);
                                     return (
@@ -2236,49 +2249,43 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                         onClick={() => toggleOpportunitySignal(key)}
                                         aria-pressed={active}
                                         title={opportunitySignalOptions.find(option => option.key === key)?.description}
-                                        className={`rounded-[9px] border px-3.5 py-2 text-[12.5px] font-medium transition-colors ${
-                                          active
-                                            ? "border-[#e8fb52] bg-[#e8fb52]/10 text-[#e8fb52]"
-                                            : "border-[#f3f5f8]/[0.13] bg-black text-[#9aa3b2] hover:text-[#f3f5f8]"
-                                        }`}
+                                        className={`${chipBase} ${active ? chipOn : chipOff}`}
                                       >
                                         {opportunitySignalLabels[key] || key}
                                       </button>
                                     );
                                   })}
                                 </div>
-                                {fieldErrors.opportunitySignals && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.opportunitySignals}</p>}
+                                {fieldErrors.opportunitySignals && <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#ffb4ab]">{fieldErrors.opportunitySignals}</p>}
                               </div>
                             );
                           })()}
 
-                          <div className={cardClass}>
+                          <div className={sectionWrap}>
                             <p className={cardLabel}>Who &amp; where</p>
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="mt-4 grid gap-6 sm:grid-cols-2">
                               <div>
-                                <div className="mb-1.5 flex h-7 items-center">
-                                  <label htmlFor="industry" className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Target market / niche</label>
-                                </div>
+                                <label htmlFor="industry" className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">Target market / niche</label>
                                 <input
                                   id="industry"
                                   value={industry}
                                   onChange={event => setIndustry(event.target.value)}
                                   placeholder="Dentists"
-                                  className={`${inputClass} ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
+                                  className={`mt-2 ${inputClass} ${fieldErrors.industry ? "border-[#ffb4ab]" : "border-[#f3f5f8]/15"}`}
                                 />
-                                {fieldErrors.industry && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.industry}</p>}
+                                {fieldErrors.industry && <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#ffb4ab]">{fieldErrors.industry}</p>}
                               </div>
                               <div>
-                                <div className="mb-1.5 flex h-7 items-center justify-between gap-2">
-                                  <label htmlFor="country" className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Location</label>
-                                  <div className="inline-flex rounded-[7px] border border-[#f3f5f8]/[0.13] bg-black p-0.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <label htmlFor="country" className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">Location</label>
+                                  <div className="inline-flex overflow-hidden rounded-[8px] border border-[#f3f5f8]/[0.12]">
                                     {(["country", "city"] as LocationMode[]).map(option => (
                                       <button
                                         key={option}
                                         type="button"
                                         onClick={() => setLocationMode(option)}
-                                        className={`rounded-[5px] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] transition-colors ${
-                                          locationMode === option ? "bg-[#1c2029] text-[#f3f5f8]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"
+                                        className={`px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors ${
+                                          locationMode === option ? "bg-[#e8fb52] text-[#08090c]" : "text-[#9aa3b2] hover:text-[#f3f5f8]"
                                         }`}
                                       >
                                         {option === "country" ? "Country" : "City"}
@@ -2291,16 +2298,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                   value={country}
                                   onChange={event => setCountry(event.target.value)}
                                   placeholder={locationMode === "country" ? "Mexico" : "Austin, TX"}
-                                  className={`${inputClass} ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#f3f5f8]/[0.13]"}`}
+                                  className={`mt-2 ${inputClass} ${fieldErrors.country ? "border-[#ffb4ab]" : "border-[#f3f5f8]/15"}`}
                                 />
-                                {fieldErrors.country && <p className="mt-1.5 font-mono text-[10px] uppercase text-[#ffb4ab]">{fieldErrors.country}</p>}
+                                {fieldErrors.country && <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#ffb4ab]">{fieldErrors.country}</p>}
                               </div>
                             </div>
                           </div>
 
-                          <div className={cardClass}>
+                          <div className={sectionWrap}>
                             <p className={cardLabel}>Scan size</p>
-                            <div className="grid grid-cols-3 gap-2.5">
+                            <div className="mt-3.5 grid grid-cols-3 gap-2">
                               {scanSizes.map(size => {
                                 const active = depth === size.depth;
                                 const credits = getSearchCost(size.depth, enrichMode);
@@ -2316,25 +2323,27 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                       setDepth(size.depth);
                                     }}
                                     aria-pressed={active}
-                                    className={`relative rounded-[12px] border p-3.5 text-left transition-colors ${
-                                      active ? "border-[#e8fb52] bg-[#e8fb52]/10" : "border-[#f3f5f8]/[0.13] bg-black hover:border-[#f3f5f8]/25"
+                                    className={`relative rounded-[12px] border p-4 text-left transition-all ${
+                                      active
+                                        ? "border-[#e8fb52] bg-[#e8fb52]/[0.07] shadow-[inset_0_0_0_1px_rgba(232,251,82,0.25),0_0_34px_-10px_rgba(232,251,82,0.5)]"
+                                        : "border-[#f3f5f8]/[0.08] bg-[#14171d] hover:border-[#f3f5f8]/25 hover:bg-[#191d25]"
                                     }`}
                                   >
-                                    {active && <Check className="absolute right-2.5 top-2.5 h-4 w-4 text-[#e8fb52]" strokeWidth={2.5} />}
-                                    <div className="font-display text-[14px] font-semibold text-[#f3f5f8]">{size.name}</div>
-                                    <div className="mt-0.5 text-[11px] text-[#5d6675]">{size.count}</div>
-                                    <div className="mt-2.5 font-mono text-[11px] text-[#e8fb52]">{credits} cr</div>
+                                    {active && <Check className="absolute right-3 top-3 h-4 w-4 text-[#e8fb52]" strokeWidth={2.5} />}
+                                    <div className="font-display text-[15px] font-bold tracking-[-0.02em] text-[#f3f5f8]">{size.name}</div>
+                                    <div className="mt-0.5 text-[11px] text-[#5d6675]">{size.count} results</div>
+                                    <div className="mt-3 font-mono text-[11px] tracking-[0.04em] text-[#e8fb52]">{credits} cr</div>
                                   </button>
                                 );
                               })}
                             </div>
                           </div>
 
-                          <div className={cardClass}>
+                          <div className={sectionWrap}>
                             <p className={cardLabel}>Advanced · optional</p>
-                            <div className="flex flex-col">
+                            <div className="mt-2 flex flex-col">
                               {advancedToggles.map((row, index) => (
-                                <div key={row.title} className={`flex items-center justify-between gap-4 py-2.5 ${index === 0 ? "" : "border-t border-[#f3f5f8]/[0.07]"}`}>
+                                <div key={row.title} className={`flex items-center justify-between gap-4 py-3 ${index === 0 ? "" : "border-t border-[#f3f5f8]/[0.07]"}`}>
                                   <div className="min-w-0">
                                     <b className="block text-[13px] font-semibold text-[#f3f5f8]">{row.title}</b>
                                     <span className="text-[11.5px] text-[#5d6675]">{row.desc}</span>
@@ -2350,7 +2359,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                   </button>
                                 </div>
                               ))}
-                              <div className="flex items-center justify-between gap-4 border-t border-[#f3f5f8]/[0.07] py-2.5">
+                              <div className="flex items-center justify-between gap-4 border-t border-[#f3f5f8]/[0.07] py-3">
                                 <div className="min-w-0">
                                   <b className="block text-[13px] font-semibold text-[#f3f5f8]">Language</b>
                                   <span className="text-[11.5px] text-[#5d6675]">Force a language for non-English markets.</span>
@@ -2359,7 +2368,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                                   value={language}
                                   onChange={event => setLanguage(event.target.value)}
                                   placeholder="Any"
-                                  className="w-[120px] shrink-0 rounded-[9px] border border-[#f3f5f8]/[0.13] bg-black px-3 py-2 text-[13px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]/50"
+                                  className="w-[120px] shrink-0 rounded-[9px] border border-[#f3f5f8]/[0.1] bg-[#0f1217] px-3 py-2 text-[13px] text-[#f3f5f8] outline-none transition-colors placeholder:text-[#5d6675] focus:border-[#e8fb52]"
                                 />
                               </div>
                             </div>
@@ -2436,40 +2445,47 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                       )}
                     </div>
 
-                    {/* RIGHT PANE — shared Scan plan */}
-                    <div className="flex min-h-0 flex-col overflow-hidden rounded-[16px] border border-[#f3f5f8]/[0.13] bg-gradient-to-b from-[#14171d] to-[#0f1115]">
-                      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f3f5f8]/[0.07] px-[18px] pb-3.5 pt-4">
-                        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">Scan plan</div>
-                        {view.hasPlan && (
-                          <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.06em] text-[#5fe3a1]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#5fe3a1]" /> Ready
-                          </div>
-                        )}
+                    {/* RIGHT PANE — live scan summary rail */}
+                    <div className="flex flex-col self-start overflow-hidden rounded-[14px] border border-[#f3f5f8]/[0.1] bg-gradient-to-b from-[#16191f] to-[#0a0b0e] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] lg:sticky lg:top-2 lg:max-h-[calc(100vh-9rem)]">
+                      <div className="relative shrink-0 border-b border-[#f3f5f8]/[0.08] px-5 pb-3.5 pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#e8fb52]">Scan plan</div>
+                          {view.hasPlan && (
+                            <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[#5fe3a1]">
+                              <span className="gl-glow h-1.5 w-1.5 rounded-full bg-[#5fe3a1]" /> Ready
+                            </div>
+                          )}
+                        </div>
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px overflow-hidden">
+                          <div className="gl-rail-scan h-px w-1/2 bg-gradient-to-r from-transparent via-[#e8fb52] to-transparent" />
+                        </div>
                       </div>
 
-                      <div className="min-h-0 flex-1 overflow-y-auto px-[18px] py-4">
+                      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+                        <div className="font-display text-[16px] font-bold leading-snug tracking-[-0.02em]">
+                          <span className={view.service ? "text-[#e8fb52]" : "text-[#3a414e]"}>{view.service || "What you sell"}</span>
+                          <span className="text-[#5d6675]"> → </span>
+                          <span className={view.niche ? "text-[#f3f5f8]" : "text-[#3a414e]"}>{view.niche || "niche"}</span>
+                          <span className="text-[#5d6675]"> · </span>
+                          <span className={view.location ? "text-[#f3f5f8]" : "text-[#3a414e]"}>{view.location || "location"}</span>
+                        </div>
+                        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.08em] text-[#5d6675]">
+                          {sm.name} · {sm.count}{enrichMode || mode === "free" ? " · contacts included" : ""}
+                        </div>
+
                         {view.hasPlan ? (
                           <>
-                            <div>
-                              <div className="font-display text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#f3f5f8]">
-                                <span className="font-bold text-[#e8fb52]">{view.service}</span> → {view.niche} · {view.location} · {sm.name}
-                              </div>
-                              <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-[#5d6675]">
-                                {sm.count} · <span className="text-[#5fe3a1]">decision-maker contacts included</span>
-                              </div>
-                            </div>
-
                             {view.strategy && (
-                              <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
-                                <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Strategy</div>
-                                <p className="mt-1.5 text-[12.5px] leading-[1.55] text-[#9aa3b2]">{view.strategy}</p>
+                              <div className="mt-5 border-t border-[#f3f5f8]/[0.08] pt-4">
+                                <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">Strategy</div>
+                                <p className="mt-2 text-[12.5px] leading-[1.55] text-[#9aa3b2]">{view.strategy}</p>
                               </div>
                             )}
 
                             {!!view.queries.length && (
-                              <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
-                                <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Search queries</div>
-                                <ul className="mt-2 space-y-1">
+                              <div className="mt-5 border-t border-[#f3f5f8]/[0.08] pt-4">
+                                <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">Search queries</div>
+                                <ul className="mt-2.5 space-y-1.5">
                                   {view.queries.slice(0, 6).map((q, i) => (
                                     <li key={`${q}-${i}`} className="truncate font-mono text-[11px] text-[#f3f5f8]/90">
                                       <span className="text-[#5d6675]">{String(i + 1).padStart(2, "0")}</span> {q}
@@ -2480,16 +2496,16 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             )}
 
                             {(!!view.signals.length || !!view.scanTargets.length) && (
-                              <div className="mt-4 border-t border-[#f3f5f8]/[0.07] pt-3.5">
-                                <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">The agent will look for</div>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
+                              <div className="mt-5 border-t border-[#f3f5f8]/[0.08] pt-4">
+                                <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">The agent will look for</div>
+                                <div className="mt-2.5 flex flex-wrap gap-1.5">
                                   {view.signals.map(sig => (
-                                    <span key={sig} className="rounded-[7px] border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#e8fb52]">
+                                    <span key={sig} className="border border-[#e8fb52]/30 bg-[#e8fb52]/[0.08] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#e8fb52]">
                                       {opportunitySignalLabels[sig] || sig}
                                     </span>
                                   ))}
                                   {view.scanTargets.map(target => (
-                                    <span key={target} className="rounded-[7px] border border-[#f3f5f8]/[0.13] bg-black px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#98a0af]">
+                                    <span key={target} className="border border-[#f3f5f8]/[0.14] bg-transparent px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[#98a0af]">
                                       {target}
                                     </span>
                                   ))}
@@ -2498,33 +2514,50 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onBuyCredits, view
                             )}
                           </>
                         ) : (
-                          <div className="flex h-full min-h-0 items-center justify-center px-2 py-8 text-center text-[13px] leading-6 text-[#5d6675]">
-                            {mode === "manual"
-                              ? "Pick what you sell, then add a niche and location — your plan, queries, and signals build here."
-                              : "Tell the agent what you sell, who you target, and where. The plan appears here before you spend any credits."}
+                          <div className="mt-5 border-t border-[#f3f5f8]/[0.08] pt-4">
+                            <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-[#5d6675]">How it works</div>
+                            <ol className="mt-3 space-y-2.5">
+                              {[
+                                { n: "1", t: "Pick what you sell", done: Boolean(view.service) },
+                                { n: "2", t: "Add a niche & location", done: Boolean(view.niche && view.location) },
+                                { n: "3", t: "Start the scan", done: false },
+                              ].map(stepItem => (
+                                <li key={stepItem.n} className="flex items-center gap-3">
+                                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border font-mono text-[10px] ${stepItem.done ? "border-[#e8fb52] bg-[#e8fb52] text-[#08090c]" : "border-[#f3f5f8]/15 bg-[#14171d] text-[#6b7584]"}`}>
+                                    {stepItem.done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : stepItem.n}
+                                  </span>
+                                  <span className={`text-[13px] ${stepItem.done ? "text-[#f3f5f8]" : "text-[#9aa3b2]"}`}>{stepItem.t}</span>
+                                </li>
+                              ))}
+                            </ol>
+                            <p className="mt-4 text-[11.5px] leading-5 text-[#5d6675]">
+                              {mode === "manual"
+                                ? "Your queries and opportunity signals build here as you go."
+                                : "The agent plans the scan here before you spend any credits."}
+                            </p>
                           </div>
                         )}
                       </div>
 
-                      <div className="shrink-0 border-t border-[#f3f5f8]/[0.07] bg-[#08090c]/35 px-[18px] py-3.5">
-                        <div className="mb-3 flex items-end justify-between gap-4">
+                      <div className="shrink-0 border-t border-[#f3f5f8]/[0.08] bg-[#08090c]/60 px-5 py-4">
+                        <div className="mb-3.5 flex items-end justify-between gap-4">
                           <div>
-                            <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-[#5d6675]">Credits</div>
-                            <div className="mt-0.5 font-display text-[21px] font-bold text-[#f3f5f8]">{creditsBalance}</div>
+                            <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">Your credits</div>
+                            <div className="mt-1 font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#f3f5f8]">{creditsBalance}</div>
                           </div>
                           <div className="text-right">
-                            <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-[#5d6675]">Cost</div>
-                            <div className="mt-0.5 font-display text-[21px] font-bold text-[#e8fb52]">{view.hasPlan ? (isAdmin ? "Admin" : cost) : "—"}</div>
+                            <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[#5d6675]">This scan</div>
+                            <div className="mt-1 font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#e8fb52]">{isAdmin ? "Free" : `${cost} cr`}</div>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={view.onStart}
                           disabled={!view.canStart || isProcessing}
-                          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[#e8fb52] font-display text-[15px] font-bold text-[#08090c] shadow-[0_8px_22px_rgba(232,251,82,0.18)] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[11px] bg-[#e8fb52] font-display text-[15px] font-bold text-[#08090c] shadow-[0_8px_26px_-10px_rgba(232,251,82,0.55)] transition-all hover:bg-white hover:shadow-[0_12px_34px_-8px_rgba(232,251,82,0.6)] disabled:cursor-not-allowed disabled:opacity-25 disabled:shadow-none"
                         >
                           <Play className="h-4 w-4 fill-current" />
-                          {isProcessing ? "Scanning…" : isAdmin ? "Start scan · admin" : view.hasPlan ? `Start scan · ${cost} credits` : "Start scan"}
+                          {isProcessing ? "Scanning…" : isAdmin ? "Start scan · admin" : view.canStart ? `Start scan · ${cost} credits` : "Complete the form to start"}
                         </button>
                       </div>
                     </div>

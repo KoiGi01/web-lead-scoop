@@ -43,6 +43,7 @@ interface NavItem {
   icon: LucideIcon;
   accent?: boolean;
   badge?: number;
+  badgeTone?: "accent" | "alert";
 }
 
 interface AppSidebarProps {
@@ -58,11 +59,13 @@ interface AppSidebarProps {
   userName?: string;
   planLabel?: string;
   prospectsCount?: number;
+  pipelineCount?: number;
   followupsCount?: number;
   email?: string;
   showPaidBadge?: boolean;
   paidBadgeLabel?: string;
   reportBugHref?: string;
+  variant?: "desktop" | "mobile";
   onEditProfile?: () => void;
   onSignOut?: () => void;
 }
@@ -80,11 +83,13 @@ const AppSidebar = ({
   userName,
   planLabel,
   prospectsCount,
+  pipelineCount,
   followupsCount,
   email,
   showPaidBadge,
   paidBadgeLabel,
   reportBugHref,
+  variant = "desktop",
   onEditProfile,
   onSignOut,
 }: AppSidebarProps) => {
@@ -94,8 +99,8 @@ const AppSidebar = ({
   const workspace: NavItem[] = [
     { label: "Home", view: "home", icon: Home },
     { label: "New scan", view: "search", icon: Plus, accent: true },
-    { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount },
-    { label: "Pipeline", view: "pipeline", icon: KanbanSquare },
+    { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount, badgeTone: "alert" },
+    { label: "Pipeline", view: "pipeline", icon: KanbanSquare, badge: pipelineCount, badgeTone: "alert" },
     { label: "Email automations", view: "follow-ups", icon: Mail, badge: followupsCount },
   ];
   const library: NavItem[] = [
@@ -111,9 +116,12 @@ const AppSidebar = ({
     .join("")
     .toUpperCase();
 
-  const renderItem = ({ label, view, icon: Icon, accent, badge }: NavItem) => {
+  const renderItem = ({ label, view, icon: Icon, accent, badge, badgeTone = "accent" }: NavItem) => {
     const active = activeView === view;
-    const base = "group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-[13.5px] font-medium transition-colors";
+    const hasBadge = typeof badge === "number" && badge > 0;
+    const badgeText = hasBadge ? (badge > 99 ? "99+" : String(badge)) : "";
+    const badgeDescription = badgeTone === "alert" ? `${badgeText} unseen leads` : `${badgeText} items`;
+    const base = "group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium transition-colors";
     const state = active
       ? "bg-[#14171d] text-[#f3f5f8] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]"
       : accent
@@ -123,7 +131,8 @@ const AppSidebar = ({
       <button
         key={label}
         type="button"
-        title={collapsed ? label : undefined}
+        title={collapsed ? (hasBadge ? `${label}: ${badgeDescription}` : label) : undefined}
+        aria-label={hasBadge ? `${label}, ${badgeDescription}` : label}
         onClick={() => (view === "admin" && onViewAdmin ? onViewAdmin() : onNavigate(view))}
         className={`${base} ${state} ${collapsed ? "justify-center px-0" : ""}`}
       >
@@ -133,9 +142,26 @@ const AppSidebar = ({
           }`}
         />
         {!collapsed && <span className="truncate">{label}</span>}
-        {!collapsed && typeof badge === "number" && badge > 0 && (
-          <span className="ml-auto rounded-full bg-[#e8fb52]/[0.13] px-1.5 py-px font-mono text-[10px] text-[#e8fb52]">
-            {badge}
+        {hasBadge && !collapsed && (
+          <span
+            className={`ml-auto rounded-full px-1.5 py-px font-mono text-[10px] font-bold ${
+              badgeTone === "alert"
+                ? "bg-[#ff3b30] text-white shadow-[0_0_0_1px_rgba(255,255,255,0.16),0_0_16px_rgba(255,59,48,0.35)]"
+                : "bg-[#e8fb52]/[0.13] text-[#e8fb52]"
+            }`}
+          >
+            {badgeText}
+          </span>
+        )}
+        {hasBadge && collapsed && (
+          <span
+            className={`absolute right-1 top-1 flex min-h-[15px] min-w-[15px] items-center justify-center rounded-full px-1 font-mono text-[8px] font-bold leading-none ${
+              badgeTone === "alert"
+                ? "bg-[#ff3b30] text-white shadow-[0_0_0_1px_#0b0d11,0_0_0_2px_rgba(255,59,48,0.45)]"
+                : "bg-[#e8fb52] text-[#08090c] shadow-[0_0_0_1px_#0b0d11]"
+            }`}
+          >
+            {badgeText}
           </span>
         )}
       </button>
@@ -144,9 +170,9 @@ const AppSidebar = ({
 
   return (
     <aside
-      className={`hidden h-full flex-shrink-0 flex-col border-r border-[#f3f5f8]/[0.07] bg-[#0b0d11] transition-[width] duration-300 ease-in-out md:flex ${
-        collapsed ? "w-[68px]" : "w-[248px]"
-      }`}
+      className={`h-full flex-shrink-0 flex-col border-[#f3f5f8]/[0.07] bg-[#0b0d11] transition-[width] duration-300 ease-in-out ${
+        variant === "desktop" ? "hidden border-r md:flex" : "flex w-full"
+      } ${variant === "desktop" ? (collapsed ? "w-[68px]" : "w-[248px]") : "w-full"}`}
     >
       {/* brand + collapse */}
       <div className="flex h-16 flex-shrink-0 items-center gap-2.5 border-b border-[#f3f5f8]/[0.07] px-3.5">
@@ -161,27 +187,29 @@ const AppSidebar = ({
             GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
           </span>
         )}
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          title={collapsed ? "Expand" : "Collapse"}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex h-7 w-7 items-center justify-center rounded-md text-[#5b6472] transition-colors hover:bg-[#14171d] hover:text-[#f3f5f8] ${
-            collapsed ? "mx-auto" : "ml-auto"
-          }`}
-        >
-          {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-        </button>
+        {variant === "desktop" && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title={collapsed ? "Expand" : "Collapse"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`flex h-7 w-7 items-center justify-center rounded-md text-[#5b6472] transition-colors hover:bg-[#14171d] hover:text-[#f3f5f8] ${
+              collapsed ? "mx-auto" : "ml-auto"
+            }`}
+          >
+            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       {/* nav */}
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-3">
         {!collapsed && (
-          <p className="px-2.5 pb-2 pt-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Workspace</p>
+          <p className="px-2.5 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Workspace</p>
         )}
         {workspace.map(renderItem)}
         {!collapsed && (
-          <p className="px-2.5 pb-2 pt-5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Library</p>
+          <p className="px-2.5 pb-1.5 pt-4 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Library</p>
         )}
         {collapsed && <div className="my-2 h-px bg-[#f3f5f8]/[0.07]" />}
         {library.map(renderItem)}
@@ -200,7 +228,7 @@ const AppSidebar = ({
             <span className="font-mono text-[10px] font-semibold tabular-nums">{creditsRemaining}</span>
           </button>
         ) : (
-          <div className="rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-3.5">
+          <div className="rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-3">
             <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em] text-[#5b6472]">
               <span>Credits</span>
               <button
@@ -211,7 +239,7 @@ const AppSidebar = ({
                 Buy <ArrowUpRight className="h-3 w-3" />
               </button>
             </div>
-            <div className="mb-2 mt-2 font-display text-[22px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
+            <div className="mb-1.5 mt-1 font-display text-[20px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
               {creditsRemaining.toLocaleString()}
               <span className="text-xs font-medium text-[#5b6472]"> / {creditsTotal.toLocaleString()}</span>
             </div>
@@ -231,7 +259,7 @@ const AppSidebar = ({
           {collapsed ? (
             <a
               href={reportBugHref}
-              title="Report a bug · +100 credits when fixed"
+              title="Report a bug"
               className="flex w-full items-center justify-center rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] py-2.5 text-[#e8fb52] transition-colors hover:bg-[#e8fb52]/[0.1]"
             >
               <Bug className="h-4 w-4" />
@@ -244,7 +272,7 @@ const AppSidebar = ({
               <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
               <div className="min-w-0">
                 <div className="text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
-                <div className="font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">+100 credits when fixed</div>
+                <div className="font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
               </div>
             </a>
           )}
