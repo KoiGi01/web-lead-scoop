@@ -136,6 +136,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [phone, setPhone] = useState("");
   const [clientType, setClientType] = useState("");
+  const [targetCustomer, setTargetCustomer] = useState("");
   const [pricingTier, setPricingTier] = useState("");
   const [location, setLocation] = useState("");
   const [sellsOnline, setSellsOnline] = useState(true);
@@ -188,6 +189,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
       },
       audience: {
         clientType,
+        targetCustomer: targetCustomer.trim(),
         location: location.trim(),
         sellsOnline,
       },
@@ -211,6 +213,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     sellsOnline,
     serviceOther,
     serviceType,
+    targetCustomer,
     tone,
     valueProp,
   ]);
@@ -220,6 +223,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     setServiceType(preset.serviceType);
     setServiceOther("");
     setClientType(preset.clientType);
+    setTargetCustomer(preset.id === "local-growth" ? "Dentists, med spas, roofers, and local clinics" : preset.id === "commerce-audit" ? "Online stores with visible conversion gaps" : "Businesses with clear growth or website gaps");
     setPricingTier(preset.pricingTier);
     setValueProp(preset.valueProp);
     setProofPoint("");
@@ -251,6 +255,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         },
         audience: {
           clientType: "any",
+          targetCustomer: targetCustomer.trim(),
           location: location.trim(),
           sellsOnline,
         },
@@ -302,7 +307,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
       2: [Boolean(fullName.trim()), "Add your name."],
       3: [Boolean(companyName.trim()), "Add your company name."],
       4: [Boolean(finalServiceType), "Choose what you sell."],
-      5: [Boolean(clientType), "Choose who you want to find."],
+      5: [Boolean(clientType) || Boolean(targetCustomer.trim()), "Choose who you want to find."],
       7: [Boolean(valueProp.trim()), "Write the outcome you help clients create."],
       9: [Boolean(pricingTier), "Choose the deal size worth prioritizing."],
     };
@@ -355,6 +360,9 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         .gl-pulse-line { animation: glPulseLine 1.2s ease-in-out both; transform-origin: left center; }
       `}</style>
 
+      <div className="pointer-events-none absolute right-[-12vw] top-[12vh] hidden h-[52vh] w-[52vh] rotate-45 border-[44px] border-[#e8fb52]/10 lg:block" />
+      <div className="pointer-events-none absolute bottom-[-18vh] left-[-10vw] h-[42vh] w-[42vh] rotate-45 bg-[#e8fb52]/[0.035]" />
+
       <svg className="pointer-events-none absolute inset-x-0 bottom-0 h-[42vh] w-full text-[#e8fb52]" viewBox="0 0 1440 420" preserveAspectRatio="none" aria-hidden="true">
         <path className="gl-wave" d="M-80 280 C 180 120, 360 380, 650 220 S 1090 110, 1520 260" fill="none" stroke="currentColor" strokeWidth="2" opacity=".32" />
         <path className="gl-wave" d="M-80 340 C 220 190, 420 410, 710 280 S 1110 180, 1520 330" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".22" />
@@ -399,17 +407,17 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 {step === 0 && (
                   <div>
                     <h1 className="max-w-4xl font-display text-[58px] font-bold leading-[0.92] tracking-[-0.045em] text-[#f3f5f8] sm:text-[88px] lg:text-[112px]">
-                      Let’s tune your workspace.
+                      Set your lead engine.
                     </h1>
                     <p className="mt-8 max-w-2xl text-xl leading-8 text-[#e8fb52]">
-                      A few simple answers. Better searches. Better emails.
+                      Simple inputs. Sharper leads. Emails that know what you sell.
                     </p>
                   </div>
                 )}
 
                 {step === 1 && (
                   <div>
-                    <QuestionTitle eyebrow="Mode">What kind of engine are we tuning?</QuestionTitle>
+                    <QuestionTitle eyebrow="Start">Choose a starting point.</QuestionTitle>
                     <div className="mt-10 grid gap-3">
                       {SETUP_PRESETS.map(preset => {
                         const Icon = preset.icon;
@@ -445,7 +453,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                 {step === 2 && (
                   <SingleInput
                     eyebrow="Identity"
-                    question="What should we call you?"
+                    question="Who is sending the outreach?"
                     value={fullName}
                     onChange={setFullName}
                     placeholder="Your name"
@@ -455,7 +463,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 3 && (
                   <div>
-                    <QuestionTitle eyebrow="Company">What company is this for?</QuestionTitle>
+                    <QuestionTitle eyebrow="Company">What company should prospects see?</QuestionTitle>
                     <div className="mt-9 grid max-w-3xl gap-4">
                       <TechInput label="Company name" value={companyName} onChange={setCompanyName} placeholder="Your company" autoFocus />
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -469,7 +477,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 4 && (
                   <div>
-                    <QuestionTitle eyebrow="Offer">What do you sell?</QuestionTitle>
+                    <QuestionTitle eyebrow="Offer">What are you selling right now?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {SERVICE_TYPES.map(service => (
                         <OptionButton
@@ -502,8 +510,19 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 5 && (
                   <div>
-                    <QuestionTitle eyebrow="Audience">Who should the system look for first?</QuestionTitle>
-                    <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2">
+                    <QuestionTitle eyebrow="Audience">Who should we find for you?</QuestionTitle>
+                    <div className="mt-9 max-w-4xl">
+                      <TechInput
+                        value={targetCustomer}
+                        onChange={(value) => {
+                          setTargetCustomer(value);
+                          setSelectedPreset("custom");
+                        }}
+                        placeholder="Example: dentists, roofers, med spas, SaaS agencies..."
+                        autoFocus
+                      />
+                    </div>
+                    <div className="mt-5 grid max-w-4xl gap-3 sm:grid-cols-2">
                       {CLIENT_TYPES.map(option => (
                         <OptionButton
                           key={option.value}
@@ -525,7 +544,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
                   <div>
                     <SingleInput
                       eyebrow="Market"
-                      question="Where should we aim first?"
+                      question="Where should we search first?"
                       value={location}
                       onChange={setLocation}
                       placeholder="United States, Miami, Mexico..."
@@ -551,7 +570,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 7 && (
                   <div>
-                    <QuestionTitle eyebrow="Outcome">What result do you help clients get?</QuestionTitle>
+                    <QuestionTitle eyebrow="Promise">What outcome do you create?</QuestionTitle>
                     <textarea
                       autoFocus
                       value={valueProp}
@@ -568,7 +587,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 8 && (
                   <div>
-                    <QuestionTitle eyebrow="CTA">What should a good email ask for?</QuestionTitle>
+                    <QuestionTitle eyebrow="Ask">What should the first email ask for?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-2">
                       {CTA_OPTIONS.map(option => (
                         <OptionButton
@@ -599,7 +618,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 9 && (
                   <div>
-                    <QuestionTitle eyebrow="Deal fit">What opportunity size is worth prioritizing?</QuestionTitle>
+                    <QuestionTitle eyebrow="Deal fit">Which deals are worth your time?</QuestionTitle>
                     <div className="mt-9 grid max-w-4xl gap-3 sm:grid-cols-3">
                       {PRICING_TIERS.map(tier => (
                         <OptionButton
@@ -642,7 +661,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
                 {step === 10 && (
                   <div>
-                    <QuestionTitle eyebrow="Ready">Everything is set.</QuestionTitle>
+                    <QuestionTitle eyebrow="Ready">Ready to search.</QuestionTitle>
                     <p className="mt-6 max-w-3xl text-xl leading-8 text-[#e8fb52]">
                       We’ll use this quietly in the background to rank leads and write better outreach.
                     </p>
