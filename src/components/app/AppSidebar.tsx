@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ArrowUpRight,
   Bookmark,
@@ -78,8 +79,6 @@ const AppSidebar = ({
   creditsUsed,
   creditsTotal,
   onBuyCredits,
-  collapsed = false,
-  onToggleCollapse,
   userName,
   planLabel,
   prospectsCount,
@@ -93,6 +92,13 @@ const AppSidebar = ({
   onEditProfile,
   onSignOut,
 }: AppSidebarProps) => {
+  // Desktop rail sits collapsed and expands as a flyout on hover.
+  const [hovered, setHovered] = useState(false);
+  const collapsed = variant === "mobile" ? false : !hovered;
+  // Labels fade out instantly on collapse, fade in (slightly delayed) on expand,
+  // while staying in flow so icons/rows never shift position or height.
+  const labelFade = `transition-opacity duration-150 ${collapsed ? "opacity-0" : "opacity-100 delay-100"}`;
+
   const creditsRemaining = Math.max(0, creditsTotal - creditsUsed);
   const creditPercent = creditsTotal > 0 ? Math.min(100, (creditsRemaining / creditsTotal) * 100) : 0;
 
@@ -134,14 +140,14 @@ const AppSidebar = ({
         title={collapsed ? (hasBadge ? `${label}: ${badgeDescription}` : label) : undefined}
         aria-label={hasBadge ? `${label}, ${badgeDescription}` : label}
         onClick={() => (view === "admin" && onViewAdmin ? onViewAdmin() : onNavigate(view))}
-        className={`${base} ${state} ${collapsed ? "justify-center px-0" : ""}`}
+        className={`${base} ${state}`}
       >
         <Icon
           className={`h-[17px] w-[17px] flex-shrink-0 ${
             active ? "text-[#e8fb52]" : accent ? "" : "opacity-75 group-hover:opacity-100"
           }`}
         />
-        {!collapsed && <span className="truncate">{label}</span>}
+        <span className={`truncate ${labelFade}`}>{label}</span>
         {hasBadge && !collapsed && (
           <span
             className={`ml-auto rounded-full px-1.5 py-px font-mono text-[10px] font-bold ${
@@ -170,11 +176,24 @@ const AppSidebar = ({
 
   return (
     <aside
-      className={`h-full flex-shrink-0 flex-col border-[#f3f5f8]/[0.07] bg-[#0b0d11] transition-[width] duration-300 ease-in-out ${
-        variant === "desktop" ? "hidden border-r md:flex" : "flex w-full"
-      } ${variant === "desktop" ? (collapsed ? "w-[68px]" : "w-[248px]") : "w-full"}`}
+      className={
+        variant === "desktop"
+          ? "relative hidden h-full w-[64px] flex-shrink-0 md:block"
+          : "flex h-full w-full flex-col"
+      }
     >
-      {/* brand + collapse */}
+      <div
+        onMouseEnter={() => variant === "desktop" && setHovered(true)}
+        onMouseLeave={() => variant === "desktop" && setHovered(false)}
+        className={
+          variant === "desktop"
+            ? `absolute inset-y-0 left-0 z-40 flex h-full flex-col overflow-hidden border-r border-[#f3f5f8]/[0.07] bg-[#0b0d11] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                collapsed ? "w-[64px]" : "w-[228px] shadow-[0_24px_70px_rgba(0,0,0,0.65)]"
+              }`
+            : "flex h-full w-full flex-col bg-[#0b0d11]"
+        }
+      >
+      {/* brand */}
       <div className="flex h-16 flex-shrink-0 items-center gap-2.5 border-b border-[#f3f5f8]/[0.07] px-3.5">
         <img
           src="/logo.png"
@@ -182,53 +201,24 @@ const AppSidebar = ({
           aria-hidden="true"
           className="h-[30px] w-[30px] flex-shrink-0 rounded-[8px] object-contain"
         />
-        {!collapsed && (
-          <span className="font-display text-[16.5px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
-            GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
-          </span>
-        )}
-        {variant === "desktop" && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            title={collapsed ? "Expand" : "Collapse"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex h-7 w-7 items-center justify-center rounded-md text-[#5b6472] transition-colors hover:bg-[#14171d] hover:text-[#f3f5f8] ${
-              collapsed ? "mx-auto" : "ml-auto"
-            }`}
-          >
-            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-          </button>
-        )}
+        <span className={`whitespace-nowrap font-display text-[16.5px] font-bold tracking-[-0.02em] text-[#f3f5f8] ${labelFade}`}>
+          GlobaLeads<sup className="font-mono text-[8px] text-[#e8fb52]">22</sup>
+        </span>
       </div>
 
       {/* nav */}
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-3">
-        {!collapsed && (
-          <p className="px-2.5 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Workspace</p>
-        )}
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3">
+        <p className={`whitespace-nowrap px-2.5 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Workspace</p>
         {workspace.map(renderItem)}
-        {!collapsed && (
-          <p className="px-2.5 pb-1.5 pt-4 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472]">Library</p>
-        )}
-        {collapsed && <div className="my-2 h-px bg-[#f3f5f8]/[0.07]" />}
+        <p className={`whitespace-nowrap px-2.5 pb-1.5 pt-4 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Library</p>
         {library.map(renderItem)}
       </nav>
 
       {/* credits */}
       <div className="flex-shrink-0 px-3 pb-2.5">
-        {collapsed ? (
-          <button
-            type="button"
-            onClick={onBuyCredits}
-            title={`${creditsRemaining} credits left`}
-            className="flex w-full flex-col items-center gap-1 rounded-[10px] border border-[#f3f5f8]/[0.07] py-2.5 text-[#f3f5f8] hover:border-[#f3f5f8]/[0.13]"
-          >
-            <Zap className="h-4 w-4 text-[#e8fb52]" />
-            <span className="font-mono text-[10px] font-semibold tabular-nums">{creditsRemaining}</span>
-          </button>
-        ) : (
-          <div className="rounded-[13px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-3">
+        <div className="flex items-center gap-2.5 rounded-[12px] border border-[#f3f5f8]/[0.07] bg-[#0f1115] p-3">
+          <Zap className="h-4 w-4 shrink-0 text-[#e8fb52]" />
+          <div className={`min-w-0 flex-1 ${labelFade}`}>
             <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em] text-[#5b6472]">
               <span>Credits</span>
               <button
@@ -239,43 +229,33 @@ const AppSidebar = ({
                 Buy <ArrowUpRight className="h-3 w-3" />
               </button>
             </div>
-            <div className="mb-1.5 mt-1 font-display text-[20px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
+            <div className="mt-1 whitespace-nowrap font-display text-[18px] font-bold tracking-[-0.02em] text-[#f3f5f8]">
               {creditsRemaining.toLocaleString()}
               <span className="text-xs font-medium text-[#5b6472]"> / {creditsTotal.toLocaleString()}</span>
             </div>
-            <div className="h-[5px] overflow-hidden rounded-full bg-[#1c2029]">
+            <div className="mt-2 h-[5px] overflow-hidden rounded-full bg-[#1c2029]">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${creditPercent}%`, background: creditPercent > 18 ? "#e8fb52" : "#ff5c49" }}
               />
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* report a bug — earns credits */}
       {reportBugHref && (
         <div className="flex-shrink-0 px-3 pb-2">
-          {collapsed ? (
-            <a
-              href={reportBugHref}
-              title="Report a bug"
-              className="flex w-full items-center justify-center rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] py-2.5 text-[#e8fb52] transition-colors hover:bg-[#e8fb52]/[0.1]"
-            >
-              <Bug className="h-4 w-4" />
-            </a>
-          ) : (
-            <a
-              href={reportBugHref}
-              className="flex items-center gap-2.5 rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-2.5 py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
-            >
-              <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
-              <div className="min-w-0">
-                <div className="text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
-                <div className="font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
-              </div>
-            </a>
-          )}
+          <a
+            href={reportBugHref}
+            className="flex items-center gap-2.5 rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
+          >
+            <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
+            <div className={`min-w-0 ${labelFade}`}>
+              <div className="whitespace-nowrap text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
+              <div className="whitespace-nowrap font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
+            </div>
+          </a>
         </div>
       )}
 
@@ -286,22 +266,18 @@ const AppSidebar = ({
             <button
               type="button"
               title={collapsed ? (userName || "Account") : undefined}
-              className={`flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 transition-colors hover:bg-[#0f1115] ${collapsed ? "justify-center px-0" : ""}`}
+              className="flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 transition-colors hover:bg-[#0f1115]"
             >
               <span className="grid h-[30px] w-[30px] flex-shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#2a2f3a,#14171d)] font-mono text-[10px] font-semibold text-[#98a0af] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]">
                 {initials}
               </span>
-              {!collapsed && (
-                <>
-                  <div className="min-w-0 text-left">
-                    <div className="truncate text-[12.5px] font-semibold text-[#f3f5f8]">{userName || "Account"}</div>
-                    {planLabel && (
-                      <div className="truncate font-mono text-[9.5px] uppercase tracking-wide text-[#5b6472]">{planLabel}</div>
-                    )}
-                  </div>
-                  <ChevronUp className="ml-auto h-4 w-4 flex-shrink-0 text-[#5b6472]" />
-                </>
-              )}
+              <div className={`min-w-0 flex-1 text-left ${labelFade}`}>
+                <div className="truncate text-[12.5px] font-semibold text-[#f3f5f8]">{userName || "Account"}</div>
+                {planLabel && (
+                  <div className="truncate font-mono text-[9.5px] uppercase tracking-wide text-[#5b6472]">{planLabel}</div>
+                )}
+              </div>
+              <ChevronUp className={`ml-auto h-4 w-4 flex-shrink-0 text-[#5b6472] ${labelFade}`} />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -349,6 +325,7 @@ const AppSidebar = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
       </div>
     </aside>
   );
