@@ -4,6 +4,7 @@ import {
   calculateGeminiCost,
   emptySlots,
   enforceBounds,
+  nextQuestion,
   followUpUsedForActiveStep,
   mergeSlots,
   shouldForceDone,
@@ -34,6 +35,12 @@ describe("onboarding-chat helpers", () => {
     ];
 
     expect(followUpUsedForActiveStep(messages, emptySlots())).toBe(true);
+  });
+
+  it("starts with name, then explains the app before the offer question", () => {
+    expect(nextQuestion(emptySlots())).toBe("Welcome to GlobaLeads22. What should I call you?");
+    expect(nextQuestion({ ...emptySlots(), fullName: "Alex" })).toContain("helps find prospects with visible reasons to buy");
+    expect(nextQuestion({ ...emptySlots(), fullName: "Alex" })).toContain("What do you sell");
   });
 
   it("forces done at the 12-turn cap", () => {

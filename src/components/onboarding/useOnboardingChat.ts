@@ -24,7 +24,7 @@ interface UseOnboardingChatOptions {
 const initialMessage: OnboardingChatMessage = {
   id: "setup-greeting",
   role: "model",
-  content: "Let's set up your prospecting workspace. What do you sell, and who is it for?",
+  content: "Welcome to GlobaLeads22. What should I call you?",
 };
 
 const makeMessage = (role: OnboardingChatMessage["role"], content: string): OnboardingChatMessage => ({
@@ -51,6 +51,7 @@ export function useOnboardingChat({ userId, onComplete, onFallback }: UseOnboard
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const skippedRef = useRef(false);
+  const authDefaultSlotsRef = useRef<OnboardingSlots>(emptyOnboardingSlots());
 
   useEffect(() => {
     const loadAuthDefaults = async () => {
@@ -61,11 +62,11 @@ export function useOnboardingChat({ userId, onComplete, onFallback }: UseOnboard
         metadata.name ||
         [metadata.given_name, metadata.family_name].filter(Boolean).join(" ");
 
-      setSlots((current) => ({
-        ...current,
-        fullName: current.fullName || (typeof name === "string" ? name.trim() : ""),
-        companyName: current.companyName || (typeof metadata.company_name === "string" ? metadata.company_name.trim() : ""),
-      }));
+      authDefaultSlotsRef.current = {
+        ...authDefaultSlotsRef.current,
+        fullName: typeof name === "string" ? name.trim() : "",
+        companyName: typeof metadata.company_name === "string" ? metadata.company_name.trim() : "",
+      };
     };
     void loadAuthDefaults();
   }, []);
@@ -162,7 +163,15 @@ export function useOnboardingChat({ userId, onComplete, onFallback }: UseOnboard
 
   const skip = useCallback(async () => {
     skippedRef.current = true;
-    const saved = await saveProfile(slots, true);
+    const authDefaults = authDefaultSlotsRef.current;
+    const saved = await saveProfile({
+      offer: slots.offer,
+      market: slots.market,
+      problem: slots.problem,
+      emailAsk: slots.emailAsk,
+      fullName: slots.fullName || authDefaults.fullName,
+      companyName: slots.companyName || authDefaults.companyName,
+    }, true);
     if (!saved) skippedRef.current = false;
   }, [saveProfile, slots]);
 

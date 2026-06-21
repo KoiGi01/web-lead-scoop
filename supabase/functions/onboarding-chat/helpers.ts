@@ -22,6 +22,7 @@ export type GeminiUsageMetadata = {
 
 export const TURN_CAP = 12;
 export const SLOT_ORDER = ["offer", "market", "problem", "emailAsk", "sender"] as const;
+export const CONVERSATION_STEP_ORDER = ["fullName", "offer", "market", "problem", "emailAsk", "companyName"] as const;
 
 export const emptySlots = (): OnboardingSlots => ({
   offer: "",
@@ -69,13 +70,25 @@ export function filledStepCount(slots: OnboardingSlots) {
   ].filter(Boolean).length;
 }
 
-export function activeStep(slots: OnboardingSlots): typeof SLOT_ORDER[number] | null {
+export function activeStep(slots: OnboardingSlots): typeof CONVERSATION_STEP_ORDER[number] | null {
+  if (!slots.fullName) return "fullName";
   if (!slots.offer) return "offer";
   if (!slots.market) return "market";
   if (!slots.problem) return "problem";
   if (!slots.emailAsk) return "emailAsk";
-  if (!slots.fullName || !slots.companyName) return "sender";
+  if (!slots.companyName) return "companyName";
   return null;
+}
+
+export function completedConversationStepCount(slots: OnboardingSlots) {
+  return [
+    Boolean(slots.fullName),
+    Boolean(slots.offer),
+    Boolean(slots.market),
+    Boolean(slots.problem),
+    Boolean(slots.emailAsk),
+    Boolean(slots.companyName),
+  ].filter(Boolean).length;
 }
 
 export function userTurnCount(messages: ChatMessage[]) {
@@ -85,7 +98,7 @@ export function userTurnCount(messages: ChatMessage[]) {
 export function followUpUsedForActiveStep(messages: ChatMessage[], slots: OnboardingSlots) {
   const current = activeStep(slots);
   if (!current) return false;
-  const userTurnsAfterPriorFilledSteps = userTurnCount(messages) - filledStepCount(slots);
+  const userTurnsAfterPriorFilledSteps = userTurnCount(messages) - completedConversationStepCount(slots);
   return userTurnsAfterPriorFilledSteps >= 2;
 }
 
@@ -99,11 +112,12 @@ export function shouldForceDone(messages: ChatMessage[]) {
 
 export function nextQuestion(slots: OnboardingSlots) {
   const step = activeStep(slots);
-  if (step === "offer") return "What do you sell, and who is it for?";
+  if (step === "fullName") return "Welcome to GlobaLeads22. What should I call you?";
+  if (step === "offer") return "GlobaLeads22 helps find prospects with visible reasons to buy, organize them, and shape the first outreach angle. What do you sell, and who is it for?";
   if (step === "market") return "Where should we look for customers?";
   if (step === "problem") return "What problem do you solve for them?";
   if (step === "emailAsk") return "What should the first email ask them to do?";
-  if (step === "sender") return "What name and company should emails come from?";
+  if (step === "companyName") return "What company should emails come from?";
   return "You're set. I'll save this and open your workspace.";
 }
 
@@ -123,18 +137,12 @@ export function enforceBounds(
     const current = activeStep(slots);
     const fallbackValue = clean(latestUserMessage(messages), current === "market" ? 200 : 500);
     if (fallbackValue) {
+      if (current === "fullName") slots = { ...slots, fullName: clean(fallbackValue, 160) };
       if (current === "offer") slots = { ...slots, offer: fallbackValue };
       if (current === "market") slots = { ...slots, market: fallbackValue };
       if (current === "problem") slots = { ...slots, problem: fallbackValue };
       if (current === "emailAsk") slots = { ...slots, emailAsk: fallbackValue };
-      if (current === "sender") {
-        const parts = fallbackValue.split(/\s+(?:at|from|,)\s+/i);
-        slots = {
-          ...slots,
-          fullName: slots.fullName || clean(parts[0], 160),
-          companyName: slots.companyName || clean(parts[1] || parts[0], 160),
-        };
-      }
+      if (current === "companyName") slots = { ...slots, companyName: clean(fallbackValue, 160) };
     }
   }
 
