@@ -3,21 +3,21 @@ import { ArrowRight, ArrowUpRight, ChevronLeft, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
-import { serializeOutreachProfile } from "@/lib/outreachProfile";
+import { buildOnboardingProfile, normalizeOnboardingSlots, type OnboardingSlots } from "@/lib/onboardingProfile";
 import { track } from "@/lib/analytics";
 
 interface OnboardingModalProps {
   open: boolean;
   onClose: () => void;
   userId: string;
+  initialSlots?: Partial<OnboardingSlots>;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
 const STEP_LABELS = ["Offer", "Market", "Problem", "Email", "Sender"] as const;
 
-export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps) {
+export function OnboardingModal({ open, onClose, userId, initialSlots }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [dir, setDir] = useState<1 | -1>(1);
   const [saving, setSaving] = useState(false);
@@ -37,10 +37,17 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
 
   useEffect(() => {
     if (!open) return;
+    const slots = normalizeOnboardingSlots(initialSlots);
     setStep(1);
     setDir(1);
     setError(null);
-  }, [open]);
+    setOffer(slots.offer);
+    setMarket(slots.market);
+    setProblem(slots.problem);
+    setEmailAsk(slots.emailAsk);
+    setFullName(slots.fullName);
+    setCompanyName(slots.companyName);
+  }, [open, initialSlots]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,69 +74,19 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
     void loadAuthDefaults();
   }, [open]);
 
-  // Map the five answers onto the existing profile shape. Anything not asked
-  // keeps a safe default so downstream code and `setup_profile` stay intact.
-  const buildProfile = (skip: boolean) => {
-    const offerText = offer.trim();
-    const serviceType = skip || !offerText ? "Lead research" : offerText;
-
-    const outreachProfile = serializeOutreachProfile({
-      valueProp: skip ? "" : problem.trim(),
-      proofPoint: "",
-      ctaType: !skip && emailAsk.trim() ? "custom" : "reply",
-      ctaDetail: skip ? "" : emailAsk.trim(),
-      tone: "direct",
-    });
-
-    const setupProfile = {
-      version: 3,
-      preset: skip ? "skipped" : "custom",
-      business: {
-        fullName: fullName.trim(),
-        roleTitle: "",
-        companyName: companyName.trim(),
-        companyWebsite: "",
-      },
-      offer: {
-        serviceType,
-        serviceOther: "",
-        pricingTier: "mid_tier",
-      },
-      audience: {
-        clientType: "any",
-        targetCustomer: skip ? "" : offerText,
-        location: skip ? "" : market.trim(),
-        sellsOnline: true,
-      },
-      outreachProfile,
-      ...(skip ? { skipped: true } : {}),
-      completedAt: new Date().toISOString(),
-    };
-
-    return {
-      id: userId,
-      service_type: serviceType,
-      service_other: null,
-      full_name: fullName.trim() || null,
-      role_title: null,
-      company_name: companyName.trim() || null,
-      company_website: null,
-      phone: null,
-      client_type: "any",
-      pricing_tier: "mid_tier",
-      location: skip ? null : market.trim() || null,
-      sells_online: true,
-      outreach_profile: outreachProfile,
-      setup_profile: setupProfile as Json,
-    };
-  };
-
   const saveProfile = async (skip = false) => {
     try {
       setSaving(true);
       setError(null);
 
-      const profile = buildProfile(skip);
+      const profile = buildOnboardingProfile(userId, {
+        offer,
+        market,
+        problem,
+        emailAsk,
+        fullName,
+        companyName,
+      }, { skip });
       if (!profile.service_type || !profile.client_type || !profile.pricing_tier) {
         setError("Finish the required setup first.");
         return;

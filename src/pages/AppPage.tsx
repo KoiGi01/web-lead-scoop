@@ -16,7 +16,7 @@ import LeadGeneratorSection from "@/components/landing/LeadGeneratorSection";
 import AuthModal from "@/components/auth/AuthModal";
 import CreditsModal from "@/components/app/CreditsModal";
 import EditProfileModal from "@/components/app/EditProfileModal";
-import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import Onboarding from "@/components/onboarding/Onboarding";
 import ViewAllLeads from "@/components/landing/ViewAllLeads";
 import HomeDashboard from "@/components/app/HomeDashboard";
 import AppSidebar from "@/components/app/AppSidebar";
@@ -707,7 +707,7 @@ const AppPage = () => {
         onSaved={refetchProfile}
       />
       {user && (
-        <OnboardingModal
+        <Onboarding
           open={onboardingOpen}
           onClose={handleOnboardingClose}
           userId={user.id}
