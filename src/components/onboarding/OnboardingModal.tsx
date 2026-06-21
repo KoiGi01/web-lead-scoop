@@ -236,7 +236,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         <div className="gl-spin absolute inset-[14%] border border-[#e8fb52]/[0.05]" style={{ animationDuration: "90s", animationDirection: "reverse" }} />
       </div>
 
-      <div className="relative flex h-screen flex-col">
+      <div className="relative flex h-[100dvh] flex-col">
         {/* Top progress rail doubles as the accent line */}
         <div className="absolute inset-x-0 top-0 h-px bg-[#e8fb52]/10">
           <div
@@ -271,8 +271,9 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
             <span className="text-[#5b6472]">{STEP_LABELS[step - 1]}</span>
           </div>
 
-          {/* Question stage */}
-          <div className="flex min-h-0 flex-1 items-center py-8 sm:py-10">
+          {/* Question stage — scrollable + top-aligned on mobile so the on-screen
+              keyboard never covers the focused field; centered on larger screens. */}
+          <div className="flex min-h-0 flex-1 items-start overflow-y-auto py-6 sm:items-center sm:py-10">
             <div key={step} className={`w-full ${enterAnim}`}>
               {step === 1 && (
                 <Question prompt="What do you sell — and who is it for?">
@@ -417,6 +418,13 @@ interface InputProps {
   placeholder: string;
 }
 
+// On mobile, scroll the focused field to center after the keyboard animates in
+// so it's never hidden behind the keyboard.
+const handleFieldFocus = (e: { currentTarget: HTMLElement }) => {
+  const el = e.currentTarget;
+  window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
+};
+
 const BigInput = forwardRef<HTMLInputElement, InputProps>(
   ({ value, onChange, onKeyDown, placeholder }, ref) => (
     <div className="mt-9 flex max-w-3xl items-center border-b border-[#f3f5f8]/[0.14] pb-3 transition-colors focus-within:border-[#e8fb52]">
@@ -426,6 +434,7 @@ const BigInput = forwardRef<HTMLInputElement, InputProps>(
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={handleFieldFocus}
         placeholder={placeholder}
         className={`${fieldText} font-display text-3xl font-bold tracking-[-0.02em] sm:text-4xl`}
       />
@@ -443,6 +452,7 @@ const BigTextarea = forwardRef<HTMLTextAreaElement, InputProps>(
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={handleFieldFocus}
         placeholder={placeholder}
         rows={2}
         className={`${fieldText} resize-none font-display text-2xl font-semibold leading-snug tracking-[-0.015em] sm:text-[28px]`}
@@ -461,6 +471,7 @@ const LineField = forwardRef<HTMLInputElement, InputProps & { label: string }>(
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={handleFieldFocus}
         placeholder={placeholder}
         className={`${fieldText} font-display text-xl font-bold tracking-[-0.015em] sm:text-2xl`}
       />
