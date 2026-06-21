@@ -53,6 +53,19 @@ const DETECTORS: Record<OpportunitySignalKey, Detector> = {
     };
   },
 
+  no_website: (facts, ctx) => {
+    const present = ctx.hasWebsite === false;
+    return {
+      key: "no_website",
+      present,
+      confidence: clamp(present ? 92 : 5),
+      evidence: {
+        sourceUrl: present ? "no-website" : sourceUrlOf(facts),
+        snippet: present ? "no website found in public business listings" : "website present",
+      },
+    };
+  },
+
   no_booking: (facts) => {
     const hasBookingCta = facts.ctaTexts.some(t => BOOKING_CTA_RE.test(t));
     const present = facts.bookingLinks.length === 0 && !hasBookingCta;

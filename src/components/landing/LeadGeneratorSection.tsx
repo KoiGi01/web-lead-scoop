@@ -39,6 +39,7 @@ import {
   opportunitySignalLabels,
   getServiceRecommendedSignalKeys,
   getServiceSignalKeys,
+  signalRequiresWebsite,
 } from "@/lib/opportunitySignals";
 import { ScanTarget, synthesizeScanPlanIntelligence } from "@/lib/scanPlan";
 import { detectOpportunitySignals, type DetectedSignal } from "@/lib/detectOpportunitySignals";
@@ -610,6 +611,10 @@ const demoLeadResults: LeadResult[] = [
     leadQualityScore: 96,
     leadQualityLabel: "Strong lead",
     leadQualityReason: "person + website + email + phone + visible booking gap.",
+    detectedSignals: [
+      { key: "no_booking", present: true, confidence: 88, evidence: { sourceUrl: "https://example.com/brightsmile", snippet: "No online booking link found on the homepage." } },
+      { key: "weak_website", present: true, confidence: 71, evidence: { sourceUrl: "https://example.com/brightsmile", snippet: "Single-page site with dated layout and no mobile menu." } },
+    ],
   },
   {
     placeId: "demo-2",
@@ -635,6 +640,10 @@ const demoLeadResults: LeadResult[] = [
     leadQualityScore: 88,
     leadQualityLabel: "Strong lead",
     leadQualityReason: "owner + public email + weak consultation CTA.",
+    detectedSignals: [
+      { key: "no_clear_cta", present: true, confidence: 80, evidence: { sourceUrl: "https://example.com/austin-cosmetic", snippet: "No consultation or quote CTA above the fold." } },
+      { key: "generic_inbox", present: true, confidence: 62, evidence: { sourceUrl: "https://example.com/austin-cosmetic", snippet: "Only a generic contact@ inbox is published." } },
+    ],
   },
   {
     placeId: "demo-3",
@@ -658,6 +667,30 @@ const demoLeadResults: LeadResult[] = [
     leadQualityScore: 81,
     leadQualityLabel: "Good lead",
     leadQualityReason: "person + phone + website + generic inbox.",
+    detectedSignals: [
+      { key: "low_reviews", present: true, confidence: 66, evidence: { sourceUrl: "https://example.com/westside-dental", snippet: "Low public review count relative to nearby clinics." } },
+      { key: "no_social_links", present: true, confidence: 58, evidence: { sourceUrl: "https://example.com/westside-dental", snippet: "No visible Instagram or Facebook links." } },
+    ],
+  },
+  {
+    placeId: "demo-4",
+    name: "Cedar Park Family Dental",
+    address: "Austin, TX",
+    phone: "(512) 555-0119",
+    website: "",
+    category: "dental clinic",
+    emails: [],
+    whatsapp: [],
+    socialLinks: [],
+    contactPageFound: false,
+    emailSource: "none",
+    contacts: [],
+    leadQualityScore: 68,
+    leadQualityLabel: "Good lead",
+    leadQualityReason: "active listing with phone, but no website at all.",
+    detectedSignals: [
+      { key: "no_website", present: true, confidence: 94, evidence: { sourceUrl: "no-website", snippet: "No website found in public business listings — only a Google profile." } },
+    ],
   },
 ];
 
@@ -843,8 +876,12 @@ const serviceOptions = [
   { value: customServiceValue, label: "Custom" },
 ];
 
+const hasPresentNoWebsiteSignal = (lead: LeadResult) =>
+  Boolean(lead.detectedSignals?.some(signal => signal.key === "no_website" && signal.present));
+
 const passesQualityGate = (lead: LeadResult, _config: SearchConfig) => {
-  return hasQualifiedPersonLead(lead);
+  // "No website" prospects are a valid opportunity even without a named person.
+  return hasQualifiedPersonLead(lead) || hasPresentNoWebsiteSignal(lead);
 };
 
 const getPreferredSignalScore = (lead: LeadResult, required: RequiredContactFilters) =>
@@ -1160,11 +1197,14 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
   };
 
   const toggleOpportunitySignal = (key: OpportunitySignalKey) => {
-    setOpportunitySignals(prev => (
-      prev.includes(key)
-        ? prev.filter(signal => signal !== key)
-        : [...prev, key]
-    ));
+    setOpportunitySignals(prev => {
+      if (prev.includes(key)) return prev.filter(signal => signal !== key);
+      // "No website" is mutually exclusive with website-derived signals.
+      if (key === "no_website") {
+        return [...prev.filter(signal => !signalRequiresWebsite(signal)), key];
+      }
+      return [...prev, key];
+    });
   };
 
   const selectService = (value: string) => {
@@ -1729,6 +1769,31 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
         }
       }
 
+      // "No website" prospects: a build-from-scratch web-design opportunity.
+      // These have no page to scrape, so they cost no Firecrawl credits. Only
+      // pulled in when the user is actually hunting for them.
+      if ((config.opportunitySignals || []).includes("no_website")) {
+        for (const business of businesses) {
+          if (business.website) continue;
+          if (leads.length >= depthSettings.maxResults) break;
+          leads.push({
+            ...business,
+            emails: [],
+            whatsapp: [],
+            socialLinks: [],
+            contactPageFound: false,
+            emailSource: "none",
+            contacts: [],
+            detectedSignals: [{
+              key: "no_website",
+              present: true,
+              confidence: 92,
+              evidence: { sourceUrl: "no-website", snippet: "No website found in public business listings." },
+            }],
+          });
+        }
+      }
+
       setStage("rank");
       setStatus("Finalizing person-qualified opportunities...");
       setProgress(96);
@@ -2235,6 +2300,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
                             const effectiveService = selectedService === customServiceValue ? customService : selectedService;
                             const signalKeys = getServiceSignalKeys(effectiveService);
                             if (!signalKeys.length) return null;
+                            const noWebsiteSelected = opportunitySignals.includes("no_website");
                             return (
                               <div className={sectionWrap}>
                                 <p className={cardLabel}>Opportunity signals</p>
@@ -2242,20 +2308,25 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
                                 <div className="mt-3.5 flex flex-wrap gap-2">
                                   {signalKeys.map(key => {
                                     const active = opportunitySignals.includes(key);
+                                    const disabled = noWebsiteSelected && key !== "no_website" && signalRequiresWebsite(key);
                                     return (
                                       <button
                                         key={key}
                                         type="button"
                                         onClick={() => toggleOpportunitySignal(key)}
                                         aria-pressed={active}
-                                        title={opportunitySignalOptions.find(option => option.key === key)?.description}
-                                        className={`${chipBase} ${active ? chipOn : chipOff}`}
+                                        disabled={disabled}
+                                        title={disabled ? "Needs a website — not available with “No website”." : opportunitySignalOptions.find(option => option.key === key)?.description}
+                                        className={`${chipBase} ${disabled ? "cursor-not-allowed border-[#f3f5f8]/[0.05] bg-transparent text-[#3a414e] line-through" : active ? chipOn : chipOff}`}
                                       >
                                         {opportunitySignalLabels[key] || key}
                                       </button>
                                     );
                                   })}
                                 </div>
+                                {noWebsiteSelected && (
+                                  <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#5d6675]">Website-based signals are off — these prospects have no site to scan.</p>
+                                )}
                                 {fieldErrors.opportunitySignals && <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-[#ffb4ab]">{fieldErrors.opportunitySignals}</p>}
                               </div>
                             );
@@ -2751,8 +2822,8 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
                           </span>
                         </div>
 
-                        {/* Buying signals (opportunity mode) */}
-                        {opportunityModeOn && (
+                        {/* Buying signals — surfaced whenever any were detected */}
+                        {summary.hasSignals && (
                           <div className="mt-3.5">
                             <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Buying signals</p>
                             {summary.hasSignals ? (
@@ -2802,7 +2873,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
                         <div className={`grid transition-all duration-200 ease-out motion-reduce:transition-none ${expanded ? "mt-3.5 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                           <div className="overflow-hidden" inert={!expanded ? true : undefined}>
                             <div className="space-y-3.5 border-t border-[#f3f5f8]/10 pt-3.5">
-                              {opportunityModeOn && summary.hasSignals && (
+                              {summary.hasSignals && (
                                 <div>
                                   <p className="font-mono text-[9px] uppercase tracking-widest text-[#5d6675]">Evidence</p>
                                   <ul className="mt-2 space-y-1.5">

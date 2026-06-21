@@ -33,25 +33,40 @@ export function buildLeadIntelligence(
   websiteSignals: WebsiteSignals | undefined,
   service: string,
 ): LeadIntelligencePayload | null {
-  if (!websiteSignals || !detectedSignals || detectedSignals.length === 0) return null;
+  if (!detectedSignals || detectedSignals.length === 0) return null;
+  // Persist even with no website (e.g. the "no website" opportunity) as long as
+  // there is at least one present signal to record.
+  if (!websiteSignals && !detectedSignals.some(signal => signal.present)) return null;
 
   const detectedIssues = detectedSignals
     .filter(signal => signal.present)
     .map(signal => opportunitySignalLabels[signal.key] || signal.key);
 
-  const website: WebsiteSignalsSummary = {
-    pagesScanned: websiteSignals.pagesScanned,
-    title: websiteSignals.title,
-    metaDescription: websiteSignals.metaDescription,
-    homepageTextLength: websiteSignals.homepageTextLength,
-    contactFormFound: websiteSignals.contactFormFound,
-    contactPageFound: websiteSignals.contactPageFound,
-    bookingLinks: websiteSignals.bookingLinks,
-    socialLinks: websiteSignals.socialLinks,
-    hasGenericInboxOnly: websiteSignals.hasGenericInboxOnly,
-    techStack: websiteSignals.techStack,
-    ssl: websiteSignals.ssl,
-  };
+  const website: WebsiteSignalsSummary = websiteSignals
+    ? {
+        pagesScanned: websiteSignals.pagesScanned,
+        title: websiteSignals.title,
+        metaDescription: websiteSignals.metaDescription,
+        homepageTextLength: websiteSignals.homepageTextLength,
+        contactFormFound: websiteSignals.contactFormFound,
+        contactPageFound: websiteSignals.contactPageFound,
+        bookingLinks: websiteSignals.bookingLinks,
+        socialLinks: websiteSignals.socialLinks,
+        hasGenericInboxOnly: websiteSignals.hasGenericInboxOnly,
+        techStack: websiteSignals.techStack,
+        ssl: websiteSignals.ssl,
+      }
+    : {
+        pagesScanned: [],
+        homepageTextLength: 0,
+        contactFormFound: false,
+        contactPageFound: false,
+        bookingLinks: [],
+        socialLinks: [],
+        hasGenericInboxOnly: false,
+        techStack: [],
+        ssl: { valid: false, httpsRedirect: false },
+      };
 
   return {
     detectedIssues,

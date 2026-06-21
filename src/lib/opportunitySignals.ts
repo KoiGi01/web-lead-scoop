@@ -1,5 +1,6 @@
 export type OpportunitySignalKey =
   | "weak_website"
+  | "no_website"
   | "no_booking"
   | "no_clear_cta"
   | "generic_inbox"
@@ -7,6 +8,19 @@ export type OpportunitySignalKey =
   | "no_social_links"
   | "no_contact_form"
   | "weak_local_presence";
+
+// Signals derived from scanning a website. These are meaningless (and mutually
+// exclusive) when the target has no website at all.
+export const WEBSITE_DEPENDENT_SIGNALS: ReadonlySet<OpportunitySignalKey> = new Set([
+  "weak_website",
+  "no_booking",
+  "no_clear_cta",
+  "generic_inbox",
+  "no_social_links",
+  "no_contact_form",
+]);
+
+export const signalRequiresWebsite = (key: OpportunitySignalKey) => WEBSITE_DEPENDENT_SIGNALS.has(key);
 
 export const opportunitySignalOptions: Array<{
   key: OpportunitySignalKey;
@@ -19,6 +33,12 @@ export const opportunitySignalOptions: Array<{
     label: "Weak website",
     description: "Outdated, thin, messy, or low-converting website signals.",
     services: ["Web design", "SEO", "Paid ads", "Lead generation"],
+  },
+  {
+    key: "no_website",
+    label: "No website",
+    description: "Business has no website at all — a build-from-scratch opportunity (and no page to scan, so no scraping cost).",
+    services: ["Web design", "SEO", "Lead generation", "Booking automation"],
   },
   {
     key: "no_booking",
@@ -73,7 +93,9 @@ export const getServiceRecommendedSignalKeys = (service = ""): OpportunitySignal
   if (!normalized) return ["weak_website", "no_clear_cta", "generic_inbox"];
   const exact = opportunitySignalOptions
     .filter(option => option.services.some(item => item.toLowerCase() === normalized))
-    .map(option => option.key);
+    .map(option => option.key)
+    // "No website" is opt-in (it changes scan composition), never a default.
+    .filter(key => key !== "no_website");
   if (exact.length) return exact.slice(0, 4);
   if (/web|site|design|ux|landing/i.test(service)) return ["weak_website", "no_clear_cta", "no_booking", "no_contact_form"];
   if (/seo|local|rank|visibility/i.test(service)) return ["weak_local_presence", "low_reviews", "weak_website", "no_social_links"];
