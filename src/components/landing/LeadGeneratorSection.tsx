@@ -47,6 +47,7 @@ import type { WebsiteSignals } from "../../supabase/functions/_shared/websiteSig
 import { buildLeadIntelligence } from "@/lib/leadIntelligence";
 import { computeSignalDiagnostics, type SignalDiagnostics } from "@/lib/signalDiagnostics";
 import { summarizeOpportunityCard } from "@/lib/opportunityCard";
+import { track } from "@/lib/analytics";
 
 interface Business {
   placeId: string;
@@ -1636,6 +1637,12 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
     }
 
     setIsProcessing(true);
+    track("scan_started", {
+      service: config.selectedService,
+      depth: config.depth,
+      enrich: config.enrichMode,
+      signals: config.opportunitySignals?.length || 0,
+    });
     setResults(null);
     setSearchDiagnostics(null);
     setSearchStepStatus(null);
@@ -1846,6 +1853,7 @@ const LeadGeneratorSection = ({ onOpenAuth, onSearchComplete, onScanStateChange,
           : `Found ${businesses.length} companies, but no public person names yet.`,
       });
       await saveSearch(ranked, searchSessionId, config, runChargedCredits);
+      track("scan_completed", { leads: ranked.length, enrich: config.enrichMode, depth: config.depth });
       onSearchComplete?.(ranked.length);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Search failed";

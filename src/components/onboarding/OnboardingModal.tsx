@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { serializeOutreachProfile } from "@/lib/outreachProfile";
+import { track } from "@/lib/analytics";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -140,6 +141,7 @@ export function OnboardingModal({ open, onClose, userId }: OnboardingModalProps)
         return;
       }
 
+      track("onboarding_completed", { skipped: skip });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save your setup.");

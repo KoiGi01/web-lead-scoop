@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,7 @@ const AuthModal = ({ open, onClose, redirectTo }: AuthModalProps) => {
                     },
                 });
                 if (error) throw error;
+                track("signup_completed", { method: "email" });
                 setSuccess("Check your email for a confirmation link. Then sign in below.");
                 setMode("signin");
                 setPassword("");

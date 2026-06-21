@@ -23,6 +23,7 @@ import AppSidebar from "@/components/app/AppSidebar";
 import type { AppSidebarView } from "@/components/app/AppSidebar";
 import ScanStatusDock from "@/components/app/ScanStatusDock";
 import type { ScanStatus } from "@/components/app/ScanStatusDock";
+import { identifyUser, track } from "@/lib/analytics";
 import AdminDashboard from "@/components/app/AdminDashboard";
 import SavedSearches from "@/components/app/SavedSearches";
 import SettingsCredits from "@/components/app/SettingsCredits";
@@ -88,6 +89,11 @@ const AppPage = () => {
   const profile = isDemoPreview ? demoProfile : fetchedProfile;
   const hasProfile = isDemoPreview ? true : fetchedHasProfile;
   const profileChecked = isDemoPreview ? true : fetchedProfileChecked;
+
+  // Tie analytics events to the signed-in user for funnel/retention analysis.
+  useEffect(() => {
+    if (user?.id && !isDemoPreview) identifyUser(user.id, { email: user.email });
+  }, [user?.id, user?.email, isDemoPreview]);
   const creditsBalance = isDemoPreview ? 140 : fetchedCreditsBalance;
   const creditsPlan = isDemoPreview ? "growth" : fetchedCreditsPlan;
   const isAdmin = isDemoPreview ? false : fetchedIsAdmin;
@@ -392,6 +398,7 @@ const AppPage = () => {
     }
 
     setCheckoutLoading(true);
+    track("checkout_started", { bundleKey, checkoutType });
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: { bundleKey, planKey: bundleKey, checkoutType, userId: user.id },
