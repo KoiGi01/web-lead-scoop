@@ -16,6 +16,12 @@ land **visually** (animation, brand-native motion, faithful UI replicas) rather
 than as prose. Keep the existing hero animation, brand identity, and the
 "powered by" vendor marquee.
 
+The page must also tell the **full product story**, not just discovery. Today it
+stops at "here are your ranked leads" and never shows that you can act on them.
+The product closes the loop with **outreach automation** (email campaigns with
+personalized templates + AI drafting). The narrative and the UI replicas must
+show both halves: **find the opportunity → reach out with context, automatically.**
+
 ## Constraints & inputs
 
 - **Real proof to use (honest, approved by owner):** 34 paying users across
@@ -70,7 +76,16 @@ faithfully (lift structure + styling, translate Tailwind → vanilla CSS in
   `src/components/app/OpportunitiesDashboard.tsx` (note its animated SVG
   `ScoreRing`) and `src/components/landing/ViewAllLeads.tsx`: business, likely
   decision maker, public contact fields, signal tags, and the fit score.
+- **Outreach automation composer** — from
+  `src/components/app/EmailAutomation.tsx`: the email composer showing a
+  subject + body with personalization tokens (`{{firstName}}`, `{{company}}`),
+  the AI-draft control (Sparkles + an intent preset such as "Send an audit"),
+  a recipient list, and a campaign status line (queued / sent). This is the
+  "act on the leads" half of the loop.
 - Use realistic but clearly-sample data; redact nothing real (it's invented).
+- **Sequencing:** present the replicas as the product flow — search → ranked
+  inbox → opportunity card → outreach composer — so the visuals walk the visitor
+  through "find the opportunity, then reach out."
 - **Accent harmonization:** app uses `#e8fb52`, landing uses `#F2E500`. Render
   the replicas in the landing's accent so the page reads as one brand.
 
@@ -86,7 +101,13 @@ faithfully (lift structure + styling, translate Tailwind → vanilla CSS in
   - *Will it work for my niche?* — works across industries (ties to #3).
 - Keeps the trust content but removes the wall of text.
 
-### 7. Scroll-reveal motion + trimmed copy (global)
+### 7. Workflow narrative includes outreach
+- Extend the "How it works" steps from 3 to 4 so the story ends on action:
+  define the market → find the opening → start with context → **reach out
+  automatically** (personalized outreach to the best-fit prospects). Keep copy
+  short and visual.
+
+### 8. Scroll-reveal motion + trimmed copy (global)
 - Lightweight `IntersectionObserver` reveal-on-scroll for each section (fade/rise),
   added in `hero-v2.js`, gated by `prefers-reduced-motion`.
 - Tighten paragraphs in how-it-works / who-it's-for into shorter, punchier lines.
