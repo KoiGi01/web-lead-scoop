@@ -24,3 +24,13 @@ export const identifyUser = (id: string, props?: Props) => {
 export const resetAnalytics = () => {
   if (ready()) posthog.reset();
 };
+
+// Build a deep-link into the PostHog app for an identified user's person page
+// (which exposes their session recordings). Returns null when the project id
+// env var isn't configured, so callers can hide the link.
+export const posthogPersonUrl = (distinctId: string): string | null => {
+  const projectId = import.meta.env.VITE_POSTHOG_PROJECT_ID as string | undefined;
+  if (!projectId || !distinctId) return null;
+  const appHost = (import.meta.env.VITE_POSTHOG_APP_HOST as string | undefined) || "https://us.posthog.com";
+  return `${appHost.replace(/\/$/, "")}/project/${projectId}/person/${encodeURIComponent(distinctId)}`;
+};

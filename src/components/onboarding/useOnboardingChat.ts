@@ -52,6 +52,14 @@ export function useOnboardingChat({ userId, onComplete, onFallback }: UseOnboard
   const [retryCount, setRetryCount] = useState(0);
   const skippedRef = useRef(false);
   const authDefaultSlotsRef = useRef<OnboardingSlots>(emptyOnboardingSlots());
+  const startedRef = useRef(false);
+  const lastTrackedProgressRef = useRef(0);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    track("onboarding_started");
+  }, []);
 
   useEffect(() => {
     const loadAuthDefaults = async () => {
@@ -72,6 +80,13 @@ export function useOnboardingChat({ userId, onComplete, onFallback }: UseOnboard
   }, []);
 
   const progress = useMemo(() => slotProgress(slots), [slots]);
+
+  useEffect(() => {
+    if (progress > lastTrackedProgressRef.current) {
+      lastTrackedProgressRef.current = progress;
+      track("onboarding_step_completed", { step: progress });
+    }
+  }, [progress]);
 
   const saveProfile = useCallback(async (saveSlots: OnboardingSlots, skip: boolean) => {
     setSaving(true);

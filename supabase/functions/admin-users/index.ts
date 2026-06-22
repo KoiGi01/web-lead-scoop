@@ -286,6 +286,29 @@ const updateUser = async (callerId: string, body: Record<string, unknown>) => {
   return json({ success: true });
 };
 
+const getSessionLeads = async (body: Record<string, unknown>) => {
+  const sessionId = String(body.sessionId || "");
+  if (!sessionId) return json({ error: "Missing session id" }, 400);
+
+  const sessionResult = await supabase
+    .from("search_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (sessionResult.error) throw sessionResult.error;
+  if (!sessionResult.data) return json({ error: "Search not found" }, 404);
+
+  const leadsResult = await supabase
+    .from("saved_leads")
+    .select("id, name, website, category, selected_service, emails, phone, contacts, crm_status, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(500);
+  if (leadsResult.error) throw leadsResult.error;
+
+  return json({ session: sessionResult.data, leads: leadsResult.data || [] });
+};
+
 const createOrganization = async (callerId: string, isAdmin: boolean, body: Record<string, unknown>) => {
   const ownerUserId = isAdmin && body.ownerUserId ? String(body.ownerUserId) : callerId;
   const name = String(body.name || "").trim();
@@ -347,6 +370,7 @@ Deno.serve(async (req) => {
 
     if (action === "list_users") return json(await listUsers());
     if (action === "update_user") return await updateUser(user.id, body);
+    if (action === "get_session_leads") return await getSessionLeads(body);
 
     return json({ error: "Unknown action" }, 400);
   } catch (error) {

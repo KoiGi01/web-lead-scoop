@@ -135,7 +135,8 @@ export function OnboardingChat({
             <span>Setup</span>
           </div>
 
-          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto py-6 sm:py-8">
+          {/* ph-no-mask: capture onboarding content in PostHog session replay (rest of app stays masked) */}
+          <div ref={listRef} className="ph-no-mask min-h-0 flex-1 overflow-y-auto py-6 sm:py-8">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
@@ -188,7 +189,7 @@ export function OnboardingChat({
               rows={2}
               disabled={loading || saving}
               placeholder="Type your answer..."
-              className="min-h-[52px] flex-1 resize-none rounded-lg border border-[#f3f5f8]/10 bg-[#0f1115] px-4 py-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5b6472] focus:border-[#e8fb52]/70 disabled:opacity-60"
+              className="ph-no-mask min-h-[52px] flex-1 resize-none rounded-lg border border-[#f3f5f8]/10 bg-[#0f1115] px-4 py-3 text-sm leading-6 text-[#f3f5f8] outline-none placeholder:text-[#5b6472] focus:border-[#e8fb52]/70 disabled:opacity-60"
             />
             <Button
               type="submit"

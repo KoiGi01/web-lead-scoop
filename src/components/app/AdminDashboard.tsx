@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, ArrowLeft, Building2, RefreshCw, Save, Search, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Building2, PlayCircle, RefreshCw, Save, Search, ShieldCheck, Users } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
+import { posthogPersonUrl } from "@/lib/analytics";
 import { PLAN_LABELS, type PlanKey } from "@/lib/entitlements";
+import AdminUserSearches from "@/components/app/AdminUserSearches";
 
 type UsageEvent = Tables<"api_usage_events">;
 type CreditTransaction = Tables<"credit_transactions">;
@@ -522,6 +524,20 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
                     </button>
                   </div>
                 </div>
+
+                <AdminUserSearches userId={selectedUser.id} userEmail={selectedUser.email} />
+
+                {posthogPersonUrl(selectedUser.id) && (
+                  <a
+                    href={posthogPersonUrl(selectedUser.id) as string}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 border border-[#e8fb52]/50 px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52] hover:border-[#e8fb52] hover:bg-[#e8fb52]/5"
+                  >
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    View session recordings ↗
+                  </a>
+                )}
 
                 <div className="space-y-1 border border-[#f3f5f8]/10 bg-black p-3 font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
                   <p>Status: <span className="text-[#f3f5f8]">{selectedUser.subscription_status}</span></p>
