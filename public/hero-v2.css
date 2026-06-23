@@ -1538,3 +1538,23 @@ html.no-motion .industries-track { animation: none; flex-wrap: wrap; justify-con
   color: var(--muted);
 }
 .compose-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); outline: 1px solid rgba(21, 20, 15, 0.4); flex: none; }
+
+/* ---------------- mid-page CTA ---------------- */
+.mid-cta {
+  max-width: 1140px;
+  margin: 96px auto 0;
+  padding: 0 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 22px;
+}
+.mid-cta-line {
+  font-family: var(--display);
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+@media (max-width: 760px) { .mid-cta { padding: 0 24px; margin-top: 64px; } }
