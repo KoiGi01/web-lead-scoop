@@ -48,12 +48,15 @@
     line(W, v * H, BX + BW, BY + v * BH, 0.15, 1, "grid-line grid-line-right");
   }
 
-  /* depth rungs (perspective-spaced rectangles) */
-  var rungs = [0.18, 0.36, 0.52, 0.66, 0.78, 0.88, 0.96];
-  rungs.forEach(function (t, index) {
-    var rung = rectOutline(lerp(0, BX, t), lerp(0, BY, t), lerp(W, BW, t), lerp(H, BH, t), 0.22, 1, "depth-rung");
-    rung.style.setProperty("--i", index);
-  });
+  /* depth rungs: every ring is born as the back-wall rect and CSS scales each
+     one out from the vanishing point on an evenly phased loop. Identical
+     geometry + even phase = a constant, perfectly-spaced forward tunnel.
+     RUNG_COUNT must match the --i divisor (duration / count) in hero-v2.css. */
+  var RUNG_COUNT = 8;
+  for (n = 0; n < RUNG_COUNT; n++) {
+    var rung = rectOutline(BX, BY, BW, BH, 0.22, 1, "depth-rung");
+    rung.style.setProperty("--i", n);
+  }
 
   /* corner rays */
   line(0, 0, BX, BY, 0.32, 1.2, "corner-ray");

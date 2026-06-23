@@ -3,15 +3,15 @@
    ============================================================ */
 
 :root {
-  --ink: #11110d;
-  --ink-soft: #39372d;
-  --muted: #6f6b5a;
-  --line: rgba(17, 17, 13, 0.16);
-  --hairline: rgba(17, 17, 13, 0.08);
-  --bg: #f5f0e3;
-  --bg-warm: #fff9e7;
-  --surface: #fffdf5;
-  --surface-2: #eee7d5;
+  --ink: #0b0c0e;
+  --ink-soft: #565b63;
+  --muted: #888d96;
+  --line: rgba(12, 14, 18, 0.10);
+  --hairline: rgba(12, 14, 18, 0.06);
+  --bg: #ffffff;
+  --bg-warm: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
   --yellow: #e8fb52;
   --yellow-true: #f2e500;
   --yellow-deep: color-mix(in oklab, var(--yellow), #15140f 25%);
@@ -26,7 +26,7 @@
 
 html, body {
   background:
-    linear-gradient(180deg, #fffaf0 0%, var(--bg) 38%, #f0ead9 100%);
+    linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
   color: var(--ink);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
@@ -49,16 +49,14 @@ body::after {
 body::before {
   z-index: 0;
   background:
-    linear-gradient(120deg, rgba(232, 251, 82, 0.22) 0 12%, transparent 12% 100%),
-    linear-gradient(300deg, transparent 0 62%, rgba(17, 17, 13, 0.045) 62% 100%),
-    repeating-linear-gradient(90deg, rgba(17, 17, 13, 0.028) 0 1px, transparent 1px 88px),
-    repeating-linear-gradient(0deg, rgba(17, 17, 13, 0.018) 0 1px, transparent 1px 88px);
-  opacity: 0.7;
+    repeating-linear-gradient(90deg, rgba(12, 14, 18, 0.02) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg, rgba(12, 14, 18, 0.02) 0 1px, transparent 1px 96px);
+  opacity: 0.6;
 }
 
 body::after {
   z-index: 0;
-  opacity: 0.22;
+  opacity: 0.035;
   mix-blend-mode: multiply;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");
@@ -364,29 +362,36 @@ body > * {
 
 #grid-svg .depth-rung {
   stroke: rgba(17, 17, 13, 0.28);
-  stroke-dasharray: 22 32;
-  stroke-dashoffset: 0;
   vector-effect: non-scaling-stroke;
-  animation:
-    depthFlow 3.6s linear infinite,
-    depthPulse 3.6s ease-in-out infinite;
-  animation-delay:
-    calc(var(--i) * -0.18s),
-    calc(var(--i) * -0.18s);
+  /* Resolve transform-origin in the SVG's own viewBox units so every ring
+     scales out from the vanishing point (back-wall centre, 620 308). */
+  transform-box: view-box;
+  transform-origin: 620px 308px;
+  /* Static fallback (reduced motion / no-motion below kills the animation):
+     fan the identical rings out into a concentric resting tunnel. */
+  transform: scale(calc(1 + var(--i) * 0.34));
+  /* ease-in (slow at the back wall, accelerating as it nears the viewer) sells
+     the forward dolly: you feel pulled into the room, not panning across it. */
+  animation: rungAdvance 6s cubic-bezier(0.42, 0, 0.88, 0.45) infinite;
+  /* 8 identical rings, one duration/8 apart, so the stream never gaps or stalls. */
+  animation-delay: calc(var(--i) * -0.75s);
 }
 
-@keyframes depthFlow {
-  to { stroke-dashoffset: -108; }
-}
-
-@keyframes depthPulse {
-  0%, 100% {
-    opacity: 0.38;
-    stroke-width: 1;
+/* Each ring is born deep at the back wall and rushes outward past the camera. */
+@keyframes rungAdvance {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
   }
-  42%, 58% {
-    opacity: 0.88;
-    stroke-width: 1.45;
+  14% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.4);
   }
 }
 
@@ -1128,6 +1133,60 @@ html.no-motion #grid-svg * {
   .trust-cols { grid-template-columns: 1fr; gap: 28px; }
 }
 
+/* ---------------- Powered-by trust strip (auto-scroll carousel) ---------------- */
+.powered {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.powered-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.powered-marquee {
+  width: 100%;
+  max-width: 720px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+.powered-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  width: max-content;
+  animation: powered-scroll 28s linear infinite;
+}
+.powered-marquee:hover .powered-track { animation-play-state: paused; }
+@keyframes powered-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.pl { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.pl img { width: auto; display: block; }
+/* Normalised so every logo reads at a similar visual weight despite each
+   source file's different internal padding. */
+.pl-maps img      { height: 64px; }
+.pl-hunter img    { height: 52px; }
+.pl-firecrawl img { height: 44px; }
+.pl-semrush img   { height: 42px; }
+.pl-resend img    { height: 42px; }
+@media (prefers-reduced-motion: reduce) {
+  .powered-track { animation: none; flex-wrap: wrap; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .powered-logos img { transition: none; }
+}
+
 @media (max-width: 760px) {
   .nav { padding: 18px 24px; }
   .nav-links, .nav-signin { display: none; }
@@ -1138,4 +1197,11 @@ html.no-motion #grid-svg * {
   .who-grid { grid-template-columns: 1fr; }
   .anatomy-notes li { grid-template-columns: 1fr; gap: 6px; }
   .footer { flex-wrap: wrap; padding: 26px 24px 32px; }
+  .powered { margin-top: 28px; gap: 14px; }
+  .powered-track { gap: 44px; }
+  .pl-maps img      { height: 46px; }
+  .pl-hunter img    { height: 38px; }
+  .pl-firecrawl img { height: 32px; }
+  .pl-semrush img   { height: 30px; }
+  .pl-resend img    { height: 30px; }
 }
