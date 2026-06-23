@@ -1467,3 +1467,74 @@ html.no-motion .industries-track { animation: none; flex-wrap: wrap; justify-con
   padding: 5px 9px;
 }
 .opp-card .lead-fields { gap: 8px 16px; font-size: 11.5px; }
+
+/* outreach composer replica */
+.compose-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.compose-ai { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ai-spark {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 1px solid rgba(21, 20, 15, 0.4);
+  border-radius: 7px;
+  padding: 6px 10px;
+}
+.ai-preset {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 6px 10px;
+}
+.ai-preset-on { border-color: rgba(21, 20, 15, 0.5); color: var(--ink); box-shadow: 2px 2px 0 var(--yellow-soft); }
+.compose-field { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.compose-k {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.compose-v { font-size: 14px; line-height: 1.6; color: var(--ink); }
+.compose-body-text .compose-v { color: var(--ink-soft); }
+.tok {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--yellow-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.compose-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.compose-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 18px;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(21, 20, 15, 0.4), 4px 4px 0 var(--yellow);
+}
+.compose-send .btn-arrow { font-family: var(--mono); color: var(--yellow); }
+.compose-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.compose-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); outline: 1px solid rgba(21, 20, 15, 0.4); flex: none; }
