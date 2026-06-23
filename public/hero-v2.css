@@ -1355,3 +1355,83 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; transition: none; }
 }
 html.no-motion .industries-track { animation: none; flex-wrap: wrap; justify-content: center; }
 @media (max-width: 760px) { .industries { padding: 0 24px; } }
+
+/* ---------------- live workflow replicas ---------------- */
+.flow .flow-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.flow-step { position: relative; }
+.flow-tag {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.flow-window { position: static; left: auto; top: auto; width: 100%; transform: none; animation: none; }
+
+/* search replica */
+.scan-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.scan-field { display: flex; flex-direction: column; gap: 7px; }
+.scan-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.scan-input {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface);
+}
+.scan-row { display: flex; align-items: center; gap: 16px; }
+.scan-row .scan-label { min-width: 64px; }
+.scan-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.scan-seg .seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border-left: 1px solid var(--hairline);
+}
+.scan-seg .seg:first-child { border-left: none; }
+.scan-seg .seg em { font-style: normal; color: var(--muted); }
+.scan-seg .seg-on { background: var(--yellow); color: var(--ink); }
+.scan-seg .seg-on em { color: var(--ink); }
+.scan-go {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(21, 20, 15, 0.4), 4px 4px 0 var(--yellow);
+}
+.scan-go .btn-arrow { font-family: var(--mono); color: var(--yellow); }
+@media (max-width: 760px) {
+  .scan-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .scan-seg { width: 100%; }
+  .scan-seg .seg { flex: 1; justify-content: center; }
+}
