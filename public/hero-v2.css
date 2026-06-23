@@ -1558,3 +1558,35 @@ html.no-motion .industries-track { animation: none; flex-wrap: wrap; justify-con
   color: var(--ink);
 }
 @media (max-width: 760px) { .mid-cta { padding: 0 24px; margin-top: 64px; } }
+
+/* ---------------- objection cards ---------------- */
+.objection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.obj-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px 22px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.obj-card:hover { transform: translateY(-3px); box-shadow: 4px 6px 0 var(--yellow-soft); }
+.obj-q {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.obj-q::before {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 3px;
+  background: var(--yellow);
+  margin-bottom: 12px;
+}
+.obj-a { font-size: 14px; line-height: 1.6; color: var(--muted); text-wrap: pretty; }
+@media (max-width: 980px) { .objection-grid { grid-template-columns: 1fr; gap: 14px; } }
+@media (prefers-reduced-motion: reduce) { .obj-card:hover { transform: none; } }
