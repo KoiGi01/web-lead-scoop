@@ -1254,3 +1254,52 @@ html.no-motion [data-reveal] { opacity: 1; transform: none; transition: none; }
   color: var(--muted);
   margin-bottom: 8px;
 }
+
+/* ---------------- social proof stat band ---------------- */
+.proof-band {
+  max-width: 1140px;
+  margin: 96px auto 0;
+  padding: 0 48px;
+}
+.proof-band-inner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 8px 10px 0 rgba(21, 20, 15, 0.06);
+  overflow: hidden;
+}
+.pb-stat {
+  padding: 38px 30px;
+  text-align: center;
+  border-left: 1px solid var(--hairline);
+}
+.pb-stat:first-child { border-left: none; }
+.pb-num {
+  display: block;
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+.pb-num b { font-weight: 800; }
+.pb-num-text .pb-cap { color: var(--muted); }
+.pb-label {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .proof-band { padding: 0 24px; margin-top: 64px; }
+  .proof-band-inner { grid-template-columns: 1fr; }
+  .pb-stat { border-left: none; border-top: 1px solid var(--hairline); padding: 28px 20px; }
+  .pb-stat:first-child { border-top: none; }
+}
