@@ -171,4 +171,44 @@
     window.addEventListener("resize", rescale);
   }
   rescale();
+
+  /* ---------------- reveal-on-scroll + count-up engine ---------------- */
+  function fmtNumber(n) { return n.toLocaleString("en-US"); }
+
+  function runCountUp(el) {
+    var target = parseFloat(el.getAttribute("data-count")) || 0;
+    var suffix = el.getAttribute("data-suffix") || "";
+    if (motionOff()) { el.textContent = fmtNumber(target) + suffix; return; }
+    var dur = 1400, start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      var eased = 1 - Math.pow(1 - p, 3); /* easeOutCubic */
+      el.textContent = fmtNumber(Math.floor(eased * target)) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+      else el.textContent = fmtNumber(target) + suffix;
+    }
+    requestAnimationFrame(step);
+  }
+
+  function revealEl(el) {
+    el.classList.add("is-in");
+    var counts = el.querySelectorAll("[data-count]");
+    for (var k = 0; k < counts.length; k++) runCountUp(counts[k]);
+    if (el.hasAttribute("data-count")) runCountUp(el);
+  }
+
+  var revealTargets = document.querySelectorAll("[data-reveal]");
+  if (!("IntersectionObserver" in window)) {
+    for (var r = 0; r < revealTargets.length; r++) revealEl(revealTargets[r]);
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        revealEl(entry.target);
+        io.unobserve(entry.target);
+      });
+    }, { threshold: 0.2, rootMargin: "0px 0px -8% 0px" });
+    for (var t = 0; t < revealTargets.length; t++) io.observe(revealTargets[t]);
+  }
 })();
