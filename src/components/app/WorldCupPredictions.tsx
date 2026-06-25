@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
 import { Trophy, Loader2, Share2, Minus, Plus, Check, Percent } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
 import { formatScore, getPrizeTier } from "@/lib/worldcupScoring";
 import { renderPredictionCard, downloadBlob } from "@/lib/predictionCard";
+import { confettiBurst } from "@/lib/confettiBurst";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import BallPit from "@/components/app/worldcup/BallPit";
+import KeepyUppy from "@/components/app/worldcup/KeepyUppy";
 import {
   Dialog,
   DialogContent,
@@ -137,10 +140,20 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Fire a big celebration the first time a winning, finished result is shown.
+  const wonBurstFired = useRef(false);
+  useEffect(() => {
+    if (match?.status === "finished" && myPrediction?.prize && !wonBurstFired.current) {
+      wonBurstFired.current = true;
+      confettiBurst({ count: myPrediction.prize === "free_month" ? 170 : 110, power: 1.35 });
+    }
+  }, [match?.status, myPrediction?.prize]);
+
   const handleSubmit = async (home: number, away: number) => {
     const res = await submit(home, away);
     if (res.ok) {
       track("worldcup_prediction_submitted", { matchId: match?.id, home, away });
+      confettiBurst({ power: 1 });
       toast({ title: "Prediction locked in", description: `You called it ${formatScore({ home, away })}. Good luck.` });
       setModalOpen(false);
     } else {
@@ -188,60 +201,94 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   const predicted = Boolean(myPrediction);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
-      {/* kicker */}
-      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">
-        <Trophy className="h-3.5 w-3.5" />
-        World Cup · predict &amp; win
+    <div className="relative min-h-full overflow-hidden">
+      <style>{ENTRANCE_CSS}</style>
+
+      {/* ambient, clickable footballs behind everything */}
+      <BallPit className="absolute inset-0 h-full w-full opacity-70" />
+      {/* one-shot kicked ball on entrance */}
+      <span className="wc-anim-kick pointer-events-none absolute left-0 top-28 z-20 text-5xl" aria-hidden="true">
+        ⚽
+      </span>
+
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
+        {/* hero text on a soft dark plate so it stays readable over the balls */}
+        <div className="wc-anim-rise rounded-2xl bg-[#08090c]/75 px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">
+            <Trophy className="h-3.5 w-3.5" />
+            World Cup · predict &amp; win
+          </div>
+          <h1 className="mt-3 font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
+            Predict the match. Win a month on us.
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[#98a0af]">
+            One featured match, two ways to win. Lock in your call before kickoff — we email your reward after full time.
+          </p>
+        </div>
+
+        <div className="wc-anim-rise" style={{ animationDelay: "90ms" }}>
+          <PrizeLadder className="mt-5" />
+        </div>
+
+        {/* match panel */}
+        <div className="wc-anim-rise mt-7 overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]" style={{ animationDelay: "160ms" }}>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 py-7 sm:px-8">
+            <TeamColumn name={match.homeTeam} flag={match.homeFlag} />
+            <div className="px-1 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-[#5b6472]">vs</div>
+            <TeamColumn name={match.awayTeam} flag={match.awayFlag} />
+          </div>
+
+          <div className="border-t border-[rgba(233,238,247,0.07)] px-5 py-5 sm:px-8">
+            <MatchStatusBlock match={match} open={open} kickoffPassed={kickoffPassed} />
+          </div>
+        </div>
+
+        {/* action area */}
+        <div className="wc-anim-rise" style={{ animationDelay: "230ms" }}>
+          {predicted && myPrediction ? (
+            <PredictionSummary match={match} prediction={myPrediction} onShare={handleShare} />
+          ) : open ? (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="mt-5 w-full rounded-xl bg-[#e8fb52] px-5 py-3.5 font-display text-[15px] font-bold text-[#08090c] shadow-[0_0_0_1px_rgba(232,251,82,0.4),0_8px_28px_-12px_rgba(232,251,82,0.55)] transition-colors duration-150 hover:bg-white"
+            >
+              Make your prediction
+            </button>
+          ) : (
+            <div className="mt-5 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0b0d11] px-5 py-4 text-sm text-[#98a0af]">
+              Predictions are closed for this match. The next featured match opens here soon.
+            </div>
+          )}
+        </div>
+
+        <KeepyUppy />
+
+        <PredictModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          match={match}
+          onSubmit={handleSubmit}
+        />
       </div>
-      <h1 className="mt-3 font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
-        Predict the match. Win a month on us.
-      </h1>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-[#98a0af]">
-        One featured match, two ways to win. Lock in your call before kickoff — we email your reward after full time.
-      </p>
-
-      <PrizeLadder className="mt-5" />
-
-      {/* match panel */}
-      <div className="mt-7 overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 py-7 sm:px-8">
-          <TeamColumn name={match.homeTeam} flag={match.homeFlag} />
-          <div className="px-1 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-[#5b6472]">vs</div>
-          <TeamColumn name={match.awayTeam} flag={match.awayFlag} />
-        </div>
-
-        <div className="border-t border-[rgba(233,238,247,0.07)] px-5 py-5 sm:px-8">
-          <MatchStatusBlock match={match} open={open} kickoffPassed={kickoffPassed} />
-        </div>
-      </div>
-
-      {/* action area */}
-      {predicted && myPrediction ? (
-        <PredictionSummary match={match} prediction={myPrediction} onShare={handleShare} />
-      ) : open ? (
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="mt-5 w-full rounded-xl bg-[#e8fb52] px-5 py-3.5 font-display text-[15px] font-bold text-[#08090c] shadow-[0_0_0_1px_rgba(232,251,82,0.4),0_8px_28px_-12px_rgba(232,251,82,0.55)] transition-colors duration-150 hover:bg-white"
-        >
-          Make your prediction
-        </button>
-      ) : (
-        <div className="mt-5 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0b0d11] px-5 py-4 text-sm text-[#98a0af]">
-          Predictions are closed for this match. The next featured match opens here soon.
-        </div>
-      )}
-
-      <PredictModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        match={match}
-        onSubmit={handleSubmit}
-      />
     </div>
   );
 };
+
+const ENTRANCE_CSS = `
+@keyframes wc-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes wc-kick {
+  0% { transform: translate(-15vw, 30px) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate(115vw, -40px) rotate(1080deg); opacity: 0; }
+}
+.wc-anim-rise { animation: wc-rise .6s cubic-bezier(0.22,1,0.36,1) both; }
+.wc-anim-kick { animation: wc-kick 1.15s cubic-bezier(0.4,0,0.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .wc-anim-rise { animation: none; opacity: 1; transform: none; }
+  .wc-anim-kick { display: none; }
+}
+`;
 
 // ── Prize ladder (two ways to win) ──────────────────────────────────────────
 const PrizeLadder = ({ className = "" }: { className?: string }) => (
