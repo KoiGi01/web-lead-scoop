@@ -85,6 +85,11 @@ const WorldCupPredictions = ({ userId }: Props) => {
               {myPrediction.isWinner ? "You won — check your email for your code! \u{1f3c6}" : "So close — next match awaits."}
             </p>
           )}
+          {match.status !== "finished" && locked && (
+            <p className="mt-3 text-sm text-[#9aa3b2]">
+              Match in progress — results and winners announced after full time.
+            </p>
+          )}
           <button
             type="button"
             onClick={handleShare}

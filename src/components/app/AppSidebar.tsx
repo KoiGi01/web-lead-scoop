@@ -47,6 +47,7 @@ interface NavItem {
   accent?: boolean;
   badge?: number;
   badgeTone?: "accent" | "alert";
+  badgeLabel?: string;
 }
 
 interface AppSidebarProps {
@@ -106,7 +107,7 @@ const AppSidebar = ({
 
   const workspace: NavItem[] = [
     { label: "Home", view: "home", icon: Home },
-    { label: "World Cup", view: "predictions", icon: Trophy, accent: true },
+    { label: "World Cup", view: "predictions", icon: Trophy, accent: true, badgeLabel: "PROMO" },
     { label: "New scan", view: "search", icon: Plus, accent: true },
     { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount, badgeTone: "alert" },
     { label: "Pipeline", view: "pipeline", icon: KanbanSquare, badge: pipelineCount, badgeTone: "alert" },
@@ -125,11 +126,12 @@ const AppSidebar = ({
     .join("")
     .toUpperCase();
 
-  const renderItem = ({ label, view, icon: Icon, accent, badge, badgeTone = "accent" }: NavItem) => {
+  const renderItem = ({ label, view, icon: Icon, accent, badge, badgeTone = "accent", badgeLabel }: NavItem) => {
     const active = activeView === view;
-    const hasBadge = typeof badge === "number" && badge > 0;
-    const badgeText = hasBadge ? (badge > 99 ? "99+" : String(badge)) : "";
-    const badgeDescription = badgeTone === "alert" ? `${badgeText} unseen leads` : `${badgeText} items`;
+    const hasNumericBadge = typeof badge === "number" && badge > 0;
+    const hasBadge = hasNumericBadge || Boolean(badgeLabel);
+    const badgeText = hasNumericBadge ? (badge! > 99 ? "99+" : String(badge)) : badgeLabel || "";
+    const badgeDescription = badgeLabel ? badgeLabel : badgeTone === "alert" ? `${badgeText} unseen leads` : `${badgeText} items`;
     const base = "group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium transition-colors";
     const state = active
       ? "bg-[#14171d] text-[#f3f5f8] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]"
@@ -162,7 +164,7 @@ const AppSidebar = ({
             {badgeText}
           </span>
         )}
-        {hasBadge && collapsed && (
+        {hasNumericBadge && collapsed && (
           <span
             className={`absolute right-1 top-1 flex min-h-[15px] min-w-[15px] items-center justify-center rounded-full px-1 font-mono text-[8px] font-bold leading-none ${
               badgeTone === "alert"
@@ -172,6 +174,9 @@ const AppSidebar = ({
           >
             {badgeText}
           </span>
+        )}
+        {Boolean(badgeLabel) && collapsed && (
+          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#e8fb52] shadow-[0_0_0_1px_#0b0d11,0_0_8px_rgba(232,251,82,0.65)] animate-pulse" />
         )}
       </button>
     );
