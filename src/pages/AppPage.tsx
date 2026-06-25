@@ -28,6 +28,7 @@ import AdminDashboard from "@/components/app/AdminDashboard";
 import SavedSearches from "@/components/app/SavedSearches";
 import SettingsCredits from "@/components/app/SettingsCredits";
 import EmailAutomation from "@/components/app/EmailAutomation";
+import WorldCupPredictions from "@/components/app/WorldCupPredictions";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
@@ -217,6 +218,10 @@ const AppPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkoutParam = params.get("checkout");
+
+    if (params.get("view") === "predictions") {
+      setViewMode("predictions");
+    }
 
     if (checkoutParam === "success" || checkoutParam === "subscription_success") {
       void confirmCheckoutReturn(
@@ -582,6 +587,8 @@ const AppPage = () => {
                   entitlements.refetch();
                 }}
               />
+            ) : viewMode === "predictions" ? (
+              <WorldCupPredictions userId={user?.id} />
             ) : null}
           </ErrorBoundary>
         </main>

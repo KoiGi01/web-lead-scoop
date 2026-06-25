@@ -14,6 +14,7 @@ import {
   Plus,
   Settings,
   ShieldCheck,
+  Trophy,
   UserRound,
   Users,
   Zap,
@@ -36,7 +37,8 @@ export type AppSidebarView =
   | "follow-ups"
   | "saved-searches"
   | "settings"
-  | "admin";
+  | "admin"
+  | "predictions";
 
 interface NavItem {
   label: string;
@@ -104,6 +106,7 @@ const AppSidebar = ({
 
   const workspace: NavItem[] = [
     { label: "Home", view: "home", icon: Home },
+    { label: "World Cup", view: "predictions", icon: Trophy, accent: true },
     { label: "New scan", view: "search", icon: Plus, accent: true },
     { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount, badgeTone: "alert" },
     { label: "Pipeline", view: "pipeline", icon: KanbanSquare, badge: pipelineCount, badgeTone: "alert" },
