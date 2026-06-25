@@ -68,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
     const matches = await fetchWorldCupMatches(footballApiKey);
     const nowIso = new Date().toISOString();
 
-    // ---- 1. Resolve: any featured match the API reports finished ----
+    // ---- 1. Featured match lifecycle: lock at kickoff, mark finished (display state) ----
     const { data: featured } = await supabase
       .from("worldcup_matches")
       .select("*")
@@ -91,40 +91,51 @@ const handler = async (req: Request): Promise<Response> => {
           .update({ status: "finished", home_score: parsed.homeScore, away_score: parsed.awayScore, is_featured: false, updated_at: nowIso })
           .eq("id", featured.id);
         summary.resolved = true;
-
-        // Find exact-score predictions not yet rewarded.
-        const { data: winners } = await supabase
-          .from("worldcup_predictions")
-          .select("id, user_id")
-          .eq("match_id", featured.id)
-          .eq("pred_home", parsed.homeScore)
-          .eq("pred_away", parsed.awayScore)
-          .is("rewarded_at", null);
-
-        for (const w of winners ?? []) {
-          summary.winners += 1;
-          const code = buildPromoCode();
-          const created = await createStripePromotionCode(code);
-          // Look up the winner's email from auth.
-          const { data: authUser } = await supabase.auth.admin.getUserById(w.user_id);
-          const email = authUser?.user?.email;
-          let emailed = false;
-          if (created && email) emailed = await emailWinner(email, code, featured.home_team, featured.away_team);
-          await supabase
-            .from("worldcup_predictions")
-            .update({
-              is_winner: true,
-              promo_code: created ? code : null,
-              rewarded_at: created ? nowIso : null,
-              email_sent_at: emailed ? nowIso : null,
-            })
-            .eq("id", w.id);
-          if (created) summary.codesIssued += 1;
-        }
       }
     }
 
-    // ---- 2. Sync: ensure a featured upcoming match exists ----
+    // ---- 2. Reward payout pass — independent of is_featured, so failures retry every tick ----
+    // Find ALL finished matches with a recorded score, then pay any unrewarded exact-score
+    // winners. The `rewarded_at is null` guard keeps this idempotent: a winner who already
+    // has a code is skipped; a winner whose Stripe call failed last tick (rewarded_at still
+    // null) is retried now.
+    const { data: finishedMatches } = await supabase
+      .from("worldcup_matches")
+      .select("id, home_team, away_team, home_score, away_score")
+      .eq("status", "finished")
+      .not("home_score", "is", null)
+      .not("away_score", "is", null);
+
+    for (const fm of finishedMatches ?? []) {
+      const { data: winners } = await supabase
+        .from("worldcup_predictions")
+        .select("id, user_id")
+        .eq("match_id", fm.id)
+        .eq("pred_home", fm.home_score)
+        .eq("pred_away", fm.away_score)
+        .is("rewarded_at", null);
+
+      for (const w of winners ?? []) {
+        summary.winners += 1;
+        const code = buildPromoCode();
+        const created = await createStripePromotionCode(code);
+        if (!created) {
+          // Leave rewarded_at null so the next tick retries; mark winner for UI visibility.
+          await supabase.from("worldcup_predictions").update({ is_winner: true }).eq("id", w.id);
+          continue;
+        }
+        const { data: authUser } = await supabase.auth.admin.getUserById(w.user_id);
+        const email = authUser?.user?.email;
+        const emailed = email ? await emailWinner(email, code, fm.home_team, fm.away_team) : false;
+        await supabase
+          .from("worldcup_predictions")
+          .update({ is_winner: true, promo_code: code, rewarded_at: nowIso, email_sent_at: emailed ? nowIso : null })
+          .eq("id", w.id);
+        summary.codesIssued += 1;
+      }
+    }
+
+    // ---- 3. Sync: ensure a featured upcoming match exists ----
     const { data: stillFeatured } = await supabase
       .from("worldcup_matches")
       .select("id")
