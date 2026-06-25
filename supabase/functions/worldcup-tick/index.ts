@@ -120,8 +120,9 @@ const handler = async (req: Request): Promise<Response> => {
         const code = buildPromoCode();
         const created = await createStripePromotionCode(code);
         if (!created) {
-          // Leave rewarded_at null so the next tick retries; mark winner for UI visibility.
-          await supabase.from("worldcup_predictions").update({ is_winner: true }).eq("id", w.id);
+          // Stripe failed — leave the row untouched (rewarded_at stays null) so the next
+          // tick retries. Do NOT mark is_winner yet: a winner is only confirmed once they
+          // actually have a redeemable code.
           continue;
         }
         const { data: authUser } = await supabase.auth.admin.getUserById(w.user_id);
