@@ -6,7 +6,8 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const footballApiKey = Deno.env.get("FOOTBALL_API_KEY");
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-const stripeWcCouponId = Deno.env.get("STRIPE_WC_COUPON_ID");
+const stripeWcCouponId = Deno.env.get("STRIPE_WC_COUPON_ID"); // 100% off, one month (free month)
+const stripeWcCoupon50Id = Deno.env.get("STRIPE_WC_COUPON_50_ID"); // 50% off, one month (discount)
 const resendApiKey = Deno.env.get("RESEND_API_KEY")?.trim();
 const fromEmail = Deno.env.get("OUTREACH_FROM_EMAIL")?.trim() || "contact@globaleads22.com";
 const tickSecret = Deno.env.get("WORLDCUP_TICK_SECRET");
@@ -26,29 +27,54 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-async function createStripePromotionCode(code: string): Promise<boolean> {
-  if (!stripeSecretKey || !stripeWcCouponId) return false;
+type PrizeTier = "free_month" | "half_off";
+
+// Two-tier prize: exact score → free month; right result only → 50% off.
+// Inlined here (Deno function can't import the src/ scoring module).
+function prizeTierFor(predHome: number, predAway: number, homeScore: number, awayScore: number): PrizeTier | null {
+  if (predHome === homeScore && predAway === awayScore) return "free_month";
+  const sign = (h: number, a: number) => (h > a ? 1 : h < a ? -1 : 0);
+  if (sign(predHome, predAway) === sign(homeScore, awayScore)) return "half_off";
+  return null;
+}
+
+function couponForTier(tier: PrizeTier): string | undefined {
+  return tier === "free_month" ? stripeWcCouponId : stripeWcCoupon50Id;
+}
+
+async function createStripePromotionCode(code: string, couponId: string): Promise<boolean> {
+  if (!stripeSecretKey || !couponId) return false;
   const res = await fetch("https://api.stripe.com/v1/promotion_codes", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeSecretKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({ coupon: stripeWcCouponId, code, "max_redemptions": "1" }).toString(),
+    body: new URLSearchParams({ coupon: couponId, code, "max_redemptions": "1" }).toString(),
   });
   return res.ok;
 }
 
-async function emailWinner(to: string, code: string, home: string, away: string): Promise<boolean> {
+async function emailWinner(to: string, code: string, home: string, away: string, tier: PrizeTier): Promise<boolean> {
   if (!resendApiKey) return false;
+  const isFree = tier === "free_month";
+  const subject = isFree
+    ? "You nailed the score — here's your free month ⚽"
+    : "Nice call! Here's 50% off your first month ⚽";
+  const intro = isFree
+    ? `You predicted ${home} vs ${away} exactly right!`
+    : `You called the result of ${home} vs ${away}!`;
+  const perk = isFree
+    ? "Use this code at checkout for your first month free:"
+    : "Use this code at checkout for 50% off your first month:";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: `GlobaLeads22 <${fromEmail}>`,
       to: [to],
-      subject: "You nailed the score — here's your free month ⚽",
-      text: `You predicted ${home} vs ${away} exactly right!\n\nUse this code at checkout for your first month free:\n\n${code}\n\nRedeem at https://app.globaleads22.com\n\n— GlobaLeads22`,
+      subject,
+      text: `${intro}\n\n${perk}\n\n${code}\n\nRedeem at https://app.globaleads22.com\n\n— GlobaLeads22`,
     }),
   });
   return res.ok;
@@ -107,31 +133,37 @@ const handler = async (req: Request): Promise<Response> => {
       .not("away_score", "is", null);
 
     for (const fm of finishedMatches ?? []) {
-      const { data: winners } = await supabase
+      const { data: predictions } = await supabase
         .from("worldcup_predictions")
-        .select("id, user_id")
+        .select("id, user_id, pred_home, pred_away")
         .eq("match_id", fm.id)
-        .eq("pred_home", fm.home_score)
-        .eq("pred_away", fm.away_score)
         .is("rewarded_at", null);
 
-      for (const w of winners ?? []) {
-        summary.winners += 1;
-        const code = buildPromoCode();
-        const created = await createStripePromotionCode(code);
-        if (!created) {
-          // Stripe failed — leave the row untouched (rewarded_at stays null) so the next
-          // tick retries. Do NOT mark is_winner yet: a winner is only confirmed once they
-          // actually have a redeemable code.
+      for (const p of predictions ?? []) {
+        const tier = prizeTierFor(p.pred_home, p.pred_away, fm.home_score, fm.away_score);
+
+        if (!tier) {
+          // No prize — mark processed so we don't re-evaluate this row every tick.
+          await supabase.from("worldcup_predictions").update({ rewarded_at: nowIso }).eq("id", p.id);
           continue;
         }
-        const { data: authUser } = await supabase.auth.admin.getUserById(w.user_id);
+
+        summary.winners += 1;
+        const couponId = couponForTier(tier);
+        const code = buildPromoCode();
+        const created = couponId ? await createStripePromotionCode(code, couponId) : false;
+        if (!created) {
+          // Coupon missing or Stripe failed — leave rewarded_at null so the next tick
+          // retries. Do NOT mark is_winner until a redeemable code actually exists.
+          continue;
+        }
+        const { data: authUser } = await supabase.auth.admin.getUserById(p.user_id);
         const email = authUser?.user?.email;
-        const emailed = email ? await emailWinner(email, code, fm.home_team, fm.away_team) : false;
+        const emailed = email ? await emailWinner(email, code, fm.home_team, fm.away_team, tier) : false;
         await supabase
           .from("worldcup_predictions")
-          .update({ is_winner: true, promo_code: code, rewarded_at: nowIso, email_sent_at: emailed ? nowIso : null })
-          .eq("id", w.id);
+          .update({ is_winner: true, prize: tier, promo_code: code, rewarded_at: nowIso, email_sent_at: emailed ? nowIso : null })
+          .eq("id", p.id);
         summary.codesIssued += 1;
       }
     }
@@ -152,6 +184,8 @@ const handler = async (req: Request): Promise<Response> => {
             external_id: next.externalId,
             home_team: next.homeTeam,
             away_team: next.awayTeam,
+            home_flag: next.homeFlag,
+            away_flag: next.awayFlag,
             kickoff_at: next.kickoffAt,
             status: "upcoming",
             is_featured: true,

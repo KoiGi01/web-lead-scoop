@@ -5,6 +5,8 @@ export interface ParsedMatch {
   externalId: string;
   homeTeam: string;
   awayTeam: string;
+  homeFlag: string | null;
+  awayFlag: string | null;
   kickoffAt: string;
   isFinished: boolean;
   homeScore: number | null;
@@ -17,6 +19,9 @@ export function parseMatch(raw: any): ParsedMatch {
     externalId: String(raw.id),
     homeTeam: raw?.homeTeam?.name ?? "",
     awayTeam: raw?.awayTeam?.name ?? "",
+    // football-data.org returns a `crest` URL (national-team flag/badge) per team.
+    homeFlag: raw?.homeTeam?.crest ?? null,
+    awayFlag: raw?.awayTeam?.crest ?? null,
     kickoffAt: raw.utcDate,
     isFinished: raw.status === "FINISHED",
     homeScore: typeof full.home === "number" ? full.home : null,

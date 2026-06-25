@@ -1,88 +1,133 @@
-import { useMemo, useState } from "react";
-import { Trophy, Loader2, Share2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode, ButtonHTMLAttributes } from "react";
+import { Trophy, Loader2, Share2, Minus, Plus, Check, Percent } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
-import { formatScore, isExactScoreWinner } from "@/lib/worldcupScoring";
+import { formatScore, getPrizeTier } from "@/lib/worldcupScoring";
 import { renderPredictionCard, downloadBlob } from "@/lib/predictionCard";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Props {
   userId?: string;
   demoMode?: boolean;
 }
 
+type Outcome = "home" | "draw" | "away";
+
 // ── Demo-only helpers ──────────────────────────────────────────────────────
 // Builds a self-contained sample match/prediction so the view is fully
 // previewable without a `worldcup_matches` row, driven by `?demo_state=`.
-type DemoState = "upcoming" | "locked" | "finished";
+type DemoState = "upcoming" | "locked" | "finished" | "discount";
 
 const DEMO_FINAL_SCORE = { home: 2, away: 1 };
+const DEMO_HOME_FLAG = "https://flagcdn.com/fr.svg";
+const DEMO_AWAY_FLAG = "https://flagcdn.com/es.svg";
 
 function readDemoState(): DemoState {
   if (typeof window === "undefined") return "upcoming";
   const raw = new URLSearchParams(window.location.search).get("demo_state");
-  return raw === "locked" || raw === "finished" ? raw : "upcoming";
+  return raw === "locked" || raw === "finished" || raw === "discount" ? raw : "upcoming";
 }
 
 function buildDemoMatch(demoState: DemoState): FeaturedMatch {
-  const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+  const inThreeDays = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 4 * 3600 * 1000).toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-  if (demoState === "locked") {
-    return {
-      id: "demo-match",
-      homeTeam: "France",
-      awayTeam: "Spain",
-      kickoffAt: oneDayAgo,
-      status: "locked",
-      homeScore: null,
-      awayScore: null,
-    };
-  }
-
-  if (demoState === "finished") {
-    return {
-      id: "demo-match",
-      homeTeam: "France",
-      awayTeam: "Spain",
-      kickoffAt: oneDayAgo,
-      status: "finished",
-      homeScore: DEMO_FINAL_SCORE.home,
-      awayScore: DEMO_FINAL_SCORE.away,
-    };
-  }
-
-  return {
+  const base = {
     id: "demo-match",
     homeTeam: "France",
     awayTeam: "Spain",
-    kickoffAt: threeDaysFromNow,
-    status: "upcoming",
-    homeScore: null,
-    awayScore: null,
+    homeFlag: DEMO_HOME_FLAG,
+    awayFlag: DEMO_AWAY_FLAG,
+  };
+  if (demoState === "locked") {
+    return { ...base, kickoffAt: oneDayAgo, status: "locked", homeScore: null, awayScore: null };
+  }
+  if (demoState === "finished" || demoState === "discount") {
+    return { ...base, kickoffAt: oneDayAgo, status: "finished", homeScore: DEMO_FINAL_SCORE.home, awayScore: DEMO_FINAL_SCORE.away };
+  }
+  return { ...base, kickoffAt: inThreeDays, status: "upcoming", homeScore: null, awayScore: null };
+}
+
+// ── Live countdown to kickoff ───────────────────────────────────────────────
+function useCountdown(targetIso: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const diff = Math.max(0, Date.parse(targetIso) - now);
+  return {
+    diff,
+    days: Math.floor(diff / 86_400_000),
+    hours: Math.floor((diff % 86_400_000) / 3_600_000),
+    mins: Math.floor((diff % 3_600_000) / 60_000),
+    secs: Math.floor((diff % 60_000) / 1_000),
   };
 }
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// ── Team flag (crest URL → image, else initials badge) ──────────────────────
+const TeamFlag = ({ src, name, size = "lg" }: { src: string | null; name: string; size?: "lg" | "sm" }) => {
+  const [errored, setErrored] = useState(false);
+  const dim = size === "lg" ? "h-16 w-24 sm:h-[72px] sm:w-[108px]" : "h-7 w-10";
+  const ring = "rounded-lg ring-1 ring-[rgba(233,238,247,0.13)]";
+  if (src && !errored) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        loading="lazy"
+        onError={() => setErrored(true)}
+        className={`${dim} ${ring} object-cover`}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} ${ring} flex items-center justify-center bg-[#14171d] font-display text-base font-bold text-[#98a0af]`}>
+      {name.slice(0, 3).toUpperCase()}
+    </div>
+  );
+};
+
 const WorldCupPredictions = ({ userId, demoMode }: Props) => {
-  // Hooks must always run unconditionally (React rules of hooks). In demo
-  // mode we simply ignore the hook's (Supabase-backed) result below and use
-  // a local mock instead.
+  // Hooks must always run unconditionally (React rules of hooks). In demo mode
+  // we ignore the hook's (Supabase-backed) result and use a local mock instead.
   const hookResult = useFeaturedMatch(userId);
 
   const demoState = useMemo(() => (demoMode ? readDemoState() : "upcoming"), [demoMode]);
   const demoMatch = useMemo(() => buildDemoMatch(demoState), [demoState]);
-  // Demo-only local prediction state — never touches Supabase.
   const [demoPrediction, setDemoPrediction] = useState<MyPrediction | null>(null);
   const demoSubmit = useMemo(
     () => async (predHome: number, predAway: number) => {
-      const isWinner =
-        demoState === "finished" && isExactScoreWinner({ home: predHome, away: predAway }, DEMO_FINAL_SCORE);
-      setDemoPrediction({ predHome, predAway, isWinner });
+      const prize =
+        demoState === "finished" || demoState === "discount"
+          ? getPrizeTier({ home: predHome, away: predAway }, DEMO_FINAL_SCORE)
+          : null;
+      setDemoPrediction({ predHome, predAway, isWinner: prize === "free_month", prize });
       return { ok: true as const };
     },
     [demoState],
   );
+
+  // Demo-only: seed a sample prediction so the locked/finished states have
+  // something to render (real users only ever have their own real prediction).
+  useEffect(() => {
+    if (!demoMode) return;
+    if (demoState === "finished") setDemoPrediction({ predHome: 2, predAway: 1, isWinner: true, prize: "free_month" });
+    else if (demoState === "discount") setDemoPrediction({ predHome: 3, predAway: 1, isWinner: false, prize: "half_off" });
+    else if (demoState === "locked") setDemoPrediction({ predHome: 1, predAway: 2, isWinner: false, prize: null });
+    else setDemoPrediction(null);
+  }, [demoMode, demoState]);
 
   const match = demoMode ? demoMatch : hookResult.match;
   const myPrediction = demoMode ? demoPrediction : hookResult.myPrediction;
@@ -90,23 +135,18 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   const submit = demoMode ? demoSubmit : hookResult.submit;
   // ────────────────────────────────────────────────────────────────────────
 
-  const [home, setHome] = useState(0);
-  const [away, setAway] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const kickoffPassed = match ? Date.parse(match.kickoffAt) <= Date.now() : false;
-  const locked = !match || match.status !== "upcoming" || kickoffPassed;
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
+  const handleSubmit = async (home: number, away: number) => {
     const res = await submit(home, away);
-    setSubmitting(false);
     if (res.ok) {
       track("worldcup_prediction_submitted", { matchId: match?.id, home, away });
-      toast({ title: "Prediction locked in!", description: `You predicted ${formatScore({ home, away })}.` });
+      toast({ title: "Prediction locked in", description: `You called it ${formatScore({ home, away })}. Good luck.` });
+      setModalOpen(false);
     } else {
       toast({ title: "Could not submit", description: res.error, variant: "destructive" });
     }
+    return res;
   };
 
   const handleShare = async () => {
@@ -123,7 +163,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center text-[#9aa3b2]">
+      <div className="flex h-full items-center justify-center text-[#98a0af]">
         <Loader2 className="h-5 w-5 animate-spin" />
       </div>
     );
@@ -131,88 +171,396 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   if (!match) {
     return (
-      <div className="mx-auto max-w-xl px-6 py-16 text-center">
-        <Trophy className="mx-auto h-10 w-10 text-[#e8fb52]" />
-        <h2 className="mt-4 font-display text-2xl font-black text-[#f3f5f8]">No match to predict right now</h2>
-        <p className="mt-2 text-sm text-[#9aa3b2]">Check back soon — the next featured match drops shortly.</p>
+      <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center px-6 py-20 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#14171d] ring-1 ring-[rgba(233,238,247,0.13)]">
+          <Trophy className="h-6 w-6 text-[#e8fb52]" />
+        </div>
+        <h2 className="mt-5 font-display text-2xl font-bold tracking-tight text-[#f3f5f8]">No match to predict right now</h2>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-[#98a0af]">
+          The next featured match drops here as soon as kickoff is set. Check back shortly.
+        </p>
+      </div>
+    );
+  }
+
+  const kickoffPassed = Date.parse(match.kickoffAt) <= Date.now();
+  const open = match.status === "upcoming" && !kickoffPassed;
+  const predicted = Boolean(myPrediction);
+
+  return (
+    <div className="mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
+      {/* kicker */}
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">
+        <Trophy className="h-3.5 w-3.5" />
+        World Cup · predict &amp; win
+      </div>
+      <h1 className="mt-3 font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
+        Predict the match. Win a month on us.
+      </h1>
+      <p className="mt-2 max-w-xl text-sm leading-6 text-[#98a0af]">
+        One featured match, two ways to win. Lock in your call before kickoff — we email your reward after full time.
+      </p>
+
+      <PrizeLadder className="mt-5" />
+
+      {/* match panel */}
+      <div className="mt-7 overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 py-7 sm:px-8">
+          <TeamColumn name={match.homeTeam} flag={match.homeFlag} />
+          <div className="px-1 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-[#5b6472]">vs</div>
+          <TeamColumn name={match.awayTeam} flag={match.awayFlag} />
+        </div>
+
+        <div className="border-t border-[rgba(233,238,247,0.07)] px-5 py-5 sm:px-8">
+          <MatchStatusBlock match={match} open={open} kickoffPassed={kickoffPassed} />
+        </div>
+      </div>
+
+      {/* action area */}
+      {predicted && myPrediction ? (
+        <PredictionSummary match={match} prediction={myPrediction} onShare={handleShare} />
+      ) : open ? (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="mt-5 w-full rounded-xl bg-[#e8fb52] px-5 py-3.5 font-display text-[15px] font-bold text-[#08090c] shadow-[0_0_0_1px_rgba(232,251,82,0.4),0_8px_28px_-12px_rgba(232,251,82,0.55)] transition-colors duration-150 hover:bg-white"
+        >
+          Make your prediction
+        </button>
+      ) : (
+        <div className="mt-5 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0b0d11] px-5 py-4 text-sm text-[#98a0af]">
+          Predictions are closed for this match. The next featured match opens here soon.
+        </div>
+      )}
+
+      <PredictModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        match={match}
+        onSubmit={handleSubmit}
+      />
+    </div>
+  );
+};
+
+// ── Prize ladder (two ways to win) ──────────────────────────────────────────
+const PrizeLadder = ({ className = "" }: { className?: string }) => (
+  <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${className}`}>
+    <div className="flex items-center gap-3 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115] px-4 py-3">
+      <Percent className="h-4 w-4 shrink-0 text-[#98a0af]" />
+      <div className="leading-tight">
+        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">Right result</p>
+        <p className="text-[12px] text-[#98a0af]">50% off your first month</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-3 rounded-xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-4 py-3">
+      <Trophy className="h-4 w-4 shrink-0 text-[#e8fb52]" />
+      <div className="leading-tight">
+        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">Exact score</p>
+        <p className="text-[12px] text-[#98a0af]">A full month, free</p>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Team column (flag + name) ───────────────────────────────────────────────
+const TeamColumn = ({ name, flag }: { name: string; flag: string | null }) => (
+  <div className="flex flex-col items-center gap-3 text-center">
+    <TeamFlag src={flag} name={name} />
+    <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-[#f3f5f8] sm:text-base">
+      {name}
+    </span>
+  </div>
+);
+
+// ── Status block: countdown / kicked-off / full-time final score ────────────
+const MatchStatusBlock = ({ match, open, kickoffPassed }: { match: FeaturedMatch; open: boolean; kickoffPassed: boolean }) => {
+  const c = useCountdown(match.kickoffAt);
+  const kickoffLabel = new Date(match.kickoffAt).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  if (match.status === "finished") {
+    return (
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Full time</span>
+        <span className="font-display text-2xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
+          {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })}
+        </span>
+      </div>
+    );
+  }
+
+  if (!open || kickoffPassed) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c49] motion-safe:animate-pulse" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#98a0af]">
+          Underway — predictions closed
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
-      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">
-        <Trophy className="h-4 w-4" /> World Cup prediction — win a free month
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Kickoff in</p>
+        <div className="mt-1.5 flex items-baseline gap-1.5 font-display text-2xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
+          {c.days > 0 && <CountUnit value={c.days} label="d" />}
+          <CountUnit value={c.hours} label="h" pad />
+          <CountUnit value={c.mins} label="m" pad />
+          <CountUnit value={c.secs} label="s" pad />
+        </div>
       </div>
-      <h1 className="mt-3 font-display text-3xl font-black text-[#f3f5f8]">
-        {match.homeTeam} vs {match.awayTeam}
-      </h1>
-      <p className="mt-1 text-sm text-[#9aa3b2]">
-        Kickoff {new Date(match.kickoffAt).toLocaleString()}. Predict the exact final score before kickoff.
-      </p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#5b6472]">{kickoffLabel}</p>
+    </div>
+  );
+};
 
-      {myPrediction ? (
-        <div className="mt-8 border border-[#e8fb52]/30 bg-[#e8fb52]/10 p-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-[#e8fb52]">Your prediction</p>
-          <p className="mt-2 font-display text-5xl font-black text-[#f3f5f8]">
-            {formatScore({ home: myPrediction.predHome, away: myPrediction.predAway })}
-          </p>
-          {match.status === "finished" && (
-            <p className="mt-3 text-sm text-[#9aa3b2]">
-              Final: {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })}.{" "}
-              {myPrediction.isWinner ? "You won — check your email for your code! \u{1f3c6}" : "So close — next match awaits."}
-            </p>
-          )}
-          {match.status !== "finished" && locked && (
-            <p className="mt-3 text-sm text-[#9aa3b2]">
-              Match in progress — results and winners announced after full time.
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={handleShare}
-            className="mt-5 inline-flex items-center gap-2 border border-[#e8fb52] bg-[#e8fb52] px-4 py-2 font-display text-sm font-bold text-black hover:bg-[#f3ff8a]"
-          >
-            <Share2 className="h-4 w-4" /> Share my prediction
-          </button>
-        </div>
-      ) : locked ? (
-        <div className="mt-8 border border-[#f3f5f8]/10 bg-[#111319] p-6 text-sm text-[#9aa3b2]">
-          Predictions are closed for this match. The next one opens soon.
-        </div>
-      ) : (
-        <div className="mt-8 border border-[#f3f5f8]/10 bg-[#111319] p-6">
-          <div className="flex items-center justify-center gap-6">
-            <ScoreInput label={match.homeTeam} value={home} onChange={setHome} />
-            <span className="font-display text-3xl font-black text-[#5d6675]">:</span>
-            <ScoreInput label={match.awayTeam} value={away} onChange={setAway} />
+const CountUnit = ({ value, label, pad: doPad }: { value: number; label: string; pad?: boolean }) => (
+  <span className="flex items-baseline">
+    {doPad ? pad(value) : value}
+    <span className="ml-0.5 font-mono text-[11px] font-medium text-[#5b6472]">{label}</span>
+  </span>
+);
+
+// ── Prediction summary (after submit) ───────────────────────────────────────
+const PredictionSummary = ({
+  match,
+  prediction,
+  onShare,
+}: {
+  match: FeaturedMatch;
+  prediction: MyPrediction;
+  onShare: () => void;
+}) => {
+  const finished = match.status === "finished";
+  const inProgress = !finished && Date.parse(match.kickoffAt) <= Date.now();
+
+  return (
+    <div className="mt-5 rounded-xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-5 py-5 sm:px-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">Your prediction</p>
+          <div className="mt-2 flex items-center gap-3">
+            <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
+            <span className="font-display text-3xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
+              {formatScore({ home: prediction.predHome, away: prediction.predAway })}
+            </span>
+            <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
           </div>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={handleSubmit}
-            className="mt-6 w-full border border-[#e8fb52] bg-[#e8fb52] px-4 py-3 font-display text-sm font-bold text-black hover:bg-[#f3ff8a] disabled:opacity-60"
-          >
-            {submitting ? "Locking in…" : "Lock in my prediction"}
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={onShare}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[rgba(233,238,247,0.13)] bg-transparent px-3.5 py-2.5 font-display text-[13px] font-semibold text-[#f3f5f8] transition-colors duration-150 hover:border-[rgba(233,238,247,0.2)] hover:bg-[#14171d]"
+        >
+          <Share2 className="h-4 w-4" />
+          Share
+        </button>
+      </div>
+
+      {finished && (
+        <p className="mt-4 border-t border-[rgba(232,251,82,0.2)] pt-3 text-sm leading-6 text-[#f3f5f8]">
+          {prediction.prize === "free_month" ? (
+            <>🏆 You nailed the exact score — check your email for your free-month code.</>
+          ) : prediction.prize === "half_off" ? (
+            <>You called the result right! Final was {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })} — your 50%-off code is in your email.</>
+          ) : (
+            <>So close. Final was {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })} — the next match is your shot.</>
+          )}
+        </p>
+      )}
+      {inProgress && (
+        <p className="mt-4 border-t border-[rgba(232,251,82,0.2)] pt-3 text-sm leading-6 text-[#98a0af]">
+          Match in progress — results and winners are announced right after full time.
+        </p>
       )}
     </div>
   );
 };
 
-const ScoreInput = ({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) => (
-  <div className="text-center">
-    <input
-      type="number"
-      min={0}
-      max={20}
-      value={value}
-      onChange={(e) => onChange(Math.max(0, Math.min(20, Number(e.target.value) || 0)))}
-      className="h-20 w-24 border border-[#f3f5f8]/15 bg-[#08090c] text-center font-display text-4xl font-black text-[#f3f5f8] focus:border-[#e8fb52] focus:outline-none"
-    />
-    <p className="mt-2 max-w-24 truncate font-mono text-[10px] uppercase tracking-widest text-[#9aa3b2]">{label}</p>
-  </div>
+// ── Prediction modal (who wins → exact goals) ───────────────────────────────
+const PredictModal = ({
+  open,
+  onOpenChange,
+  match,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  match: FeaturedMatch;
+  onSubmit: (home: number, away: number) => Promise<{ ok: boolean; error?: string }>;
+}) => {
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [home, setHome] = useState(1);
+  const [away, setAway] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Reset each time the modal opens.
+  useEffect(() => {
+    if (open) {
+      setOutcome(null);
+      setHome(1);
+      setAway(0);
+      setSubmitting(false);
+    }
+  }, [open]);
+
+  const chooseOutcome = (o: Outcome) => {
+    setOutcome(o);
+    // Seed a sensible default scoreline matching the pick; user adjusts from here.
+    if (o === "home") { setHome(1); setAway(0); }
+    else if (o === "away") { setHome(0); setAway(1); }
+    else { setHome(1); setAway(1); }
+  };
+
+  const consistent =
+    outcome === "home" ? home > away :
+    outcome === "away" ? away > home :
+    outcome === "draw" ? home === away :
+    false;
+
+  const hint =
+    outcome === "home" ? `A ${match.homeTeam} win means ${match.homeTeam} scores more.` :
+    outcome === "away" ? `A ${match.awayTeam} win means ${match.awayTeam} scores more.` :
+    outcome === "draw" ? "A draw means both teams score the same." :
+    "";
+
+  const submit = async () => {
+    setSubmitting(true);
+    await onSubmit(home, away);
+    setSubmitting(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="border-[rgba(233,238,247,0.13)] bg-[#0b0d11] text-[#f3f5f8] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl font-bold tracking-tight">Predict the final score</DialogTitle>
+          <DialogDescription className="text-sm leading-6 text-[#98a0af]">
+            {match.homeTeam} vs {match.awayTeam}. Call the result for 50% off, or nail the exact score for a free month.
+          </DialogDescription>
+        </DialogHeader>
+
+        <PrizeLadder />
+
+        {/* Step 1 — who wins */}
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">1 · Who wins?</p>
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
+            <OutcomeButton selected={outcome === "home"} onClick={() => chooseOutcome("home")}>
+              <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
+              <span className="mt-1.5 line-clamp-1 max-w-full">{match.homeTeam}</span>
+            </OutcomeButton>
+            <OutcomeButton selected={outcome === "draw"} onClick={() => chooseOutcome("draw")}>
+              <span className="flex h-7 items-center font-display text-base font-bold text-current">Draw</span>
+              <span className="mt-1.5 text-[#5b6472]">Tie</span>
+            </OutcomeButton>
+            <OutcomeButton selected={outcome === "away"} onClick={() => chooseOutcome("away")}>
+              <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
+              <span className="mt-1.5 line-clamp-1 max-w-full">{match.awayTeam}</span>
+            </OutcomeButton>
+          </div>
+        </div>
+
+        {/* Step 2 — exact goals */}
+        <div className={outcome ? "" : "pointer-events-none opacity-40"}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">2 · Exact goals</p>
+          <div className="mt-2.5 flex items-center justify-center gap-5">
+            <Stepper label={match.homeTeam} flag={match.homeFlag} value={home} onChange={setHome} />
+            <span className="pt-5 font-display text-2xl font-bold text-[#5b6472]">:</span>
+            <Stepper label={match.awayTeam} flag={match.awayFlag} value={away} onChange={setAway} />
+          </div>
+          {outcome && !consistent && (
+            <p className="mt-3 text-center text-[12px] leading-5 text-[#ffb23e]">{hint}</p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <button
+            type="button"
+            disabled={!outcome || !consistent || submitting}
+            onClick={submit}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e8fb52] px-4 font-display text-[15px] font-bold text-[#08090c] transition-colors duration-150 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {submitting ? "Locking in…" : "Lock in my prediction"}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const OutcomeButton = ({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center rounded-xl border px-2 py-3 font-display text-[13px] font-semibold transition-colors duration-150 ${
+      selected
+        ? "border-[#e8fb52] bg-[rgba(232,251,82,0.1)] text-[#e8fb52]"
+        : "border-[rgba(233,238,247,0.13)] bg-[#0f1115] text-[#f3f5f8] hover:border-[rgba(233,238,247,0.2)] hover:bg-[#14171d]"
+    }`}
+  >
+    {children}
+  </button>
+);
+
+const Stepper = ({
+  label,
+  flag,
+  value,
+  onChange,
+}: {
+  label: string;
+  flag: string | null;
+  value: number;
+  onChange: (n: number) => void;
+}) => {
+  const clamp = (n: number) => Math.max(0, Math.min(20, n));
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <TeamFlag src={flag} name={label} size="sm" />
+      <div className="flex items-center gap-2">
+        <StepBtn onClick={() => onChange(clamp(value - 1))} aria-label={`One fewer goal for ${label}`}>
+          <Minus className="h-4 w-4" />
+        </StepBtn>
+        <span className="w-10 text-center font-display text-3xl font-bold tabular-nums text-[#f3f5f8]">{value}</span>
+        <StepBtn onClick={() => onChange(clamp(value + 1))} aria-label={`One more goal for ${label}`}>
+          <Plus className="h-4 w-4" />
+        </StepBtn>
+      </div>
+    </div>
+  );
+};
+
+const StepBtn = ({
+  onClick,
+  children,
+  ...rest
+}: { onClick: () => void; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(233,238,247,0.13)] bg-[#0f1115] text-[#98a0af] transition-colors duration-150 hover:border-[#e8fb52]/50 hover:text-[#e8fb52]"
+    {...rest}
+  >
+    {children}
+  </button>
 );
 
 export default WorldCupPredictions;

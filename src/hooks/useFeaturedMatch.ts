@@ -5,6 +5,8 @@ export interface FeaturedMatch {
   id: string;
   homeTeam: string;
   awayTeam: string;
+  homeFlag: string | null;
+  awayFlag: string | null;
   kickoffAt: string;
   status: "upcoming" | "locked" | "finished";
   homeScore: number | null;
@@ -15,6 +17,7 @@ export interface MyPrediction {
   predHome: number;
   predAway: number;
   isWinner: boolean;
+  prize: "free_month" | "half_off" | null;
 }
 
 export function useFeaturedMatch(userId?: string) {
@@ -26,7 +29,7 @@ export function useFeaturedMatch(userId?: string) {
     setLoading(true);
     const { data: m } = await supabase
       .from("worldcup_matches")
-      .select("id, home_team, away_team, kickoff_at, status, home_score, away_score")
+      .select("id, home_team, away_team, home_flag, away_flag, kickoff_at, status, home_score, away_score")
       .eq("is_featured", true)
       .maybeSingle();
 
@@ -35,6 +38,8 @@ export function useFeaturedMatch(userId?: string) {
           id: m.id,
           homeTeam: m.home_team,
           awayTeam: m.away_team,
+          homeFlag: m.home_flag,
+          awayFlag: m.away_flag,
           kickoffAt: m.kickoff_at,
           status: m.status,
           homeScore: m.home_score,
@@ -46,11 +51,13 @@ export function useFeaturedMatch(userId?: string) {
     if (nextMatch && userId) {
       const { data: p } = await supabase
         .from("worldcup_predictions")
-        .select("pred_home, pred_away, is_winner")
+        .select("pred_home, pred_away, is_winner, prize")
         .eq("user_id", userId)
         .eq("match_id", nextMatch.id)
         .maybeSingle();
-      setMyPrediction(p ? { predHome: p.pred_home, predAway: p.pred_away, isWinner: p.is_winner } : null);
+      setMyPrediction(
+        p ? { predHome: p.pred_home, predAway: p.pred_away, isWinner: p.is_winner, prize: p.prize ?? null } : null,
+      );
     } else {
       setMyPrediction(null);
     }

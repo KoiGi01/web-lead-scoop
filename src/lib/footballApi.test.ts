@@ -5,8 +5,8 @@ const finished = {
   id: 537001,
   utcDate: "2026-06-20T19:00:00Z",
   status: "FINISHED",
-  homeTeam: { name: "Brazil" },
-  awayTeam: { name: "Argentina" },
+  homeTeam: { name: "Brazil", crest: "https://crests.football-data.org/764.svg" },
+  awayTeam: { name: "Argentina", crest: "https://crests.football-data.org/762.svg" },
   score: { fullTime: { home: 2, away: 1 } },
 };
 
@@ -20,12 +20,14 @@ const upcoming = {
 };
 
 describe("parseMatch", () => {
-  it("maps a finished match with scores", () => {
+  it("maps a finished match with scores and team crests", () => {
     const m = parseMatch(finished);
     expect(m).toEqual({
       externalId: "537001",
       homeTeam: "Brazil",
       awayTeam: "Argentina",
+      homeFlag: "https://crests.football-data.org/764.svg",
+      awayFlag: "https://crests.football-data.org/762.svg",
       kickoffAt: "2026-06-20T19:00:00Z",
       isFinished: true,
       homeScore: 2,
@@ -33,11 +35,13 @@ describe("parseMatch", () => {
     });
   });
 
-  it("maps an upcoming match with null scores", () => {
+  it("maps an upcoming match with null scores and null flags when crest is absent", () => {
     const m = parseMatch(upcoming);
     expect(m.isFinished).toBe(false);
     expect(m.homeScore).toBeNull();
     expect(m.externalId).toBe("537002");
+    expect(m.homeFlag).toBeNull();
+    expect(m.awayFlag).toBeNull();
   });
 });
 
