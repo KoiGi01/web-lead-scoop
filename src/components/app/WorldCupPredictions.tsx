@@ -1,17 +1,95 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Trophy, Loader2, Share2 } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
-import { formatScore } from "@/lib/worldcupScoring";
+import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
+import { formatScore, isExactScoreWinner } from "@/lib/worldcupScoring";
 import { renderPredictionCard, downloadBlob } from "@/lib/predictionCard";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 
 interface Props {
   userId?: string;
+  demoMode?: boolean;
 }
 
-const WorldCupPredictions = ({ userId }: Props) => {
-  const { match, myPrediction, loading, submit } = useFeaturedMatch(userId);
+// ── Demo-only helpers ──────────────────────────────────────────────────────
+// Builds a self-contained sample match/prediction so the view is fully
+// previewable without a `worldcup_matches` row, driven by `?demo_state=`.
+type DemoState = "upcoming" | "locked" | "finished";
+
+const DEMO_FINAL_SCORE = { home: 2, away: 1 };
+
+function readDemoState(): DemoState {
+  if (typeof window === "undefined") return "upcoming";
+  const raw = new URLSearchParams(window.location.search).get("demo_state");
+  return raw === "locked" || raw === "finished" ? raw : "upcoming";
+}
+
+function buildDemoMatch(demoState: DemoState): FeaturedMatch {
+  const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  if (demoState === "locked") {
+    return {
+      id: "demo-match",
+      homeTeam: "France",
+      awayTeam: "Spain",
+      kickoffAt: oneDayAgo,
+      status: "locked",
+      homeScore: null,
+      awayScore: null,
+    };
+  }
+
+  if (demoState === "finished") {
+    return {
+      id: "demo-match",
+      homeTeam: "France",
+      awayTeam: "Spain",
+      kickoffAt: oneDayAgo,
+      status: "finished",
+      homeScore: DEMO_FINAL_SCORE.home,
+      awayScore: DEMO_FINAL_SCORE.away,
+    };
+  }
+
+  return {
+    id: "demo-match",
+    homeTeam: "France",
+    awayTeam: "Spain",
+    kickoffAt: threeDaysFromNow,
+    status: "upcoming",
+    homeScore: null,
+    awayScore: null,
+  };
+}
+
+const WorldCupPredictions = ({ userId, demoMode }: Props) => {
+  // Hooks must always run unconditionally (React rules of hooks). In demo
+  // mode we simply ignore the hook's (Supabase-backed) result below and use
+  // a local mock instead.
+  const hookResult = useFeaturedMatch(userId);
+
+  const demoState = useMemo(() => (demoMode ? readDemoState() : "upcoming"), [demoMode]);
+  const demoMatch = useMemo(() => buildDemoMatch(demoState), [demoState]);
+  // Demo-only local prediction state — never touches Supabase.
+  const [demoPrediction, setDemoPrediction] = useState<MyPrediction | null>(null);
+  const demoSubmit = useMemo(
+    () => async (predHome: number, predAway: number) => {
+      const isWinner =
+        demoState === "finished" && isExactScoreWinner({ home: predHome, away: predAway }, DEMO_FINAL_SCORE);
+      setDemoPrediction({ predHome, predAway, isWinner });
+      return { ok: true as const };
+    },
+    [demoState],
+  );
+
+  const match = demoMode ? demoMatch : hookResult.match;
+  const myPrediction = demoMode ? demoPrediction : hookResult.myPrediction;
+  const loading = demoMode ? false : hookResult.loading;
+  const submit = demoMode ? demoSubmit : hookResult.submit;
+  // ────────────────────────────────────────────────────────────────────────
+
   const [home, setHome] = useState(0);
   const [away, setAway] = useState(0);
   const [submitting, setSubmitting] = useState(false);

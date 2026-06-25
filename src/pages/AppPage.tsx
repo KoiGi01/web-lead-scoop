@@ -588,7 +588,7 @@ const AppPage = () => {
                 }}
               />
             ) : viewMode === "predictions" ? (
-              <WorldCupPredictions userId={user?.id} />
+              <WorldCupPredictions userId={user?.id} demoMode={isDemoPreview} />
             ) : null}
           </ErrorBoundary>
         </main>
