@@ -1,6 +1,61 @@
-// Shared stylized-football renderer used by the ambient ball-pit and the
-// keepy-uppy minigame. Crisp white (or citron accent) ball with dark seams —
-// on-brand, not cartoonish.
+// The real football artwork (lives in public/). Loaded once, lazily.
+export const FOOTBALL_IMAGE_SRC = "/sport-ball-football-free-png.webp";
+
+let ballImg: HTMLImageElement | null = null;
+let ballReady = false;
+
+function getBallImage(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!ballImg) {
+    ballImg = new Image();
+    ballImg.onload = () => {
+      ballReady = true;
+    };
+    ballImg.onerror = () => {
+      ballImg = null;
+      ballReady = false;
+    };
+    ballImg.src = FOOTBALL_IMAGE_SRC;
+  }
+  return ballReady ? ballImg : null;
+}
+
+// Preferred renderer: draws the real ball image, clipped to a circle so any
+// non-transparent corners are hidden. Falls back to the vector ball until the
+// image is loaded (or if it fails to load).
+export function drawBall(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  rot = 0,
+  citron = false,
+): void {
+  const img = getBallImage();
+  if (!img) {
+    drawFootball(ctx, x, y, r, rot, citron);
+    return;
+  }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.clip();
+  // Aspect-correct "cover" so the round ball never stretches: scale by the
+  // smaller source dimension, let the larger overflow (clipped to the circle).
+  const iw = img.naturalWidth || 1;
+  const ih = img.naturalHeight || 1;
+  const box = r * 2 * 1.16;
+  const scale = box / Math.min(iw, ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+  ctx.restore();
+}
+
+// Shared stylized-football fallback used until the image loads. Crisp white (or
+// citron accent) ball with dark seams — on-brand, not cartoonish.
 export function drawFootball(
   ctx: CanvasRenderingContext2D,
   x: number,

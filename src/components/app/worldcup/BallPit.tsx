@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { drawFootball } from "@/lib/footballSprite";
+import { drawBall } from "@/lib/footballSprite";
 
 interface Ball {
   x: number;
@@ -54,17 +54,21 @@ const BallPit = ({ className = "" }: { className?: string }) => {
 
     const renderStatic = () => {
       ctx.clearRect(0, 0, w, h);
-      for (const b of balls) drawFootball(ctx, b.x, b.y, b.r, b.rot, b.citron);
+      for (const b of balls) drawBall(ctx, b.x, b.y, b.r, b.rot, b.citron);
     };
 
     let raf = 0;
-    const step = () => {
+    let last = performance.now();
+    const step = (now: number) => {
+      // Time-based so the balls drift at the same speed on any refresh rate.
+      const dt = Math.min(2.5, (now - last) / 16.667);
+      last = now;
       ctx.clearRect(0, 0, w, h);
       for (const b of balls) {
-        b.vy += 0.05;
-        b.x += b.vx;
-        b.y += b.vy;
-        b.rot += b.vr;
+        b.vy += 0.05 * dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.rot += b.vr * dt;
         if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.7; }
         else if (b.x > w - b.r) { b.x = w - b.r; b.vx = -Math.abs(b.vx) * 0.7; }
         if (b.y > h - b.r) {
@@ -74,7 +78,7 @@ const BallPit = ({ className = "" }: { className?: string }) => {
           b.vr *= 0.9;
         }
         if (b.y > h + 120) Object.assign(b, spawn(true));
-        drawFootball(ctx, b.x, b.y, b.r, b.rot, b.citron);
+        drawBall(ctx, b.x, b.y, b.r, b.rot, b.citron);
       }
       raf = requestAnimationFrame(step);
     };

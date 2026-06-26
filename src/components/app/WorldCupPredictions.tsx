@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 import BallPit from "@/components/app/worldcup/BallPit";
 import KeepyUppy from "@/components/app/worldcup/KeepyUppy";
+import StadiumBackdrop from "@/components/app/worldcup/StadiumBackdrop";
 import {
   Dialog,
   DialogContent,
@@ -140,12 +141,16 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Fire a big celebration the first time a winning, finished result is shown.
+  // Fire a big multi-cannon celebration the first time a winning result shows.
   const wonBurstFired = useRef(false);
   useEffect(() => {
     if (match?.status === "finished" && myPrediction?.prize && !wonBurstFired.current) {
       wonBurstFired.current = true;
-      confettiBurst({ count: myPrediction.prize === "free_month" ? 170 : 110, power: 1.35 });
+      const big = myPrediction.prize === "free_month";
+      confettiBurst({ count: big ? 240 : 170, power: 1.45 });
+      confettiBurst({ count: big ? 140 : 90, originX: window.innerWidth * 0.14, originY: window.innerHeight * 0.6, power: 1.2 });
+      confettiBurst({ count: big ? 140 : 90, originX: window.innerWidth * 0.86, originY: window.innerHeight * 0.6, power: 1.2 });
+      if (big) window.setTimeout(() => confettiBurst({ count: 180, power: 1.35 }), 380);
     }
   }, [match?.status, myPrediction?.prize]);
 
@@ -153,7 +158,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     const res = await submit(home, away);
     if (res.ok) {
       track("worldcup_prediction_submitted", { matchId: match?.id, home, away });
-      confettiBurst({ power: 1 });
+      confettiBurst({ count: 170, power: 1.2 });
       toast({ title: "Prediction locked in", description: `You called it ${formatScore({ home, away })}. Good luck.` });
       setModalOpen(false);
     } else {
@@ -204,12 +209,18 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     <div className="relative min-h-full overflow-hidden">
       <style>{ENTRANCE_CSS}</style>
 
-      {/* ambient, clickable footballs behind everything */}
+      {/* stadium atmosphere: pitch lines, floodlights, pitch-green */}
+      <StadiumBackdrop />
+      {/* ambient, clickable footballs above the backdrop */}
       <BallPit className="absolute inset-0 h-full w-full opacity-70" />
       {/* one-shot kicked ball on entrance */}
-      <span className="wc-anim-kick pointer-events-none absolute left-0 top-28 z-20 text-5xl" aria-hidden="true">
-        ⚽
-      </span>
+      <img
+        src="/sport-ball-football-free-png.webp"
+        alt=""
+        aria-hidden="true"
+        className="wc-anim-kick pointer-events-none absolute left-0 top-28 z-20 h-14 w-14 object-cover"
+        style={{ clipPath: "circle(46%)" }}
+      />
 
       <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
         {/* hero text on a soft dark plate so it stays readable over the balls */}
@@ -282,11 +293,14 @@ const ENTRANCE_CSS = `
   12% { opacity: 1; }
   100% { transform: translate(115vw, -40px) rotate(1080deg); opacity: 0; }
 }
+@keyframes wc-glow { from { opacity: 0.55; } to { opacity: 1; } }
 .wc-anim-rise { animation: wc-rise .6s cubic-bezier(0.22,1,0.36,1) both; }
 .wc-anim-kick { animation: wc-kick 1.15s cubic-bezier(0.4,0,0.2,1) both; }
+.wc-floodlight { animation: wc-glow 5.5s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) {
   .wc-anim-rise { animation: none; opacity: 1; transform: none; }
   .wc-anim-kick { display: none; }
+  .wc-floodlight { animation: none; }
 }
 `;
 

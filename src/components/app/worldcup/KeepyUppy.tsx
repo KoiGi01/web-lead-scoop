@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { drawFootball } from "@/lib/footballSprite";
+import { drawBall } from "@/lib/footballSprite";
 import { track } from "@/lib/analytics";
 
 const BEST_KEY = "gl22:keepyuppy-best";
@@ -65,19 +65,26 @@ const KeepyUppy = () => {
       ctx.moveTo(0, g.h - 1);
       ctx.lineTo(g.w, g.h - 1);
       ctx.stroke();
-      drawFootball(ctx, g.x, g.y, g.r, g.rot, false);
+      drawBall(ctx, g.x, g.y, g.r, g.rot, false);
     };
 
     let raf = 0;
-    const step = () => {
+    let last = performance.now();
+    const step = (now: number) => {
+      // Time-based so fall speed is identical on 60 / 120 / 144 Hz displays.
+      // dt is in units of one 60 fps frame; capped so a backgrounded tab that
+      // resumes doesn't teleport the ball.
+      const dt = Math.min(2.5, (now - last) / 16.667);
+      last = now;
       if (g.phase === "playing") {
-        g.vy += 0.45;
-        g.vx *= 0.995;
-        g.x += g.vx;
-        g.y += g.vy;
-        g.rot += g.vr;
-        if (g.x < g.r) { g.x = g.r; g.vx = Math.abs(g.vx) * 0.8; }
-        else if (g.x > g.w - g.r) { g.x = g.w - g.r; g.vx = -Math.abs(g.vx) * 0.8; }
+        g.vy += 0.28 * dt;
+        g.vx *= Math.pow(0.995, dt);
+        g.x += g.vx * dt;
+        g.y += g.vy * dt;
+        g.rot += g.vr * dt;
+        if (g.x < g.r) { g.x = g.r; g.vx = Math.abs(g.vx) * 0.88; g.vr = -g.vr; }
+        else if (g.x > g.w - g.r) { g.x = g.w - g.r; g.vx = -Math.abs(g.vx) * 0.88; g.vr = -g.vr; }
+        if (g.y < g.r) { g.y = g.r; g.vy = Math.abs(g.vy) * 0.7; }
         if (g.y - g.r > g.h) {
           // dropped — game over
           g.phase = "over";
@@ -100,10 +107,10 @@ const KeepyUppy = () => {
       const my = clientY - rect.top;
       if (g.phase !== "playing") return;
       const d2 = (g.x - mx) ** 2 + (g.y - my) ** 2;
-      if (d2 <= (g.r + 18) ** 2) {
+      if (d2 <= (g.r + 26) ** 2) {
         const dx = g.x - mx;
-        g.vx = (dx / (g.r + 18)) * 5 + (Math.random() - 0.5) * 1.5;
-        g.vy = -10.5;
+        g.vx = (dx / (g.r + 26)) * 3.2 + (Math.random() - 0.5) * 1.2;
+        g.vy = -10;
         g.vr = (Math.random() - 0.5) * 0.8;
         g.score += 1;
         setScore(g.score);

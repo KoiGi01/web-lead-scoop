@@ -12,7 +12,7 @@ export function confettiBurst(opts: BurstOpts = {}): void {
   if (typeof window === "undefined") return;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-  const count = opts.count ?? 90;
+  const count = opts.count ?? 140;
   const power = opts.power ?? 1;
   const canvas = document.createElement("canvas");
   canvas.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:60;";
@@ -34,7 +34,8 @@ export function confettiBurst(opts: BurstOpts = {}): void {
 
   const ox = opts.originX ?? window.innerWidth / 2;
   const oy = opts.originY ?? window.innerHeight * 0.38;
-  const colors = ["#e8fb52", "#ffffff", "#cfe935"];
+  // Citron + white anchor the brand; mint/cool/hot add festive World-Cup color.
+  const colors = ["#e8fb52", "#ffffff", "#cfe935", "#5fe3a1", "#57b9ff", "#ff5c49"];
 
   const parts = Array.from({ length: count }, () => {
     const angle = Math.random() * Math.PI * 2;
@@ -43,13 +44,13 @@ export function confettiBurst(opts: BurstOpts = {}): void {
       x: ox,
       y: oy,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 5,
-      r: 2.5 + Math.random() * 4.5,
+      vy: Math.sin(angle) * speed - 6,
+      r: 3 + Math.random() * 6,
       color: colors[(Math.random() * colors.length) | 0],
       rot: Math.random() * Math.PI,
       vr: (Math.random() - 0.5) * 0.5,
       life: 0,
-      ttl: 70 + Math.random() * 45,
+      ttl: 85 + Math.random() * 55,
       square: Math.random() < 0.5,
     };
   });
