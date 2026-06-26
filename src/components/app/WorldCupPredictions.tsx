@@ -3,6 +3,8 @@ import type { ReactNode, ButtonHTMLAttributes } from "react";
 import { Trophy, Loader2, Share2, Minus, Plus, Check } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
+import { useWorldCupFixtures } from "@/hooks/useWorldCupFixtures";
+import type { Fixture } from "@/hooks/useWorldCupFixtures";
 import { formatScore, resolvePrize } from "@/lib/worldcupScoring";
 import type { Bet, Outcome } from "@/lib/worldcupScoring";
 import { renderPredictionCard, shareOrDownloadImage } from "@/lib/predictionCard";
@@ -121,7 +123,14 @@ const TeamFlag = ({ src, name, size = "lg" }: { src: string | null; name: string
   );
 };
 
+// Top-level router: demo mode keeps the single-match poster (offline preview);
+// live mode shows the day's full fixtures list.
 const WorldCupPredictions = ({ userId, demoMode }: Props) => {
+  if (demoMode) return <SingleMatchPoster userId={userId} demoMode />;
+  return <LiveFixtures userId={userId} />;
+};
+
+const SingleMatchPoster = ({ userId, demoMode }: Props) => {
   const hookResult = useFeaturedMatch(userId);
 
   const demoState = useMemo(() => (demoMode ? readDemoState() : "upcoming"), [demoMode]);
@@ -577,5 +586,183 @@ const StepBtn = ({ onClick, children, ...rest }: { onClick: () => void; children
     {children}
   </button>
 );
+
+// ── Live fixtures: the day's full slate, each match predictable ─────────────
+const LiveFixtures = ({ userId }: { userId?: string }) => {
+  const { fixtures, predictions, loading, submit } = useWorldCupFixtures(userId);
+  const [modalMatch, setModalMatch] = useState<Fixture | null>(null);
+  const [initialMarket, setInitialMarket] = useState<Market | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const openPredict = (m: Fixture) => {
+    setModalMatch(m);
+    setInitialMarket(null);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (bet: Bet) => {
+    if (!modalMatch) return { ok: false, error: "No match selected" };
+    const res = await submit(modalMatch.id, bet);
+    if (res.ok) {
+      track("worldcup_prediction_submitted", { matchId: modalMatch.id, betType: bet.type });
+      confettiBurst({ count: 170, power: 1.2 });
+      const label = bet.type === "exact" ? formatScore({ home: bet.home, away: bet.away }) : outcomeLabel(bet.outcome, modalMatch.homeTeam, modalMatch.awayTeam);
+      toast({ title: "Prediction locked in", description: `Your pick: ${label}. Good luck.` });
+      setModalOpen(false);
+    } else {
+      toast({ title: "Could not submit", description: res.error, variant: "destructive" });
+    }
+    return res;
+  };
+
+  const handleShare = async (m: Fixture, p: MyPrediction) => {
+    const subtitle = p.betType === "exact" ? "Exact score — a free month if I nail it" : "Match result — 50% off if I call it";
+    const blob = await renderPredictionCard({
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      pick: predictionPick(p, m.homeTeam, m.awayTeam),
+      subtitle,
+    });
+    const how = await shareOrDownloadImage(blob, "my-worldcup-prediction.png", "My World Cup prediction — predict & win a free month at globaleads22.com");
+    track("worldcup_card_shared", { matchId: m.id, how });
+    if (how === "downloaded") toast({ title: "Prediction image saved", description: "Post it to your story to challenge your friends." });
+  };
+
+  return (
+    <div className="relative min-h-full overflow-hidden">
+      <style>{SCREEN_CSS}</style>
+      <StadiumBackdrop />
+      <BallPit className="absolute inset-0 h-full w-full opacity-50" />
+      <img
+        src="/sport-ball-football-free-png.webp"
+        alt=""
+        aria-hidden="true"
+        className="wc-anim-kick pointer-events-none absolute left-0 top-28 z-20 h-14 w-14 object-cover"
+        style={{ clipPath: "circle(46%)" }}
+      />
+
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
+        <header className="wc-anim-rise relative text-center">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-[-12%] h-[135%] w-[160%] -translate-x-1/2"
+            style={{ background: "radial-gradient(closest-side, rgba(8,9,12,0.86), rgba(8,9,12,0) 75%)" }}
+          />
+          <div className="relative">
+            <img src={WC_LOGO} alt="FIFA World Cup 2026" className="wc-float mx-auto h-40 w-auto drop-shadow-[0_14px_46px_rgba(232,251,82,0.22)] sm:h-52" />
+            <h1 className="wc-display mt-4 text-[52px] leading-[0.84] tracking-[0.012em] text-[#f3f5f8] sm:text-[80px]">
+              Predict <span className="text-[#e8fb52]">&amp;</span> win
+            </h1>
+            <p className="mx-auto mt-3 max-w-md text-[15px] leading-6 text-[#c4cad4]">
+              Call any match below before kickoff. Right result wins 50% off — nail the exact score for a free month.
+            </p>
+          </div>
+        </header>
+
+        <section className="wc-anim-rise mt-10" style={{ animationDelay: "120ms" }}>
+          <h2 className="wc-display mb-4 text-2xl tracking-wide text-[#f3f5f8]">Today&apos;s matches</h2>
+          {loading ? (
+            <div className="flex justify-center py-10 text-[#98a0af]">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : fixtures.length === 0 ? (
+            <p className="rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]/85 px-5 py-6 text-center text-sm text-[#98a0af]">
+              No World Cup matches in the next few days — check back soon.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {fixtures.map((f) => (
+                <FixtureRow
+                  key={f.id}
+                  fixture={f}
+                  prediction={predictions[f.id]}
+                  onPredict={() => openPredict(f)}
+                  onShare={() => predictions[f.id] && handleShare(f, predictions[f.id])}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <KeepyUppy />
+
+        {modalMatch && (
+          <PredictModal open={modalOpen} onOpenChange={setModalOpen} match={modalMatch} initialMarket={initialMarket} onSubmit={handleSubmit} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FixtureRow = ({
+  fixture,
+  prediction,
+  onPredict,
+  onShare,
+}: {
+  fixture: Fixture;
+  prediction?: MyPrediction;
+  onPredict: () => void;
+  onShare: () => void;
+}) => {
+  const open = fixture.status === "upcoming" && Date.parse(fixture.kickoffAt) > Date.now();
+  const finished = fixture.status === "finished";
+  const when = new Date(fixture.kickoffAt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+
+  return (
+    <div className="rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]/85 px-4 py-3.5">
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <TeamFlag src={fixture.homeFlag} name={fixture.homeTeam} size="sm" />
+          <span className="wc-display truncate text-lg leading-none tracking-wide text-[#f3f5f8]">{fixture.homeTeam}</span>
+        </div>
+        <span className="wc-display shrink-0 text-sm text-[#5b6472]">vs</span>
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-2.5">
+          <span className="wc-display truncate text-lg leading-none tracking-wide text-[#f3f5f8]">{fixture.awayTeam}</span>
+          <TeamFlag src={fixture.awayFlag} name={fixture.awayTeam} size="sm" />
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[rgba(233,238,247,0.07)] pt-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">
+          {finished
+            ? `FT ${formatScore({ home: fixture.homeScore ?? 0, away: fixture.awayScore ?? 0 })}`
+            : !open
+              ? "Underway"
+              : when}
+        </span>
+        {prediction ? (
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#e8fb52]">
+              {prediction.prize === "free_month"
+                ? "Won · free month"
+                : prediction.prize === "half_off"
+                  ? "Won · 50% off"
+                  : `Pick: ${predictionPick(prediction, fixture.homeTeam, fixture.awayTeam)}`}
+            </span>
+            <button
+              type="button"
+              onClick={onShare}
+              aria-label="Share prediction"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-[rgba(233,238,247,0.13)] text-[#98a0af] transition-colors duration-150 hover:border-[#e8fb52]/50 hover:text-[#e8fb52]"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : open ? (
+          <button
+            type="button"
+            onClick={onPredict}
+            className="rounded-lg bg-[#e8fb52] px-4 py-1.5 font-display text-[12px] font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
+          >
+            Predict →
+          </button>
+        ) : (
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Closed</span>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default WorldCupPredictions;

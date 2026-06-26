@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fetchWorldCupMatches, pickNextUpcoming, parseMatch } from "../_shared/footballApi.ts";
+import { fetchWorldCupMatches, parseMatch } from "../_shared/footballApi.ts";
 import { buildPromoCode } from "../_shared/promoCode.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -40,6 +40,13 @@ interface PredictionRow {
 }
 
 const outcomeOf = (h: number, a: number) => (h > a ? "home" : h < a ? "away" : "draw");
+
+function mapStatus(apiStatus: string): "upcoming" | "locked" | "finished" {
+  if (apiStatus === "FINISHED") return "finished";
+  if (apiStatus === "IN_PLAY" || apiStatus === "PAUSED") return "locked";
+  if (apiStatus === "SCHEDULED" || apiStatus === "TIMED") return "upcoming";
+  return "locked"; // POSTPONED / SUSPENDED / CANCELLED / AWARDED — not predictable
+}
 
 // One bet per market: exact-score bet → free month only on the precise score;
 // result bet → 50% off when the called Home/Draw/Away is correct.
@@ -145,43 +152,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
   if (!footballApiKey) return json({ error: "FOOTBALL_API_KEY not configured" }, 500);
 
-  const summary = { synced: false, locked: false, resolved: false, winners: 0, codesIssued: 0 };
+  const summary = { matches: 0, winners: 0, codesIssued: 0, featured: null as string | null };
 
   try {
     const matches = await fetchWorldCupMatches(footballApiKey);
     const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
 
-    // ---- 1. Featured match lifecycle: lock at kickoff, mark finished (display state) ----
-    const { data: featured } = await supabase
-      .from("worldcup_matches")
-      .select("*")
-      .eq("is_featured", true)
-      .maybeSingle();
-
-    if (featured) {
-      const apiMatch = matches.find((m) => String(m.id) === featured.external_id);
-      const parsed = apiMatch ? parseMatch(apiMatch) : null;
-
-      // Lock once kickoff passes.
-      if (featured.status === "upcoming" && Date.parse(featured.kickoff_at) <= Date.now()) {
-        await supabase.from("worldcup_matches").update({ status: "locked", updated_at: nowIso }).eq("id", featured.id);
-        summary.locked = true;
-      }
-
-      if (parsed?.isFinished && parsed.homeScore !== null && parsed.awayScore !== null) {
-        await supabase
-          .from("worldcup_matches")
-          .update({ status: "finished", home_score: parsed.homeScore, away_score: parsed.awayScore, is_featured: false, updated_at: nowIso })
-          .eq("id", featured.id);
-        summary.resolved = true;
-      }
+    // ---- 1. Sync ALL matches: upsert every WC match with fresh status + score ----
+    const rows = matches.map((m) => {
+      const p = parseMatch(m);
+      return {
+        external_id: p.externalId,
+        home_team: p.homeTeam,
+        away_team: p.awayTeam,
+        home_flag: p.homeFlag,
+        away_flag: p.awayFlag,
+        kickoff_at: p.kickoffAt,
+        status: mapStatus(m.status),
+        home_score: p.homeScore,
+        away_score: p.awayScore,
+        updated_at: nowIso,
+      };
+    });
+    if (rows.length) {
+      await supabase.from("worldcup_matches").upsert(rows, { onConflict: "external_id" });
+      summary.matches = rows.length;
     }
 
-    // ---- 2. Reward payout pass — independent of is_featured, so failures retry every tick ----
-    // Find ALL finished matches with a recorded score, then pay any unrewarded exact-score
-    // winners. The `rewarded_at is null` guard keeps this idempotent: a winner who already
-    // has a code is skipped; a winner whose Stripe call failed last tick (rewarded_at still
-    // null) is retried now.
+    // ---- 2. Feature the soonest upcoming match (the big hero poster) ----
+    const upcoming = matches
+      .map(parseMatch)
+      .filter((p) => !p.isFinished && Date.parse(p.kickoffAt) > nowMs)
+      .sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt));
+    const featuredExternalId = upcoming.length ? upcoming[0].externalId : null;
+    summary.featured = featuredExternalId;
+    if (featuredExternalId) {
+      await supabase.from("worldcup_matches").update({ is_featured: false }).eq("is_featured", true).neq("external_id", featuredExternalId);
+      await supabase.from("worldcup_matches").update({ is_featured: true }).eq("external_id", featuredExternalId);
+    } else {
+      await supabase.from("worldcup_matches").update({ is_featured: false }).eq("is_featured", true);
+    }
+
+    // ---- 3. Reward payout pass — scan ALL finished matches; idempotent + retries failures ----
     const { data: finishedMatches } = await supabase
       .from("worldcup_matches")
       .select("id, home_team, away_team, home_score, away_score")
@@ -223,35 +236,6 @@ const handler = async (req: Request): Promise<Response> => {
           .update({ is_winner: true, prize: tier, promo_code: code, rewarded_at: nowIso, email_sent_at: emailed ? nowIso : null })
           .eq("id", p.id);
         summary.codesIssued += 1;
-      }
-    }
-
-    // ---- 3. Sync: ensure a featured upcoming match exists ----
-    const { data: stillFeatured } = await supabase
-      .from("worldcup_matches")
-      .select("id")
-      .eq("is_featured", true)
-      .maybeSingle();
-
-    if (!stillFeatured) {
-      const next = pickNextUpcoming(matches, nowIso);
-      if (next) {
-        // Upsert by external_id, then feature it.
-        await supabase.from("worldcup_matches").upsert(
-          {
-            external_id: next.externalId,
-            home_team: next.homeTeam,
-            away_team: next.awayTeam,
-            home_flag: next.homeFlag,
-            away_flag: next.awayFlag,
-            kickoff_at: next.kickoffAt,
-            status: "upcoming",
-            is_featured: true,
-            updated_at: nowIso,
-          },
-          { onConflict: "external_id" },
-        );
-        summary.synced = true;
       }
     }
 
