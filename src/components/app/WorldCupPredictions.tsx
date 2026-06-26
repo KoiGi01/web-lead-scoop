@@ -26,7 +26,13 @@ import {
 interface Props {
   userId?: string;
   demoMode?: boolean;
+  onRequireAuth?: () => void;
 }
+
+// Where a logged-out lock-in is stashed so it survives the sign-in (incl. an
+// OAuth full-page redirect) and auto-submits once the user is authenticated.
+const PENDING_KEY = "gl22:wc-pending";
+const PENDING_TTL_MS = 30 * 60 * 1000;
 
 type Market = "result" | "exact";
 
@@ -125,9 +131,9 @@ const TeamFlag = ({ src, name, size = "lg" }: { src: string | null; name: string
 
 // Top-level router: demo mode keeps the single-match poster (offline preview);
 // live mode shows the day's full fixtures list.
-const WorldCupPredictions = ({ userId, demoMode }: Props) => {
+const WorldCupPredictions = ({ userId, demoMode, onRequireAuth }: Props) => {
   if (demoMode) return <SingleMatchPoster userId={userId} demoMode />;
-  return <LiveFixtures userId={userId} />;
+  return <LiveFixtures userId={userId} onRequireAuth={onRequireAuth} />;
 };
 
 const SingleMatchPoster = ({ userId, demoMode }: Props) => {
@@ -588,7 +594,7 @@ const StepBtn = ({ onClick, children, ...rest }: { onClick: () => void; children
 );
 
 // ── Live fixtures: the day's full slate, each match predictable ─────────────
-const LiveFixtures = ({ userId }: { userId?: string }) => {
+const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAuth?: () => void }) => {
   const { fixtures, predictions, loading, submit } = useWorldCupFixtures(userId);
   const [modalMatch, setModalMatch] = useState<Fixture | null>(null);
   const [initialMarket, setInitialMarket] = useState<Market | null>(null);
@@ -600,8 +606,44 @@ const LiveFixtures = ({ userId }: { userId?: string }) => {
     setModalOpen(true);
   };
 
+  // After sign-in, finish a prediction the user locked in while logged out.
+  const pendingHandled = useRef(false);
+  useEffect(() => {
+    if (!userId || pendingHandled.current) return;
+    let pending: { matchId: string; bet: Bet; ts: number } | null = null;
+    try {
+      const raw = window.localStorage.getItem(PENDING_KEY);
+      if (raw) pending = JSON.parse(raw);
+    } catch {
+      pending = null;
+    }
+    window.localStorage.removeItem(PENDING_KEY);
+    if (!pending || Date.now() - pending.ts > PENDING_TTL_MS) return;
+    pendingHandled.current = true;
+    void (async () => {
+      const res = await submit(pending.matchId, pending.bet);
+      if (res.ok) {
+        confettiBurst({ count: 200, power: 1.35 });
+        toast({ title: "You're in! 🎉", description: "Your prediction is locked in. Good luck!" });
+      } else {
+        toast({ title: "Couldn't lock in your pick", description: res.error, variant: "destructive" });
+      }
+    })();
+  }, [userId, submit]);
+
   const handleSubmit = async (bet: Bet) => {
     if (!modalMatch) return { ok: false, error: "No match selected" };
+    if (!userId) {
+      // Stash the pick and send them through sign-in; it auto-submits after.
+      try {
+        window.localStorage.setItem(PENDING_KEY, JSON.stringify({ matchId: modalMatch.id, bet, ts: Date.now() }));
+      } catch {
+        /* ignore storage failures */
+      }
+      setModalOpen(false);
+      onRequireAuth?.();
+      return { ok: true };
+    }
     const res = await submit(modalMatch.id, bet);
     if (res.ok) {
       track("worldcup_prediction_submitted", { matchId: modalMatch.id, betType: bet.type });

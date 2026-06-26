@@ -219,7 +219,8 @@ const AppPage = () => {
     const params = new URLSearchParams(window.location.search);
     const checkoutParam = params.get("checkout");
 
-    if (params.get("view") === "predictions") {
+    if (params.get("view") === "predictions" || window.localStorage.getItem("gl22:wc-return") === "1") {
+      window.localStorage.removeItem("gl22:wc-return");
       setViewMode("predictions");
     }
 
@@ -588,7 +589,16 @@ const AppPage = () => {
                 }}
               />
             ) : viewMode === "predictions" ? (
-              <WorldCupPredictions userId={user?.id} demoMode={isDemoPreview} />
+              <WorldCupPredictions
+                userId={user?.id}
+                demoMode={isDemoPreview}
+                onRequireAuth={() => {
+                  // Flag so we return to the predictions view after sign-in
+                  // (incl. a Google OAuth full-page redirect to the base URL).
+                  window.localStorage.setItem("gl22:wc-return", "1");
+                  setAuthOpen(true);
+                }}
+              />
             ) : null}
           </ErrorBoundary>
         </main>
