@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
-import { Trophy, Loader2, Share2, Minus, Plus, Check, Percent } from "lucide-react";
+import { Trophy, Loader2, Share2, Minus, Plus, Check } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
 import { formatScore, resolvePrize } from "@/lib/worldcupScoring";
@@ -28,7 +28,8 @@ interface Props {
 
 type Market = "result" | "exact";
 
-// Human-readable pick for a stored prediction.
+const WC_LOGO = "/world-cup-logo-2026.webp";
+
 function predictionPick(p: MyPrediction, homeTeam: string, awayTeam: string): string {
   if (p.betType === "exact" && p.predHome !== null && p.predAway !== null) {
     return formatScore({ home: p.predHome, away: p.predAway });
@@ -45,8 +46,6 @@ function outcomeLabel(outcome: Outcome, homeTeam: string, awayTeam: string): str
 }
 
 // ── Demo-only helpers ──────────────────────────────────────────────────────
-// Builds a self-contained sample match/prediction so the view is fully
-// previewable without a `worldcup_matches` row, driven by `?demo_state=`.
 type DemoState = "upcoming" | "locked" | "finished" | "discount";
 
 const DEMO_FINAL_SCORE = { home: 2, away: 1 };
@@ -62,16 +61,8 @@ function readDemoState(): DemoState {
 function buildDemoMatch(demoState: DemoState): FeaturedMatch {
   const inThreeDays = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 4 * 3600 * 1000).toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const base = {
-    id: "demo-match",
-    homeTeam: "France",
-    awayTeam: "Spain",
-    homeFlag: DEMO_HOME_FLAG,
-    awayFlag: DEMO_AWAY_FLAG,
-  };
-  if (demoState === "locked") {
-    return { ...base, kickoffAt: oneDayAgo, status: "locked", homeScore: null, awayScore: null };
-  }
+  const base = { id: "demo-match", homeTeam: "France", awayTeam: "Spain", homeFlag: DEMO_HOME_FLAG, awayFlag: DEMO_AWAY_FLAG };
+  if (demoState === "locked") return { ...base, kickoffAt: oneDayAgo, status: "locked", homeScore: null, awayScore: null };
   if (demoState === "finished" || demoState === "discount") {
     return { ...base, kickoffAt: oneDayAgo, status: "finished", homeScore: DEMO_FINAL_SCORE.home, awayScore: DEMO_FINAL_SCORE.away };
   }
@@ -89,7 +80,7 @@ function betToPrediction(bet: Bet, prize: MyPrediction["prize"]): MyPrediction {
   };
 }
 
-// ── Live countdown to kickoff ───────────────────────────────────────────────
+// ── Live countdown ──────────────────────────────────────────────────────────
 function useCountdown(targetIso: string) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -109,31 +100,28 @@ function useCountdown(targetIso: string) {
 const pad = (n: number) => String(n).padStart(2, "0");
 
 // ── Team flag (crest URL → image, else initials badge) ──────────────────────
-const TeamFlag = ({ src, name, size = "lg" }: { src: string | null; name: string; size?: "lg" | "sm" }) => {
+const FLAG_DIMS = {
+  sm: "h-7 w-10",
+  lg: "h-16 w-24",
+  xl: "h-[88px] w-[132px] sm:h-28 sm:w-44",
+} as const;
+
+const TeamFlag = ({ src, name, size = "lg" }: { src: string | null; name: string; size?: keyof typeof FLAG_DIMS }) => {
   const [errored, setErrored] = useState(false);
-  const dim = size === "lg" ? "h-16 w-24 sm:h-[72px] sm:w-[108px]" : "h-7 w-10";
-  const ring = "rounded-lg ring-1 ring-[rgba(233,238,247,0.13)]";
+  const ring = "rounded-xl ring-1 ring-[rgba(233,238,247,0.16)] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)]";
   if (src && !errored) {
     return (
-      <img
-        src={src}
-        alt={name}
-        loading="lazy"
-        onError={() => setErrored(true)}
-        className={`${dim} ${ring} object-cover`}
-      />
+      <img src={src} alt={name} loading="lazy" onError={() => setErrored(true)} className={`${FLAG_DIMS[size]} ${ring} object-cover`} />
     );
   }
   return (
-    <div className={`${dim} ${ring} flex items-center justify-center bg-[#14171d] font-display text-base font-bold text-[#98a0af]`}>
+    <div className={`${FLAG_DIMS[size]} ${ring} flex items-center justify-center bg-[#14171d] font-display text-base font-bold text-[#98a0af]`}>
       {name.slice(0, 3).toUpperCase()}
     </div>
   );
 };
 
 const WorldCupPredictions = ({ userId, demoMode }: Props) => {
-  // Hooks must always run unconditionally (React rules of hooks). In demo mode
-  // we ignore the hook's (Supabase-backed) result and use a local mock instead.
   const hookResult = useFeaturedMatch(userId);
 
   const demoState = useMemo(() => (demoMode ? readDemoState() : "upcoming"), [demoMode]);
@@ -141,33 +129,25 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   const [demoPrediction, setDemoPrediction] = useState<MyPrediction | null>(null);
   const demoSubmit = useMemo(
     () => async (bet: Bet) => {
-      const prize =
-        demoState === "finished" || demoState === "discount" ? resolvePrize(bet, DEMO_FINAL_SCORE) : null;
+      const prize = demoState === "finished" || demoState === "discount" ? resolvePrize(bet, DEMO_FINAL_SCORE) : null;
       setDemoPrediction(betToPrediction(bet, prize));
       return { ok: true as const };
     },
     [demoState],
   );
 
-  // Demo-only: seed a sample prediction so the locked/finished states render.
   useEffect(() => {
     if (!demoMode) return;
-    if (demoState === "finished") {
-      setDemoPrediction(betToPrediction({ type: "exact", home: 2, away: 1 }, "free_month"));
-    } else if (demoState === "discount") {
-      setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, "half_off"));
-    } else if (demoState === "locked") {
-      setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, null));
-    } else {
-      setDemoPrediction(null);
-    }
+    if (demoState === "finished") setDemoPrediction(betToPrediction({ type: "exact", home: 2, away: 1 }, "free_month"));
+    else if (demoState === "discount") setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, "half_off"));
+    else if (demoState === "locked") setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, null));
+    else setDemoPrediction(null);
   }, [demoMode, demoState]);
 
   const match = demoMode ? demoMatch : hookResult.match;
   const myPrediction = demoMode ? demoPrediction : hookResult.myPrediction;
   const loading = demoMode ? false : hookResult.loading;
   const submit = demoMode ? demoSubmit : hookResult.submit;
-  // ────────────────────────────────────────────────────────────────────────
 
   const [modalOpen, setModalOpen] = useState(false);
   const [initialMarket, setInitialMarket] = useState<Market | null>(null);
@@ -176,7 +156,6 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     setModalOpen(true);
   };
 
-  // Fire a big multi-cannon celebration the first time a winning result shows.
   const wonBurstFired = useRef(false);
   useEffect(() => {
     if (match?.status === "finished" && myPrediction?.prize && !wonBurstFired.current) {
@@ -194,10 +173,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     if (res.ok && match) {
       track("worldcup_prediction_submitted", { matchId: match.id, betType: bet.type });
       confettiBurst({ count: 170, power: 1.2 });
-      const label =
-        bet.type === "exact"
-          ? formatScore({ home: bet.home, away: bet.away })
-          : outcomeLabel(bet.outcome, match.homeTeam, match.awayTeam);
+      const label = bet.type === "exact" ? formatScore({ home: bet.home, away: bet.away }) : outcomeLabel(bet.outcome, match.homeTeam, match.awayTeam);
       toast({ title: "Prediction locked in", description: `Your pick: ${label}. Good luck.` });
       setModalOpen(false);
     } else if (!res.ok) {
@@ -208,25 +184,16 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   const handleShare = async () => {
     if (!match || !myPrediction) return;
-    const subtitle =
-      myPrediction.betType === "exact"
-        ? "Exact score — a free month if I nail it"
-        : "Match result — 50% off if I call it";
+    const subtitle = myPrediction.betType === "exact" ? "Exact score — a free month if I nail it" : "Match result — 50% off if I call it";
     const blob = await renderPredictionCard({
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       pick: predictionPick(myPrediction, match.homeTeam, match.awayTeam),
       subtitle,
     });
-    const how = await shareOrDownloadImage(
-      blob,
-      "my-worldcup-prediction.png",
-      "My World Cup prediction — predict & win a free month at globaleads22.com",
-    );
+    const how = await shareOrDownloadImage(blob, "my-worldcup-prediction.png", "My World Cup prediction — predict & win a free month at globaleads22.com");
     track("worldcup_card_shared", { matchId: match.id, how });
-    if (how === "downloaded") {
-      toast({ title: "Prediction image saved", description: "Post it to your story to challenge your friends." });
-    }
+    if (how === "downloaded") toast({ title: "Prediction image saved", description: "Post it to your story to challenge your friends." });
   };
 
   if (loading) {
@@ -240,13 +207,9 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   if (!match) {
     return (
       <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center px-6 py-20 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#14171d] ring-1 ring-[rgba(233,238,247,0.13)]">
-          <Trophy className="h-6 w-6 text-[#e8fb52]" />
-        </div>
-        <h2 className="mt-5 font-display text-2xl font-bold tracking-tight text-[#f3f5f8]">No match to predict right now</h2>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-[#98a0af]">
-          The next featured match drops here as soon as kickoff is set. Check back shortly.
-        </p>
+        <img src={WC_LOGO} alt="FIFA World Cup 2026" className="h-40 w-auto opacity-90" />
+        <h2 className="wc-display mt-6 text-4xl tracking-wide text-[#f3f5f8]">No match to predict right now</h2>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-[#98a0af]">The next featured match drops here as soon as kickoff is set. Check back shortly.</p>
       </div>
     );
   }
@@ -257,13 +220,10 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   return (
     <div className="relative min-h-full overflow-hidden">
-      <style>{ENTRANCE_CSS}</style>
+      <style>{SCREEN_CSS}</style>
 
-      {/* stadium atmosphere: pitch lines, floodlights, pitch-green */}
       <StadiumBackdrop />
-      {/* ambient, clickable footballs above the backdrop */}
-      <BallPit className="absolute inset-0 h-full w-full opacity-70" />
-      {/* one-shot kicked ball on entrance */}
+      <BallPit className="absolute inset-0 h-full w-full opacity-[0.55]" />
       <img
         src="/sport-ball-football-free-png.webp"
         alt=""
@@ -272,263 +232,168 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
         style={{ clipPath: "circle(46%)" }}
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
-        {/* hero text on a soft dark plate so it stays readable over the balls */}
-        <div className="wc-anim-rise relative rounded-2xl bg-[#08090c]/75 px-4 py-4 sm:px-5">
-          <img
-            src="/world-cup-logo-2026.webp"
-            alt="FIFA World Cup 2026"
-            className="pointer-events-none absolute right-4 top-4 h-16 w-auto sm:h-[88px]"
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
+        {/* ── HERO POSTER ── */}
+        <header className="wc-anim-rise relative text-center">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-[-12%] h-[135%] w-[160%] -translate-x-1/2"
+            style={{ background: "radial-gradient(closest-side, rgba(8,9,12,0.86), rgba(8,9,12,0) 75%)" }}
           />
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">
-            <Trophy className="h-3.5 w-3.5" />
-            World Cup · predict &amp; win
+          <div className="relative">
+            <img
+              src={WC_LOGO}
+              alt="FIFA World Cup 2026"
+              className="wc-float mx-auto h-44 w-auto drop-shadow-[0_14px_46px_rgba(232,251,82,0.22)] sm:h-56"
+            />
+            <h1 className="wc-display mt-5 text-[58px] leading-[0.82] tracking-[0.012em] text-[#f3f5f8] sm:text-[88px]">
+              Call the game.
+              <br />
+              <span className="text-[#e8fb52]">Win a free month.</span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-md text-[15px] leading-6 text-[#c4cad4]">
+              Predict the featured match before kickoff. Call the result for 50% off — nail the exact score for a month on us.
+            </p>
           </div>
-          <h1 className="mt-3 max-w-[78%] font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
-            Predict the match. Win a month on us.
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[#98a0af]">
-            One featured match, two ways to win. Lock in your call before kickoff — we email your reward after full time.
-          </p>
-        </div>
+        </header>
 
-        {/* the two prize cards double as the bet entry points */}
-        {open && !predicted && (
-          <div className="wc-anim-rise" style={{ animationDelay: "90ms" }}>
-            <PrizeLadder className="mt-5" onPick={openModal} />
+        {/* ── TEAM FACE-OFF (no boxes) ── */}
+        <section className="wc-anim-rise relative mt-12" style={{ animationDelay: "120ms" }}>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+            <FaceTeam name={match.homeTeam} flag={match.homeFlag} />
+            <span className="wc-display select-none text-4xl text-[#5b6472] sm:text-6xl">vs</span>
+            <FaceTeam name={match.awayTeam} flag={match.awayFlag} />
           </div>
-        )}
-
-        {/* match panel */}
-        <div className="wc-anim-rise mt-7 overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]" style={{ animationDelay: "160ms" }}>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 py-7 sm:px-8">
-            <TeamColumn name={match.homeTeam} flag={match.homeFlag} />
-            <div className="px-1 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-[#5b6472]">vs</div>
-            <TeamColumn name={match.awayTeam} flag={match.awayFlag} />
+          <div className="mt-6 flex justify-center">
+            <KickoffBar match={match} open={open} kickoffPassed={kickoffPassed} />
           </div>
+        </section>
 
-          <div className="border-t border-[rgba(233,238,247,0.07)] px-5 py-5 sm:px-8">
-            <MatchStatusBlock match={match} open={open} kickoffPassed={kickoffPassed} />
-          </div>
-        </div>
-
-        {/* action area */}
-        <div className="wc-anim-rise" style={{ animationDelay: "230ms" }}>
+        {/* ── ACTION ── */}
+        <section className="wc-anim-rise mt-10" style={{ animationDelay: "230ms" }}>
           {predicted && myPrediction ? (
             <PredictionSummary match={match} prediction={myPrediction} onShare={handleShare} />
           ) : open ? (
-            <button
-              type="button"
-              onClick={() => openModal()}
-              className="mt-5 w-full rounded-xl bg-[#e8fb52] px-5 py-3.5 font-display text-[15px] font-bold text-[#08090c] shadow-[0_0_0_1px_rgba(232,251,82,0.4),0_8px_28px_-12px_rgba(232,251,82,0.55)] transition-colors duration-150 hover:bg-white"
-            >
-              Make your prediction
-            </button>
-          ) : (
-            <div className="mt-5 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0b0d11] px-5 py-4 text-sm text-[#98a0af]">
-              Predictions are closed for this match. The next featured match opens here soon.
+            <div className="grid gap-3 sm:grid-cols-2">
+              <MarketCTA title="Match result" prize="Win 50% off" onClick={() => openModal("result")} />
+              <MarketCTA title="Exact score" prize="Win a free month" primary onClick={() => openModal("exact")} />
             </div>
+          ) : (
+            <p className="text-center text-sm text-[#98a0af]">
+              Predictions are closed for this match. The next featured match opens here soon.
+            </p>
           )}
-        </div>
+        </section>
 
         <KeepyUppy />
 
-        <PredictModal
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          match={match}
-          initialMarket={initialMarket}
-          onSubmit={handleSubmit}
-        />
+        <PredictModal open={modalOpen} onOpenChange={setModalOpen} match={match} initialMarket={initialMarket} onSubmit={handleSubmit} />
       </div>
     </div>
   );
 };
 
-const ENTRANCE_CSS = `
-@keyframes wc-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+const SCREEN_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+@keyframes wc-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes wc-kick {
   0% { transform: translate(-15vw, 30px) rotate(0deg); opacity: 0; }
   12% { opacity: 1; }
   100% { transform: translate(115vw, -40px) rotate(1080deg); opacity: 0; }
 }
 @keyframes wc-glow { from { opacity: 0.55; } to { opacity: 1; } }
+@keyframes wc-floaty { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+.wc-display { font-family: 'Bebas Neue', 'Space Grotesk', system-ui, sans-serif; font-weight: 400; }
 .wc-anim-rise { animation: wc-rise .6s cubic-bezier(0.22,1,0.36,1) both; }
 .wc-anim-kick { animation: wc-kick 1.15s cubic-bezier(0.4,0,0.2,1) both; }
 .wc-floodlight { animation: wc-glow 5.5s ease-in-out infinite alternate; }
+.wc-float { animation: wc-floaty 3.4s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) {
   .wc-anim-rise { animation: none; opacity: 1; transform: none; }
   .wc-anim-kick { display: none; }
-  .wc-floodlight { animation: none; }
+  .wc-floodlight, .wc-float { animation: none; }
 }
 `;
 
-// ── Prize ladder (two markets / two ways to win) ────────────────────────────
-const PrizeLadder = ({ className = "", onPick }: { className?: string; onPick?: (m: Market) => void }) => (
-  <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${className}`}>
-    <PrizeTile
-      icon={<Percent className="h-4 w-4 shrink-0 text-[#98a0af]" />}
-      title="Match result"
-      subtitle="50% off your first month"
-      onClick={onPick ? () => onPick("result") : undefined}
-    />
-    <PrizeTile
-      icon={<Trophy className="h-4 w-4 shrink-0 text-[#e8fb52]" />}
-      title="Exact score"
-      subtitle="A full month, free"
-      accent
-      onClick={onPick ? () => onPick("exact") : undefined}
-    />
-  </div>
-);
-
-const PrizeTile = ({
-  icon,
-  title,
-  subtitle,
-  accent,
-  onClick,
-}: {
-  icon: ReactNode;
-  title: string;
-  subtitle: string;
-  accent?: boolean;
-  onClick?: () => void;
-}) => {
-  const base = `flex items-center gap-3 rounded-xl border px-4 py-3 text-left ${
-    accent
-      ? "border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)]"
-      : "border-[rgba(233,238,247,0.07)] bg-[#0f1115]"
-  }`;
-  const inner = (
-    <>
-      {icon}
-      <div className="leading-tight">
-        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">{title}</p>
-        <p className="text-[12px] text-[#98a0af]">{subtitle}</p>
-      </div>
-      {onClick && <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Pick →</span>}
-    </>
-  );
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className={`${base} transition-colors duration-150 hover:border-[rgba(233,238,247,0.22)]`}
-      >
-        {inner}
-      </button>
-    );
-  }
-  return <div className={base}>{inner}</div>;
-};
-
-// ── Team column (flag + name) ───────────────────────────────────────────────
-const TeamColumn = ({ name, flag }: { name: string; flag: string | null }) => (
+// ── Face-off team (big flag + condensed name, no box) ───────────────────────
+const FaceTeam = ({ name, flag }: { name: string; flag: string | null }) => (
   <div className="flex flex-col items-center gap-3 text-center">
-    <TeamFlag src={flag} name={name} />
-    <span className="font-display text-[15px] font-semibold leading-tight tracking-tight text-[#f3f5f8] sm:text-base">
-      {name}
-    </span>
+    <TeamFlag src={flag} name={name} size="xl" />
+    <span className="wc-display text-2xl leading-none tracking-wide text-[#f3f5f8] sm:text-[32px]">{name}</span>
   </div>
 );
 
-// ── Status block: countdown / kicked-off / full-time final score ────────────
-const MatchStatusBlock = ({ match, open, kickoffPassed }: { match: FeaturedMatch; open: boolean; kickoffPassed: boolean }) => {
+// ── Kickoff status (countdown / underway / full time) ───────────────────────
+const KickoffBar = ({ match, open, kickoffPassed }: { match: FeaturedMatch; open: boolean; kickoffPassed: boolean }) => {
   const c = useCountdown(match.kickoffAt);
-  const kickoffLabel = new Date(match.kickoffAt).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 
   if (match.status === "finished") {
     return (
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Full time</span>
-        <span className="font-display text-2xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
+      <span className="inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[#98a0af]">
+        Full time
+        <span className="wc-display text-2xl tracking-wide text-[#f3f5f8]">
           {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })}
         </span>
-      </div>
+      </span>
     );
   }
 
   if (!open || kickoffPassed) {
     return (
-      <div className="flex items-center gap-2">
+      <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[#ff5c49]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#ff5c49] motion-safe:animate-pulse" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#98a0af]">
-          Underway — predictions closed
-        </span>
-      </div>
+        Underway — predictions closed
+      </span>
     );
   }
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Kickoff in</p>
-        <div className="mt-1.5 flex items-baseline gap-1.5 font-display text-2xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
-          {c.days > 0 && <CountUnit value={c.days} label="d" />}
-          <CountUnit value={c.hours} label="h" pad />
-          <CountUnit value={c.mins} label="m" pad />
-          <CountUnit value={c.secs} label="s" pad />
-        </div>
-      </div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#5b6472]">{kickoffLabel}</p>
-    </div>
+    <span className="inline-flex items-baseline gap-2.5 rounded-full border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-5 py-2">
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">Kickoff in</span>
+      <span className="wc-display text-2xl tabular-nums tracking-wide text-[#f3f5f8]">
+        {c.days > 0 ? `${c.days}d ` : ""}
+        {pad(c.hours)}:{pad(c.mins)}:{pad(c.secs)}
+      </span>
+    </span>
   );
 };
 
-const CountUnit = ({ value, label, pad: doPad }: { value: number; label: string; pad?: boolean }) => (
-  <span className="flex items-baseline">
-    {doPad ? pad(value) : value}
-    <span className="ml-0.5 font-mono text-[11px] font-medium text-[#5b6472]">{label}</span>
-  </span>
+// ── Market CTA (bold, not an info card) ─────────────────────────────────────
+const MarketCTA = ({ title, prize, primary, onClick }: { title: string; prize: string; primary?: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`group flex items-center justify-between gap-3 rounded-2xl px-5 py-4 text-left transition-colors duration-150 ${
+      primary
+        ? "bg-[#e8fb52] text-[#08090c] shadow-[0_10px_34px_-14px_rgba(232,251,82,0.8)] hover:bg-white"
+        : "border border-[rgba(232,251,82,0.4)] bg-[rgba(232,251,82,0.05)] text-[#f3f5f8] hover:bg-[rgba(232,251,82,0.12)]"
+    }`}
+  >
+    <span>
+      <span className="wc-display block text-[26px] leading-none tracking-wide">{title}</span>
+      <span className={`mt-1.5 block font-mono text-[10px] uppercase tracking-[0.16em] ${primary ? "text-[#08090c]/70" : "text-[#e8fb52]"}`}>
+        {prize}
+      </span>
+    </span>
+    <span className="wc-display text-2xl opacity-60 transition-transform duration-150 group-hover:translate-x-1">→</span>
+  </button>
 );
 
 // ── Prediction summary (after submit) ───────────────────────────────────────
-const PredictionSummary = ({
-  match,
-  prediction,
-  onShare,
-}: {
-  match: FeaturedMatch;
-  prediction: MyPrediction;
-  onShare: () => void;
-}) => {
+const PredictionSummary = ({ match, prediction, onShare }: { match: FeaturedMatch; prediction: MyPrediction; onShare: () => void }) => {
   const finished = match.status === "finished";
   const inProgress = !finished && Date.parse(match.kickoffAt) <= Date.now();
   const pick = predictionPick(prediction, match.homeTeam, match.awayTeam);
   const marketTag = prediction.betType === "exact" ? "Exact score · free month if right" : "Match result · 50% off if right";
 
   return (
-    <div className="mt-5 rounded-xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-5 py-5 sm:px-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">Your prediction</p>
-          <div className="mt-2 flex items-center gap-3">
-            <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
-            <span className="font-display text-2xl font-bold tracking-tight text-[#f3f5f8] sm:text-3xl">{pick}</span>
-            <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
-          </div>
-          <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">{marketTag}</p>
-        </div>
-        <button
-          type="button"
-          onClick={onShare}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[rgba(233,238,247,0.13)] bg-transparent px-3.5 py-2.5 font-display text-[13px] font-semibold text-[#f3f5f8] transition-colors duration-150 hover:border-[rgba(233,238,247,0.2)] hover:bg-[#14171d]"
-        >
-          <Share2 className="h-4 w-4" />
-          Share
-        </button>
-      </div>
+    <div className="rounded-2xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.07)] px-6 py-6 text-center">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">Your prediction is in</p>
+      <p className="wc-display mt-2 text-5xl leading-none tracking-wide text-[#f3f5f8] sm:text-6xl">{pick}</p>
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">{marketTag}</p>
 
       {finished && (
-        <p className="mt-4 border-t border-[rgba(232,251,82,0.2)] pt-3 text-sm leading-6 text-[#f3f5f8]">
+        <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-[#f3f5f8]">
           {prediction.prize === "free_month" ? (
             <>🏆 You nailed the exact score — check your email for your free-month code.</>
           ) : prediction.prize === "half_off" ? (
@@ -539,10 +404,17 @@ const PredictionSummary = ({
         </p>
       )}
       {inProgress && (
-        <p className="mt-4 border-t border-[rgba(232,251,82,0.2)] pt-3 text-sm leading-6 text-[#98a0af]">
-          Match in progress — results and winners are announced right after full time.
-        </p>
+        <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-[#98a0af]">Match in progress — winners are announced right after full time.</p>
       )}
+
+      <button
+        type="button"
+        onClick={onShare}
+        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#e8fb52] px-5 py-2.5 font-display text-[13px] font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
+      >
+        <Share2 className="h-4 w-4" />
+        Share my prediction
+      </button>
     </div>
   );
 };
@@ -567,7 +439,6 @@ const PredictModal = ({
   const [away, setAway] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset each time the modal opens.
   useEffect(() => {
     if (open) {
       setMarket(initialMarket ?? "result");
@@ -583,8 +454,7 @@ const PredictModal = ({
   const submit = async () => {
     if (!canSubmit || submitting) return;
     setSubmitting(true);
-    const bet: Bet =
-      market === "exact" ? { type: "exact", home, away } : { type: "result", outcome: outcome as Outcome };
+    const bet: Bet = market === "exact" ? { type: "exact", home, away } : { type: "result", outcome: outcome as Outcome };
     await onSubmit(bet);
     setSubmitting(false);
   };
@@ -593,29 +463,15 @@ const PredictModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-[rgba(233,238,247,0.13)] bg-[#0b0d11] text-[#f3f5f8] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl font-bold tracking-tight">Place your prediction</DialogTitle>
+          <DialogTitle className="wc-display text-3xl tracking-wide">Place your prediction</DialogTitle>
           <DialogDescription className="text-sm leading-6 text-[#98a0af]">
             {match.homeTeam} vs {match.awayTeam}. Pick a market, then make your call.
           </DialogDescription>
         </DialogHeader>
 
-        {/* market selector */}
         <div className="grid grid-cols-2 gap-2">
-          <MarketCard
-            selected={market === "result"}
-            onClick={() => setMarket("result")}
-            icon={<Percent className="h-4 w-4" />}
-            title="Match result"
-            prize="Win 50% off"
-          />
-          <MarketCard
-            selected={market === "exact"}
-            onClick={() => setMarket("exact")}
-            icon={<Trophy className="h-4 w-4" />}
-            title="Exact score"
-            prize="Win a free month"
-            accent
-          />
+          <MarketTab selected={market === "result"} onClick={() => setMarket("result")} title="Match result" prize="Win 50% off" />
+          <MarketTab selected={market === "exact"} onClick={() => setMarket("exact")} title="Exact score" prize="Win a free month" accent />
         </div>
 
         {market === "result" ? (
@@ -628,7 +484,7 @@ const PredictModal = ({
                 <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">Win</span>
               </OutcomeButton>
               <OutcomeButton selected={outcome === "draw"} onClick={() => setOutcome("draw")}>
-                <span className="flex h-7 items-center font-display text-xl font-black">X</span>
+                <span className="wc-display flex h-7 items-center text-2xl">X</span>
                 <span className="mt-1.5">Draw</span>
                 <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">Tie</span>
               </OutcomeButton>
@@ -644,7 +500,7 @@ const PredictModal = ({
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Final score</p>
             <div className="mt-2.5 flex items-center justify-center gap-5">
               <Stepper label={match.homeTeam} flag={match.homeFlag} value={home} onChange={setHome} />
-              <span className="pt-5 font-display text-2xl font-bold text-[#5b6472]">:</span>
+              <span className="wc-display pt-5 text-3xl text-[#5b6472]">:</span>
               <Stepper label={match.awayTeam} flag={match.awayFlag} value={away} onChange={setAway} />
             </div>
           </div>
@@ -666,47 +522,20 @@ const PredictModal = ({
   );
 };
 
-const MarketCard = ({
-  selected,
-  onClick,
-  icon,
-  title,
-  prize,
-  accent,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  icon: ReactNode;
-  title: string;
-  prize: string;
-  accent?: boolean;
-}) => (
+const MarketTab = ({ selected, onClick, title, prize, accent }: { selected: boolean; onClick: () => void; title: string; prize: string; accent?: boolean }) => (
   <button
     type="button"
     onClick={onClick}
     className={`flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-left transition-colors duration-150 ${
-      selected
-        ? "border-[#e8fb52] bg-[rgba(232,251,82,0.1)]"
-        : "border-[rgba(233,238,247,0.13)] bg-[#0f1115] hover:border-[rgba(233,238,247,0.2)]"
+      selected ? "border-[#e8fb52] bg-[rgba(232,251,82,0.1)]" : "border-[rgba(233,238,247,0.13)] bg-[#0f1115] hover:border-[rgba(233,238,247,0.2)]"
     }`}
   >
-    <span className="flex items-center gap-2">
-      <span className={accent ? "text-[#e8fb52]" : "text-[#98a0af]"}>{icon}</span>
-      <span className="font-display text-[13px] font-semibold text-[#f3f5f8]">{title}</span>
-    </span>
+    <span className={`wc-display text-xl leading-none tracking-wide ${accent ? "text-[#e8fb52]" : "text-[#f3f5f8]"}`}>{title}</span>
     <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#98a0af]">{prize}</span>
   </button>
 );
 
-const OutcomeButton = ({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) => (
+const OutcomeButton = ({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) => (
   <button
     type="button"
     onClick={onClick}
@@ -720,17 +549,7 @@ const OutcomeButton = ({
   </button>
 );
 
-const Stepper = ({
-  label,
-  flag,
-  value,
-  onChange,
-}: {
-  label: string;
-  flag: string | null;
-  value: number;
-  onChange: (n: number) => void;
-}) => {
+const Stepper = ({ label, flag, value, onChange }: { label: string; flag: string | null; value: number; onChange: (n: number) => void }) => {
   const clamp = (n: number) => Math.max(0, Math.min(20, n));
   return (
     <div className="flex flex-col items-center gap-2">
@@ -739,7 +558,7 @@ const Stepper = ({
         <StepBtn onClick={() => onChange(clamp(value - 1))} aria-label={`One fewer goal for ${label}`}>
           <Minus className="h-4 w-4" />
         </StepBtn>
-        <span className="w-10 text-center font-display text-3xl font-bold tabular-nums text-[#f3f5f8]">{value}</span>
+        <span className="wc-display w-10 text-center text-4xl tabular-nums text-[#f3f5f8]">{value}</span>
         <StepBtn onClick={() => onChange(clamp(value + 1))} aria-label={`One more goal for ${label}`}>
           <Plus className="h-4 w-4" />
         </StepBtn>
@@ -748,11 +567,7 @@ const Stepper = ({
   );
 };
 
-const StepBtn = ({
-  onClick,
-  children,
-  ...rest
-}: { onClick: () => void; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) => (
+const StepBtn = ({ onClick, children, ...rest }: { onClick: () => void; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button
     type="button"
     onClick={onClick}

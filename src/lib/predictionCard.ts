@@ -33,11 +33,20 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath();
 }
 
+const DISPLAY = "'Bebas Neue', 'Arial Narrow', Arial, sans-serif";
+
 // Shrink the font until the text fits maxWidth (keeps long result labels on one line).
-function fitFont(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, startPx: number, weight = "900") {
+function fitFont(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  startPx: number,
+  weight = "400",
+  family = DISPLAY,
+) {
   let size = startPx;
   while (size > 28) {
-    ctx.font = `${weight} ${size}px Arial`;
+    ctx.font = `${weight} ${size}px ${family}`;
     if (ctx.measureText(text).width <= maxWidth) break;
     size -= 4;
   }
@@ -55,6 +64,17 @@ export async function renderPredictionCard(opts: CardOpts): Promise<Blob> {
     loadImage("/logo.png"),
     loadImage("/world-cup-logo-2026.webp"),
   ]);
+
+  // Ensure the condensed display font is ready before drawing (falls back to
+  // Arial if it can't load — canvas honours the font-family fallback list).
+  try {
+    await Promise.all([
+      document.fonts.load("400 200px 'Bebas Neue'"),
+      document.fonts.load("400 80px 'Bebas Neue'"),
+    ]);
+  } catch {
+    /* fall back to Arial */
+  }
 
   const M = 90;
 
@@ -119,26 +139,26 @@ export async function renderPredictionCard(opts: CardOpts): Promise<Blob> {
   ctx.textAlign = "center";
 
   ctx.fillStyle = ACCENT;
-  ctx.font = "700 30px Arial";
-  ctx.fillText("W O R L D   C U P   P R E D I C T O R", W / 2, 372);
+  ctx.font = `400 44px ${DISPLAY}`;
+  ctx.fillText("WORLD CUP PREDICTOR", W / 2, 376);
 
-  const teams = `${opts.homeTeam}  vs  ${opts.awayTeam}`;
-  const tSize = fitFont(ctx, teams, W - 2 * M, 70, "800");
+  const teams = `${opts.homeTeam.toUpperCase()}  VS  ${opts.awayTeam.toUpperCase()}`;
+  const tSize = fitFont(ctx, teams, W - 2 * M, 96);
   ctx.fillStyle = TEXT;
-  ctx.font = `800 ${tSize}px Arial`;
-  ctx.fillText(teams, W / 2, 480);
+  ctx.font = `400 ${tSize}px ${DISPLAY}`;
+  ctx.fillText(teams, W / 2, 492);
 
   ctx.fillStyle = MUTED;
-  ctx.font = "700 27px Arial";
-  ctx.fillText("M Y   C A L L", W / 2, 612);
+  ctx.font = `400 40px ${DISPLAY}`;
+  ctx.fillText("MY CALL", W / 2, 620);
 
-  const pSize = fitFont(ctx, opts.pick, W - 2 * M, 200, "900");
+  const pSize = fitFont(ctx, opts.pick.toUpperCase(), W - 2 * M, 300);
   ctx.fillStyle = ACCENT;
-  ctx.font = `900 ${pSize}px Arial`;
-  ctx.fillText(opts.pick, W / 2, 828);
+  ctx.font = `400 ${pSize}px ${DISPLAY}`;
+  ctx.fillText(opts.pick.toUpperCase(), W / 2, 832);
 
   ctx.fillStyle = TEXT;
-  const sSize = fitFont(ctx, opts.subtitle, W - 2 * M, 36, "600");
+  const sSize = fitFont(ctx, opts.subtitle, W - 2 * M, 36, "600", "Arial");
   ctx.font = `600 ${sSize}px Arial`;
   ctx.fillText(opts.subtitle, W / 2, 952);
 
