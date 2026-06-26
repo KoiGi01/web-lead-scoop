@@ -3,7 +3,8 @@ import type { ReactNode, ButtonHTMLAttributes } from "react";
 import { Trophy, Loader2, Share2, Minus, Plus, Check, Percent } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
-import { formatScore, getPrizeTier } from "@/lib/worldcupScoring";
+import { formatScore, resolvePrize } from "@/lib/worldcupScoring";
+import type { Bet, Outcome } from "@/lib/worldcupScoring";
 import { renderPredictionCard, downloadBlob } from "@/lib/predictionCard";
 import { confettiBurst } from "@/lib/confettiBurst";
 import { toast } from "@/hooks/use-toast";
@@ -25,7 +26,23 @@ interface Props {
   demoMode?: boolean;
 }
 
-type Outcome = "home" | "draw" | "away";
+type Market = "result" | "exact";
+
+// Human-readable pick for a stored prediction.
+function predictionPick(p: MyPrediction, homeTeam: string, awayTeam: string): string {
+  if (p.betType === "exact" && p.predHome !== null && p.predAway !== null) {
+    return formatScore({ home: p.predHome, away: p.predAway });
+  }
+  if (p.predOutcome === "home") return `${homeTeam} to win`;
+  if (p.predOutcome === "away") return `${awayTeam} to win`;
+  return "Draw";
+}
+
+function outcomeLabel(outcome: Outcome, homeTeam: string, awayTeam: string): string {
+  if (outcome === "home") return `${homeTeam} to win`;
+  if (outcome === "away") return `${awayTeam} to win`;
+  return "Draw";
+}
 
 // ── Demo-only helpers ──────────────────────────────────────────────────────
 // Builds a self-contained sample match/prediction so the view is fully
@@ -59,6 +76,17 @@ function buildDemoMatch(demoState: DemoState): FeaturedMatch {
     return { ...base, kickoffAt: oneDayAgo, status: "finished", homeScore: DEMO_FINAL_SCORE.home, awayScore: DEMO_FINAL_SCORE.away };
   }
   return { ...base, kickoffAt: inThreeDays, status: "upcoming", homeScore: null, awayScore: null };
+}
+
+function betToPrediction(bet: Bet, prize: MyPrediction["prize"]): MyPrediction {
+  return {
+    betType: bet.type,
+    predOutcome: bet.type === "result" ? bet.outcome : null,
+    predHome: bet.type === "exact" ? bet.home : null,
+    predAway: bet.type === "exact" ? bet.away : null,
+    isWinner: prize === "free_month",
+    prize,
+  };
 }
 
 // ── Live countdown to kickoff ───────────────────────────────────────────────
@@ -112,25 +140,27 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   const demoMatch = useMemo(() => buildDemoMatch(demoState), [demoState]);
   const [demoPrediction, setDemoPrediction] = useState<MyPrediction | null>(null);
   const demoSubmit = useMemo(
-    () => async (predHome: number, predAway: number) => {
+    () => async (bet: Bet) => {
       const prize =
-        demoState === "finished" || demoState === "discount"
-          ? getPrizeTier({ home: predHome, away: predAway }, DEMO_FINAL_SCORE)
-          : null;
-      setDemoPrediction({ predHome, predAway, isWinner: prize === "free_month", prize });
+        demoState === "finished" || demoState === "discount" ? resolvePrize(bet, DEMO_FINAL_SCORE) : null;
+      setDemoPrediction(betToPrediction(bet, prize));
       return { ok: true as const };
     },
     [demoState],
   );
 
-  // Demo-only: seed a sample prediction so the locked/finished states have
-  // something to render (real users only ever have their own real prediction).
+  // Demo-only: seed a sample prediction so the locked/finished states render.
   useEffect(() => {
     if (!demoMode) return;
-    if (demoState === "finished") setDemoPrediction({ predHome: 2, predAway: 1, isWinner: true, prize: "free_month" });
-    else if (demoState === "discount") setDemoPrediction({ predHome: 3, predAway: 1, isWinner: false, prize: "half_off" });
-    else if (demoState === "locked") setDemoPrediction({ predHome: 1, predAway: 2, isWinner: false, prize: null });
-    else setDemoPrediction(null);
+    if (demoState === "finished") {
+      setDemoPrediction(betToPrediction({ type: "exact", home: 2, away: 1 }, "free_month"));
+    } else if (demoState === "discount") {
+      setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, "half_off"));
+    } else if (demoState === "locked") {
+      setDemoPrediction(betToPrediction({ type: "result", outcome: "home" }, null));
+    } else {
+      setDemoPrediction(null);
+    }
   }, [demoMode, demoState]);
 
   const match = demoMode ? demoMatch : hookResult.match;
@@ -140,6 +170,11 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
   // ────────────────────────────────────────────────────────────────────────
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [initialMarket, setInitialMarket] = useState<Market | null>(null);
+  const openModal = (m: Market | null = null) => {
+    setInitialMarket(m);
+    setModalOpen(true);
+  };
 
   // Fire a big multi-cannon celebration the first time a winning result shows.
   const wonBurstFired = useRef(false);
@@ -154,14 +189,18 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     }
   }, [match?.status, myPrediction?.prize]);
 
-  const handleSubmit = async (home: number, away: number) => {
-    const res = await submit(home, away);
-    if (res.ok) {
-      track("worldcup_prediction_submitted", { matchId: match?.id, home, away });
+  const handleSubmit = async (bet: Bet) => {
+    const res = await submit(bet);
+    if (res.ok && match) {
+      track("worldcup_prediction_submitted", { matchId: match.id, betType: bet.type });
       confettiBurst({ count: 170, power: 1.2 });
-      toast({ title: "Prediction locked in", description: `You called it ${formatScore({ home, away })}. Good luck.` });
+      const label =
+        bet.type === "exact"
+          ? formatScore({ home: bet.home, away: bet.away })
+          : outcomeLabel(bet.outcome, match.homeTeam, match.awayTeam);
+      toast({ title: "Prediction locked in", description: `Your pick: ${label}. Good luck.` });
       setModalOpen(false);
-    } else {
+    } else if (!res.ok) {
       toast({ title: "Could not submit", description: res.error, variant: "destructive" });
     }
     return res;
@@ -172,8 +211,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
     const blob = await renderPredictionCard({
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
-      predHome: myPrediction.predHome,
-      predAway: myPrediction.predAway,
+      pick: predictionPick(myPrediction, match.homeTeam, match.awayTeam),
     });
     downloadBlob(blob, "my-worldcup-prediction.png");
     track("worldcup_card_shared", { matchId: match.id });
@@ -237,9 +275,12 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
           </p>
         </div>
 
-        <div className="wc-anim-rise" style={{ animationDelay: "90ms" }}>
-          <PrizeLadder className="mt-5" />
-        </div>
+        {/* the two prize cards double as the bet entry points */}
+        {open && !predicted && (
+          <div className="wc-anim-rise" style={{ animationDelay: "90ms" }}>
+            <PrizeLadder className="mt-5" onPick={openModal} />
+          </div>
+        )}
 
         {/* match panel */}
         <div className="wc-anim-rise mt-7 overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]" style={{ animationDelay: "160ms" }}>
@@ -261,7 +302,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
           ) : open ? (
             <button
               type="button"
-              onClick={() => setModalOpen(true)}
+              onClick={() => openModal()}
               className="mt-5 w-full rounded-xl bg-[#e8fb52] px-5 py-3.5 font-display text-[15px] font-bold text-[#08090c] shadow-[0_0_0_1px_rgba(232,251,82,0.4),0_8px_28px_-12px_rgba(232,251,82,0.55)] transition-colors duration-150 hover:bg-white"
             >
               Make your prediction
@@ -279,6 +320,7 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
           open={modalOpen}
           onOpenChange={setModalOpen}
           match={match}
+          initialMarket={initialMarket}
           onSubmit={handleSubmit}
         />
       </div>
@@ -304,25 +346,66 @@ const ENTRANCE_CSS = `
 }
 `;
 
-// ── Prize ladder (two ways to win) ──────────────────────────────────────────
-const PrizeLadder = ({ className = "" }: { className?: string }) => (
+// ── Prize ladder (two markets / two ways to win) ────────────────────────────
+const PrizeLadder = ({ className = "", onPick }: { className?: string; onPick?: (m: Market) => void }) => (
   <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${className}`}>
-    <div className="flex items-center gap-3 rounded-xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115] px-4 py-3">
-      <Percent className="h-4 w-4 shrink-0 text-[#98a0af]" />
-      <div className="leading-tight">
-        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">Right result</p>
-        <p className="text-[12px] text-[#98a0af]">50% off your first month</p>
-      </div>
-    </div>
-    <div className="flex items-center gap-3 rounded-xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-4 py-3">
-      <Trophy className="h-4 w-4 shrink-0 text-[#e8fb52]" />
-      <div className="leading-tight">
-        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">Exact score</p>
-        <p className="text-[12px] text-[#98a0af]">A full month, free</p>
-      </div>
-    </div>
+    <PrizeTile
+      icon={<Percent className="h-4 w-4 shrink-0 text-[#98a0af]" />}
+      title="Match result"
+      subtitle="50% off your first month"
+      onClick={onPick ? () => onPick("result") : undefined}
+    />
+    <PrizeTile
+      icon={<Trophy className="h-4 w-4 shrink-0 text-[#e8fb52]" />}
+      title="Exact score"
+      subtitle="A full month, free"
+      accent
+      onClick={onPick ? () => onPick("exact") : undefined}
+    />
   </div>
 );
+
+const PrizeTile = ({
+  icon,
+  title,
+  subtitle,
+  accent,
+  onClick,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  accent?: boolean;
+  onClick?: () => void;
+}) => {
+  const base = `flex items-center gap-3 rounded-xl border px-4 py-3 text-left ${
+    accent
+      ? "border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)]"
+      : "border-[rgba(233,238,247,0.07)] bg-[#0f1115]"
+  }`;
+  const inner = (
+    <>
+      {icon}
+      <div className="leading-tight">
+        <p className="font-display text-[13px] font-semibold text-[#f3f5f8]">{title}</p>
+        <p className="text-[12px] text-[#98a0af]">{subtitle}</p>
+      </div>
+      {onClick && <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Pick →</span>}
+    </>
+  );
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${base} transition-colors duration-150 hover:border-[rgba(233,238,247,0.22)]`}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className={base}>{inner}</div>;
+};
 
 // ── Team column (flag + name) ───────────────────────────────────────────────
 const TeamColumn = ({ name, flag }: { name: string; flag: string | null }) => (
@@ -402,19 +485,20 @@ const PredictionSummary = ({
 }) => {
   const finished = match.status === "finished";
   const inProgress = !finished && Date.parse(match.kickoffAt) <= Date.now();
+  const pick = predictionPick(prediction, match.homeTeam, match.awayTeam);
+  const marketTag = prediction.betType === "exact" ? "Exact score · free month if right" : "Match result · 50% off if right";
 
   return (
     <div className="mt-5 rounded-xl border border-[rgba(232,251,82,0.28)] bg-[rgba(232,251,82,0.06)] px-5 py-5 sm:px-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#e8fb52]">Your prediction</p>
           <div className="mt-2 flex items-center gap-3">
             <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
-            <span className="font-display text-3xl font-bold tabular-nums tracking-tight text-[#f3f5f8]">
-              {formatScore({ home: prediction.predHome, away: prediction.predAway })}
-            </span>
+            <span className="font-display text-2xl font-bold tracking-tight text-[#f3f5f8] sm:text-3xl">{pick}</span>
             <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
           </div>
+          <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">{marketTag}</p>
         </div>
         <button
           type="button"
@@ -431,7 +515,7 @@ const PredictionSummary = ({
           {prediction.prize === "free_month" ? (
             <>🏆 You nailed the exact score — check your email for your free-month code.</>
           ) : prediction.prize === "half_off" ? (
-            <>You called the result right! Final was {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })} — your 50%-off code is in your email.</>
+            <>You called it! Final was {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })} — your 50%-off code is in your email.</>
           ) : (
             <>So close. Final was {formatScore({ home: match.homeScore ?? 0, away: match.awayScore ?? 0 })} — the next match is your shot.</>
           )}
@@ -446,18 +530,21 @@ const PredictionSummary = ({
   );
 };
 
-// ── Prediction modal (who wins → exact goals) ───────────────────────────────
+// ── Prediction modal (pick a market → make the call) ────────────────────────
 const PredictModal = ({
   open,
   onOpenChange,
   match,
+  initialMarket,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   match: FeaturedMatch;
-  onSubmit: (home: number, away: number) => Promise<{ ok: boolean; error?: string }>;
+  initialMarket: Market | null;
+  onSubmit: (bet: Bet) => Promise<{ ok: boolean; error?: string }>;
 }) => {
+  const [market, setMarket] = useState<Market>("result");
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [home, setHome] = useState(1);
   const [away, setAway] = useState(0);
@@ -466,36 +553,22 @@ const PredictModal = ({
   // Reset each time the modal opens.
   useEffect(() => {
     if (open) {
+      setMarket(initialMarket ?? "result");
       setOutcome(null);
       setHome(1);
       setAway(0);
       setSubmitting(false);
     }
-  }, [open]);
+  }, [open, initialMarket]);
 
-  const chooseOutcome = (o: Outcome) => {
-    setOutcome(o);
-    // Seed a sensible default scoreline matching the pick; user adjusts from here.
-    if (o === "home") { setHome(1); setAway(0); }
-    else if (o === "away") { setHome(0); setAway(1); }
-    else { setHome(1); setAway(1); }
-  };
-
-  const consistent =
-    outcome === "home" ? home > away :
-    outcome === "away" ? away > home :
-    outcome === "draw" ? home === away :
-    false;
-
-  const hint =
-    outcome === "home" ? `A ${match.homeTeam} win means ${match.homeTeam} scores more.` :
-    outcome === "away" ? `A ${match.awayTeam} win means ${match.awayTeam} scores more.` :
-    outcome === "draw" ? "A draw means both teams score the same." :
-    "";
+  const canSubmit = market === "exact" || outcome !== null;
 
   const submit = async () => {
+    if (!canSubmit || submitting) return;
     setSubmitting(true);
-    await onSubmit(home, away);
+    const bet: Bet =
+      market === "exact" ? { type: "exact", home, away } : { type: "result", outcome: outcome as Outcome };
+    await onSubmit(bet);
     setSubmitting(false);
   };
 
@@ -503,50 +576,67 @@ const PredictModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="border-[rgba(233,238,247,0.13)] bg-[#0b0d11] text-[#f3f5f8] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl font-bold tracking-tight">Predict the final score</DialogTitle>
+          <DialogTitle className="font-display text-xl font-bold tracking-tight">Place your prediction</DialogTitle>
           <DialogDescription className="text-sm leading-6 text-[#98a0af]">
-            {match.homeTeam} vs {match.awayTeam}. Call the result for 50% off, or nail the exact score for a free month.
+            {match.homeTeam} vs {match.awayTeam}. Pick a market, then make your call.
           </DialogDescription>
         </DialogHeader>
 
-        <PrizeLadder />
-
-        {/* Step 1 — who wins */}
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">1 · Who wins?</p>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            <OutcomeButton selected={outcome === "home"} onClick={() => chooseOutcome("home")}>
-              <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
-              <span className="mt-1.5 line-clamp-1 max-w-full">{match.homeTeam}</span>
-            </OutcomeButton>
-            <OutcomeButton selected={outcome === "draw"} onClick={() => chooseOutcome("draw")}>
-              <span className="flex h-7 items-center font-display text-base font-bold text-current">Draw</span>
-              <span className="mt-1.5 text-[#5b6472]">Tie</span>
-            </OutcomeButton>
-            <OutcomeButton selected={outcome === "away"} onClick={() => chooseOutcome("away")}>
-              <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
-              <span className="mt-1.5 line-clamp-1 max-w-full">{match.awayTeam}</span>
-            </OutcomeButton>
-          </div>
+        {/* market selector */}
+        <div className="grid grid-cols-2 gap-2">
+          <MarketCard
+            selected={market === "result"}
+            onClick={() => setMarket("result")}
+            icon={<Percent className="h-4 w-4" />}
+            title="Match result"
+            prize="Win 50% off"
+          />
+          <MarketCard
+            selected={market === "exact"}
+            onClick={() => setMarket("exact")}
+            icon={<Trophy className="h-4 w-4" />}
+            title="Exact score"
+            prize="Win a free month"
+            accent
+          />
         </div>
 
-        {/* Step 2 — exact goals */}
-        <div className={outcome ? "" : "pointer-events-none opacity-40"}>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">2 · Exact goals</p>
-          <div className="mt-2.5 flex items-center justify-center gap-5">
-            <Stepper label={match.homeTeam} flag={match.homeFlag} value={home} onChange={setHome} />
-            <span className="pt-5 font-display text-2xl font-bold text-[#5b6472]">:</span>
-            <Stepper label={match.awayTeam} flag={match.awayFlag} value={away} onChange={setAway} />
+        {market === "result" ? (
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Who wins?</p>
+            <div className="mt-2.5 grid grid-cols-3 gap-2">
+              <OutcomeButton selected={outcome === "home"} onClick={() => setOutcome("home")}>
+                <TeamFlag src={match.homeFlag} name={match.homeTeam} size="sm" />
+                <span className="mt-1.5 line-clamp-1 max-w-full">{match.homeTeam}</span>
+                <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">Win</span>
+              </OutcomeButton>
+              <OutcomeButton selected={outcome === "draw"} onClick={() => setOutcome("draw")}>
+                <span className="flex h-7 items-center font-display text-xl font-black">X</span>
+                <span className="mt-1.5">Draw</span>
+                <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">Tie</span>
+              </OutcomeButton>
+              <OutcomeButton selected={outcome === "away"} onClick={() => setOutcome("away")}>
+                <TeamFlag src={match.awayFlag} name={match.awayTeam} size="sm" />
+                <span className="mt-1.5 line-clamp-1 max-w-full">{match.awayTeam}</span>
+                <span className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">Win</span>
+              </OutcomeButton>
+            </div>
           </div>
-          {outcome && !consistent && (
-            <p className="mt-3 text-center text-[12px] leading-5 text-[#ffb23e]">{hint}</p>
-          )}
-        </div>
+        ) : (
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Final score</p>
+            <div className="mt-2.5 flex items-center justify-center gap-5">
+              <Stepper label={match.homeTeam} flag={match.homeFlag} value={home} onChange={setHome} />
+              <span className="pt-5 font-display text-2xl font-bold text-[#5b6472]">:</span>
+              <Stepper label={match.awayTeam} flag={match.awayFlag} value={away} onChange={setAway} />
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
           <button
             type="button"
-            disabled={!outcome || !consistent || submitting}
+            disabled={!canSubmit || submitting}
             onClick={submit}
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#e8fb52] px-4 font-display text-[15px] font-bold text-[#08090c] transition-colors duration-150 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -558,6 +648,38 @@ const PredictModal = ({
     </Dialog>
   );
 };
+
+const MarketCard = ({
+  selected,
+  onClick,
+  icon,
+  title,
+  prize,
+  accent,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  title: string;
+  prize: string;
+  accent?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-left transition-colors duration-150 ${
+      selected
+        ? "border-[#e8fb52] bg-[rgba(232,251,82,0.1)]"
+        : "border-[rgba(233,238,247,0.13)] bg-[#0f1115] hover:border-[rgba(233,238,247,0.2)]"
+    }`}
+  >
+    <span className="flex items-center gap-2">
+      <span className={accent ? "text-[#e8fb52]" : "text-[#98a0af]"}>{icon}</span>
+      <span className="font-display text-[13px] font-semibold text-[#f3f5f8]">{title}</span>
+    </span>
+    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#98a0af]">{prize}</span>
+  </button>
+);
 
 const OutcomeButton = ({
   selected,

@@ -1,8 +1,8 @@
 interface CardOpts {
   homeTeam: string;
   awayTeam: string;
-  predHome: number;
-  predAway: number;
+  // The pick as shown on the card: a scoreline ("2–1") or a result ("France to win").
+  pick: string;
 }
 
 const SIZE = 1080;
@@ -35,8 +35,10 @@ export async function renderPredictionCard(opts: CardOpts): Promise<Blob> {
   ctx.fillText(`${opts.homeTeam}  vs  ${opts.awayTeam}`, SIZE / 2, 430);
 
   ctx.fillStyle = ACCENT;
-  ctx.font = "900 200px Arial";
-  ctx.fillText(`${opts.predHome}–${opts.predAway}`, SIZE / 2, 700);
+  // Scale the pick down for longer result labels so it never overflows.
+  const pickSize = opts.pick.length <= 5 ? 200 : opts.pick.length <= 14 ? 110 : 80;
+  ctx.font = `900 ${pickSize}px Arial`;
+  ctx.fillText(opts.pick, SIZE / 2, 680);
 
   ctx.fillStyle = TEXT;
   ctx.font = "700 40px Arial";

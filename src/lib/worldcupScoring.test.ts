@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isExactScoreWinner, formatScore, matchOutcome, getPrizeTier } from "./worldcupScoring";
+import { isExactScoreWinner, formatScore, matchOutcome, resolvePrize } from "./worldcupScoring";
 
 describe("isExactScoreWinner", () => {
   it("is true when both scores match exactly", () => {
@@ -39,17 +39,23 @@ describe("matchOutcome", () => {
   });
 });
 
-describe("getPrizeTier", () => {
-  it("awards free_month for the exact score", () => {
-    expect(getPrizeTier({ home: 2, away: 1 }, { home: 2, away: 1 })).toBe("free_month");
+describe("resolvePrize — exact-score bet", () => {
+  it("wins free_month only on the precise scoreline", () => {
+    expect(resolvePrize({ type: "exact", home: 2, away: 1 }, { home: 2, away: 1 })).toBe("free_month");
   });
-  it("awards half_off for the right outcome but wrong score", () => {
-    expect(getPrizeTier({ home: 3, away: 1 }, { home: 2, away: 1 })).toBe("half_off");
+  it("wins nothing if the score is off, even with the right result", () => {
+    expect(resolvePrize({ type: "exact", home: 3, away: 1 }, { home: 2, away: 1 })).toBeNull();
   });
-  it("awards half_off for a correctly-called draw with the wrong score", () => {
-    expect(getPrizeTier({ home: 2, away: 2 }, { home: 1, away: 1 })).toBe("half_off");
+});
+
+describe("resolvePrize — result bet", () => {
+  it("wins half_off when the called result is correct", () => {
+    expect(resolvePrize({ type: "result", outcome: "home" }, { home: 2, away: 1 })).toBe("half_off");
   });
-  it("awards nothing for the wrong outcome", () => {
-    expect(getPrizeTier({ home: 1, away: 2 }, { home: 2, away: 1 })).toBeNull();
+  it("wins half_off on a correctly-called draw", () => {
+    expect(resolvePrize({ type: "result", outcome: "draw" }, { home: 1, away: 1 })).toBe("half_off");
+  });
+  it("wins nothing on the wrong result", () => {
+    expect(resolvePrize({ type: "result", outcome: "away" }, { home: 2, away: 1 })).toBeNull();
   });
 });

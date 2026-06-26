@@ -29,12 +29,25 @@ const json = (body: unknown, status = 200) =>
 
 type PrizeTier = "free_month" | "half_off";
 
-// Two-tier prize: exact score → free month; right result only → 50% off.
+interface PredictionRow {
+  bet_type: string | null;
+  pred_outcome: string | null;
+  pred_home: number | null;
+  pred_away: number | null;
+}
+
+const outcomeOf = (h: number, a: number) => (h > a ? "home" : h < a ? "away" : "draw");
+
+// One bet per market: exact-score bet → free month only on the precise score;
+// result bet → 50% off when the called Home/Draw/Away is correct.
 // Inlined here (Deno function can't import the src/ scoring module).
-function prizeTierFor(predHome: number, predAway: number, homeScore: number, awayScore: number): PrizeTier | null {
-  if (predHome === homeScore && predAway === awayScore) return "free_month";
-  const sign = (h: number, a: number) => (h > a ? 1 : h < a ? -1 : 0);
-  if (sign(predHome, predAway) === sign(homeScore, awayScore)) return "half_off";
+function prizeForBet(p: PredictionRow, homeScore: number, awayScore: number): PrizeTier | null {
+  if (p.bet_type === "exact" && p.pred_home !== null && p.pred_away !== null) {
+    return p.pred_home === homeScore && p.pred_away === awayScore ? "free_month" : null;
+  }
+  if (p.bet_type === "result" && p.pred_outcome) {
+    return p.pred_outcome === outcomeOf(homeScore, awayScore) ? "half_off" : null;
+  }
   return null;
 }
 
@@ -135,12 +148,12 @@ const handler = async (req: Request): Promise<Response> => {
     for (const fm of finishedMatches ?? []) {
       const { data: predictions } = await supabase
         .from("worldcup_predictions")
-        .select("id, user_id, pred_home, pred_away")
+        .select("id, user_id, bet_type, pred_outcome, pred_home, pred_away")
         .eq("match_id", fm.id)
         .is("rewarded_at", null);
 
       for (const p of predictions ?? []) {
-        const tier = prizeTierFor(p.pred_home, p.pred_away, fm.home_score, fm.away_score);
+        const tier = prizeForBet(p, fm.home_score, fm.away_score);
 
         if (!tier) {
           // No prize — mark processed so we don't re-evaluate this row every tick.
