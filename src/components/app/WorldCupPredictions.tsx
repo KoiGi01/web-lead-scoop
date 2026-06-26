@@ -5,7 +5,7 @@ import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
 import { formatScore, resolvePrize } from "@/lib/worldcupScoring";
 import type { Bet, Outcome } from "@/lib/worldcupScoring";
-import { renderPredictionCard, downloadBlob } from "@/lib/predictionCard";
+import { renderPredictionCard, shareOrDownloadImage } from "@/lib/predictionCard";
 import { confettiBurst } from "@/lib/confettiBurst";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
@@ -208,13 +208,25 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
   const handleShare = async () => {
     if (!match || !myPrediction) return;
+    const subtitle =
+      myPrediction.betType === "exact"
+        ? "Exact score — a free month if I nail it"
+        : "Match result — 50% off if I call it";
     const blob = await renderPredictionCard({
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       pick: predictionPick(myPrediction, match.homeTeam, match.awayTeam),
+      subtitle,
     });
-    downloadBlob(blob, "my-worldcup-prediction.png");
-    track("worldcup_card_shared", { matchId: match.id });
+    const how = await shareOrDownloadImage(
+      blob,
+      "my-worldcup-prediction.png",
+      "My World Cup prediction — predict & win a free month at globaleads22.com",
+    );
+    track("worldcup_card_shared", { matchId: match.id, how });
+    if (how === "downloaded") {
+      toast({ title: "Prediction image saved", description: "Post it to your story to challenge your friends." });
+    }
   };
 
   if (loading) {
@@ -262,12 +274,17 @@ const WorldCupPredictions = ({ userId, demoMode }: Props) => {
 
       <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-10 sm:py-14">
         {/* hero text on a soft dark plate so it stays readable over the balls */}
-        <div className="wc-anim-rise rounded-2xl bg-[#08090c]/75 px-4 py-4 sm:px-5">
+        <div className="wc-anim-rise relative rounded-2xl bg-[#08090c]/75 px-4 py-4 sm:px-5">
+          <img
+            src="/world-cup-logo-2026.webp"
+            alt="FIFA World Cup 2026"
+            className="pointer-events-none absolute right-4 top-4 h-16 w-auto sm:h-[88px]"
+          />
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#e8fb52]">
             <Trophy className="h-3.5 w-3.5" />
             World Cup · predict &amp; win
           </div>
-          <h1 className="mt-3 font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
+          <h1 className="mt-3 max-w-[78%] font-display text-[28px] font-bold leading-tight tracking-tight text-[#f3f5f8] sm:text-3xl">
             Predict the match. Win a month on us.
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#98a0af]">
