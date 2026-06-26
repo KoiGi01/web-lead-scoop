@@ -6,9 +6,12 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const footballApiKey = Deno.env.get("FOOTBALL_API_KEY");
 const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-const stripeWcCouponId = Deno.env.get("STRIPE_WC_COUPON_ID"); // 100% off, one month (free month)
-const stripeWcCoupon50Id = Deno.env.get("STRIPE_WC_COUPON_50_ID"); // 50% off, one month (discount)
 const resendApiKey = Deno.env.get("RESEND_API_KEY")?.trim();
+
+// Fixed coupon ids — created automatically (see ensureCoupon) so no manual
+// Stripe setup or coupon-id secrets are needed.
+const WC_COUPON_FREE = "gl22-wc-free-month"; // 100% off, once
+const WC_COUPON_HALF = "gl22-wc-half-off"; // 50% off, once
 const fromEmail = Deno.env.get("OUTREACH_FROM_EMAIL")?.trim() || "contact@globaleads22.com";
 const tickSecret = Deno.env.get("WORLDCUP_TICK_SECRET");
 
@@ -51,8 +54,49 @@ function prizeForBet(p: PredictionRow, homeScore: number, awayScore: number): Pr
   return null;
 }
 
-function couponForTier(tier: PrizeTier): string | undefined {
-  return tier === "free_month" ? stripeWcCouponId : stripeWcCoupon50Id;
+function couponForTier(tier: PrizeTier): { id: string; percentOff: number } {
+  return tier === "free_month"
+    ? { id: WC_COUPON_FREE, percentOff: 100 }
+    : { id: WC_COUPON_HALF, percentOff: 50 };
+}
+
+// Ensures a fixed-id coupon exists in Stripe, creating it once if missing.
+// Cached per warm instance so we don't re-check every payout.
+const ensuredCoupons = new Set<string>();
+async function ensureCoupon(id: string, percentOff: number): Promise<boolean> {
+  if (ensuredCoupons.has(id)) return true;
+  if (!stripeSecretKey) return false;
+
+  const getRes = await fetch(`https://api.stripe.com/v1/coupons/${id}`, {
+    headers: { Authorization: `Bearer ${stripeSecretKey}` },
+  });
+  if (getRes.ok) {
+    ensuredCoupons.add(id);
+    return true;
+  }
+  if (getRes.status !== 404) return false;
+
+  const createRes = await fetch("https://api.stripe.com/v1/coupons", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${stripeSecretKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      id,
+      percent_off: String(percentOff),
+      duration: "once",
+      name: percentOff === 100 ? "World Cup — free month" : "World Cup — 50% off",
+    }).toString(),
+  });
+  if (createRes.ok) {
+    ensuredCoupons.add(id);
+    return true;
+  }
+  // Handle a race where another tick created it first.
+  const body = await createRes.json().catch(() => ({}));
+  if (body?.error?.code === "resource_already_exists") {
+    ensuredCoupons.add(id);
+    return true;
+  }
+  return false;
 }
 
 async function createStripePromotionCode(code: string, couponId: string): Promise<boolean> {
@@ -162,12 +206,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         summary.winners += 1;
-        const couponId = couponForTier(tier);
+        const coupon = couponForTier(tier);
+        const couponOk = await ensureCoupon(coupon.id, coupon.percentOff);
         const code = buildPromoCode();
-        const created = couponId ? await createStripePromotionCode(code, couponId) : false;
+        const created = couponOk ? await createStripePromotionCode(code, coupon.id) : false;
         if (!created) {
-          // Coupon missing or Stripe failed — leave rewarded_at null so the next tick
-          // retries. Do NOT mark is_winner until a redeemable code actually exists.
+          // Coupon unavailable or Stripe failed — leave rewarded_at null so the next
+          // tick retries. Do NOT mark is_winner until a redeemable code actually exists.
           continue;
         }
         const { data: authUser } = await supabase.auth.admin.getUserById(p.user_id);
