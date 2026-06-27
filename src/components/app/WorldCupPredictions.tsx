@@ -709,7 +709,7 @@ const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAut
             </div>
           ) : fixtures.length === 0 ? (
             <p className="rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]/85 px-5 py-6 text-center text-sm text-[#98a0af]">
-              No World Cup matches in the next few days — check back soon.
+              No World Cup matches today — check back on the next matchday.
             </p>
           ) : (
             <div className="space-y-3">

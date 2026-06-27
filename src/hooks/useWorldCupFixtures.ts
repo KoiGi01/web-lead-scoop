@@ -16,10 +16,10 @@ export interface Fixture {
   isFeatured: boolean;
 }
 
-// Loads the day's World Cup fixtures (a rolling window starting at local
-// midnight) plus the signed-in user's prediction for each, and submits a bet
-// against a specific match.
-export function useWorldCupFixtures(userId?: string, windowDays = 3) {
+// Loads the current day's World Cup fixtures (local-midnight to local-midnight)
+// plus the signed-in user's prediction for each, and submits a bet against a
+// specific match.
+export function useWorldCupFixtures(userId?: string, windowDays = 1) {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [predictions, setPredictions] = useState<Record<string, MyPrediction>>({});
   const [loading, setLoading] = useState(true);

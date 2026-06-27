@@ -103,6 +103,14 @@ const BallPit = ({ className = "" }: { className?: string }) => {
       }
     };
 
+    // Re-size the backing store whenever the canvas box changes — not just on
+    // window resize. The page grows taller after content loads, which would
+    // otherwise stretch the fixed-size canvas (oval balls).
+    const ro = new ResizeObserver(() => {
+      resize();
+      if (reduce) renderStatic();
+    });
+    ro.observe(canvas);
     window.addEventListener("resize", resize);
     if (reduce) {
       renderStatic();
@@ -113,6 +121,7 @@ const BallPit = ({ className = "" }: { className?: string }) => {
 
     return () => {
       cancelAnimationFrame(raf);
+      ro.disconnect();
       canvas.removeEventListener("click", onClick);
       window.removeEventListener("resize", resize);
     };
