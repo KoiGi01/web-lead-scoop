@@ -747,60 +747,88 @@ const FixtureRow = ({
   onPredict: () => void;
   onShare: () => void;
 }) => {
-  const open = fixture.status === "upcoming" && Date.parse(fixture.kickoffAt) > Date.now();
+  const kickoffMs = Date.parse(fixture.kickoffAt);
   const finished = fixture.status === "finished";
-  const when = new Date(fixture.kickoffAt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+  const live = !finished && (fixture.status === "locked" || kickoffMs <= Date.now());
+  const open = fixture.status === "upcoming" && kickoffMs > Date.now();
+  const hasScore = fixture.homeScore !== null && fixture.awayScore !== null;
+  const dateLabel = new Date(fixture.kickoffAt).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const timeLabel = new Date(fixture.kickoffAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
   return (
-    <div className="rounded-2xl border border-[rgba(233,238,247,0.07)] bg-[#0f1115]/85 px-4 py-3.5">
-      <div className="flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <TeamFlag src={fixture.homeFlag} name={fixture.homeTeam} size="sm" />
-          <span className="wc-display truncate text-lg leading-none tracking-wide text-[#f3f5f8]">{fixture.homeTeam}</span>
+    <div className="overflow-hidden rounded-2xl border border-[rgba(233,238,247,0.08)] bg-gradient-to-b from-[#12151b] to-[#0d0f14]">
+      {/* status row */}
+      <div className="flex items-center justify-between px-5 pt-4">
+        {live ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5c49] px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-white motion-safe:animate-pulse" /> Live
+          </span>
+        ) : finished ? (
+          <span className="rounded-full bg-[#1c2029] px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#98a0af]">Full time</span>
+        ) : (
+          <span className="rounded-full bg-[rgba(232,251,82,0.12)] px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#e8fb52]">{timeLabel}</span>
+        )}
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#5b6472]">{dateLabel}</span>
+      </div>
+
+      {/* teams + score */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5 sm:px-6">
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <TeamFlag src={fixture.homeFlag} name={fixture.homeTeam} size="lg" />
+          <span className="wc-display text-[15px] leading-none tracking-wide text-[#f3f5f8] sm:text-lg">{fixture.homeTeam}</span>
         </div>
-        <span className="wc-display shrink-0 text-sm text-[#5b6472]">vs</span>
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-2.5">
-          <span className="wc-display truncate text-lg leading-none tracking-wide text-[#f3f5f8]">{fixture.awayTeam}</span>
-          <TeamFlag src={fixture.awayFlag} name={fixture.awayTeam} size="sm" />
+        <div className="px-1 text-center sm:px-3">
+          {finished || (live && hasScore) ? (
+            <>
+              <div className="wc-display text-4xl leading-none tabular-nums text-[#f3f5f8] sm:text-5xl">
+                {fixture.homeScore ?? 0}<span className="mx-1.5 text-[#5b6472]">-</span>{fixture.awayScore ?? 0}
+              </div>
+              {live && <div className="mt-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-[#ff5c49]">Live</div>}
+            </>
+          ) : live ? (
+            <div className="wc-display text-3xl leading-none text-[#ff5c49] sm:text-4xl">Live</div>
+          ) : (
+            <div className="wc-display text-3xl leading-none text-[#5b6472] sm:text-4xl">vs</div>
+          )}
+        </div>
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <TeamFlag src={fixture.awayFlag} name={fixture.awayTeam} size="lg" />
+          <span className="wc-display text-[15px] leading-none tracking-wide text-[#f3f5f8] sm:text-lg">{fixture.awayTeam}</span>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[rgba(233,238,247,0.07)] pt-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">
-          {finished
-            ? `FT ${formatScore({ home: fixture.homeScore ?? 0, away: fixture.awayScore ?? 0 })}`
-            : !open
-              ? "Underway"
-              : when}
-        </span>
+      {/* actions */}
+      <div className="border-t border-[rgba(233,238,247,0.07)] p-3">
         {prediction ? (
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#e8fb52]">
-              {prediction.prize === "free_month"
-                ? "Won · free month"
-                : prediction.prize === "half_off"
-                  ? "Won · 50% off"
-                  : `Pick: ${predictionPick(prediction, fixture.homeTeam, fixture.awayTeam)}`}
-            </span>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="flex flex-col items-center justify-center rounded-xl bg-[#14171d] px-3 py-2.5 text-center">
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#5b6472]">
+                {prediction.prize ? "You won" : "Your pick"}
+              </span>
+              <span className="wc-display mt-0.5 text-base leading-none text-[#e8fb52]">
+                {prediction.prize === "free_month" ? "Free month" : prediction.prize === "half_off" ? "50% off" : predictionPick(prediction, fixture.homeTeam, fixture.awayTeam)}
+              </span>
+            </div>
             <button
               type="button"
               onClick={onShare}
-              aria-label="Share prediction"
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-[rgba(233,238,247,0.13)] text-[#98a0af] transition-colors duration-150 hover:border-[#e8fb52]/50 hover:text-[#e8fb52]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#e8fb52] px-4 py-2.5 font-display text-sm font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
             >
-              <Share2 className="h-3.5 w-3.5" />
+              <Share2 className="h-4 w-4" /> Share
             </button>
           </div>
         ) : open ? (
           <button
             type="button"
             onClick={onPredict}
-            className="rounded-lg bg-[#e8fb52] px-4 py-1.5 font-display text-[12px] font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
+            className="flex w-full items-center justify-center rounded-xl bg-[#e8fb52] px-4 py-3 font-display text-sm font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
           >
-            Predict →
+            Make your prediction
           </button>
         ) : (
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Closed</span>
+          <div className="rounded-xl bg-[#14171d] px-4 py-3 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">
+            Predictions closed
+          </div>
         )}
       </div>
     </div>
