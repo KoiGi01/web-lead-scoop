@@ -78,6 +78,28 @@ interface ProviderAccountStatus {
   };
 }
 
+interface WorldCupPredictionRow {
+  id: string;
+  user_id: string;
+  user_email: string;
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  kickoff_at: string | null;
+  match_status: string;
+  actual_score: string | null;
+  bet_type: string;
+  picked_winner: string;
+  predicted_score: string | null;
+  pred_outcome: string | null;
+  is_winner: boolean;
+  prize: string | null;
+  promo_code: string | null;
+  rewarded_at: string | null;
+  email_sent_at: string | null;
+  created_at: string;
+}
+
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit" });
 const compactNumber = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -99,6 +121,7 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationRow[]>([]);
   const [providerStatuses, setProviderStatuses] = useState<ProviderAccountStatus[]>([]);
+  const [worldCupPredictions, setWorldCupPredictions] = useState<WorldCupPredictionRow[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -111,13 +134,14 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
     setLoading(true);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [usage, credits, sessions, payments, adminUsers, providerStatus] = await Promise.all([
+    const [usage, credits, sessions, payments, adminUsers, providerStatus, worldCup] = await Promise.all([
       supabase.from("api_usage_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("credit_transactions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("search_sessions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.from("stripe_payments").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.functions.invoke("admin-users", { body: { action: "list_users" } }),
       supabase.functions.invoke("admin-provider-status", { body: {} }),
+      supabase.functions.invoke("admin-users", { body: { action: "list_worldcup_predictions" } }),
     ]);
 
     if (!usage.error) setUsageEvents(usage.data || []);
@@ -135,6 +159,11 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
       setProviderStatuses(providerStatus.data.providers || []);
     } else if (providerStatus.error) {
       toast({ title: "Provider status failed", description: providerStatus.error.message, variant: "destructive" });
+    }
+    if (!worldCup.error && worldCup.data) {
+      setWorldCupPredictions(worldCup.data.predictions || []);
+    } else if (worldCup.error) {
+      toast({ title: "World Cup predictions failed", description: worldCup.error.message, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -322,6 +351,72 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
                 Provider balances have not loaded yet.
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="border border-[#f3f5f8]/[0.14] bg-[#111319]">
+          <div className="flex flex-col gap-1 border-b border-[#f3f5f8]/10 p-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-lg font-bold">World Cup reward review</h2>
+              <p className="mt-1 text-sm text-[#9aa3b2]">Manual approval feed: who predicted what, who they chose to win, and current reward status.</p>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">{worldCupPredictions.length} predictions</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-left">
+              <thead className="font-mono text-[10px] uppercase tracking-widest text-[#5d6675]">
+                <tr>
+                  <th className="px-4 py-3">User</th>
+                  <th className="px-4 py-3">Match</th>
+                  <th className="px-4 py-3">Kickoff</th>
+                  <th className="px-4 py-3">Market</th>
+                  <th className="px-4 py-3">Chose to win</th>
+                  <th className="px-4 py-3">Score pick</th>
+                  <th className="px-4 py-3">Actual</th>
+                  <th className="px-4 py-3">Reward</th>
+                  <th className="px-4 py-3">Code</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f3f5f8]/10 font-mono text-xs">
+                {worldCupPredictions.map(prediction => (
+                  <tr key={prediction.id}>
+                    <td className="px-4 py-3">
+                      <p className="max-w-[220px] truncate text-[#f3f5f8]">{prediction.user_email || prediction.user_id}</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-widest text-[#5d6675]">{formatDate(prediction.created_at)}</p>
+                    </td>
+                    <td className="px-4 py-3 text-[#f3f5f8]">
+                      {prediction.home_team} vs {prediction.away_team}
+                      <p className="mt-1 text-[10px] uppercase tracking-widest text-[#5d6675]">{prediction.match_status}</p>
+                    </td>
+                    <td className="px-4 py-3 text-[#9aa3b2]">{formatDate(prediction.kickoff_at)}</td>
+                    <td className="px-4 py-3 uppercase text-[#9aa3b2]">{prediction.bet_type}</td>
+                    <td className="px-4 py-3 text-[#e8fb52]">{prediction.picked_winner}</td>
+                    <td className="px-4 py-3 text-[#9aa3b2]">{prediction.predicted_score || prediction.pred_outcome || "-"}</td>
+                    <td className="px-4 py-3 text-[#9aa3b2]">{prediction.actual_score || "-"}</td>
+                    <td className="px-4 py-3">
+                      {prediction.prize ? (
+                        <span className="text-[#e8fb52]">{prediction.prize === "free_month" ? "Free month" : "50% off"}</span>
+                      ) : prediction.is_winner ? (
+                        <span className="text-[#e8fb52]">Winner</span>
+                      ) : prediction.match_status === "finished" ? (
+                        <span className="text-[#5d6675]">No reward</span>
+                      ) : (
+                        <span className="text-[#9aa3b2]">Pending</span>
+                      )}
+                      <p className="mt-1 text-[10px] uppercase tracking-widest text-[#5d6675]">
+                        {prediction.rewarded_at ? `Processed ${formatDate(prediction.rewarded_at)}` : "Manual review"}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-[#9aa3b2]">{prediction.promo_code || "-"}</td>
+                  </tr>
+                ))}
+                {!worldCupPredictions.length && (
+                  <tr>
+                    <td className="px-4 py-6 text-[#5d6675]" colSpan={9}>No World Cup predictions yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

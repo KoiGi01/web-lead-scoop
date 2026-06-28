@@ -27,6 +27,33 @@ export interface Entries {
 
 const REF_KEY = "gl22:wc-ref";
 
+const mapFixture = (m: {
+  id: string;
+  home_team: string;
+  away_team: string;
+  home_flag: string | null;
+  away_flag: string | null;
+  kickoff_at: string;
+  status: Fixture["status"];
+  home_score: number | null;
+  away_score: number | null;
+  is_featured: boolean;
+}): Fixture => ({
+  id: m.id,
+  homeTeam: m.home_team,
+  awayTeam: m.away_team,
+  homeFlag: m.home_flag,
+  awayFlag: m.away_flag,
+  kickoffAt: m.kickoff_at,
+  status: m.status,
+  homeScore: m.home_score,
+  awayScore: m.away_score,
+  isFeatured: m.is_featured,
+});
+
+const isOpenFixture = (fixture: Fixture) =>
+  fixture.status === "upcoming" && Date.parse(fixture.kickoffAt) > Date.now();
+
 export function useWorldCupFixtures(userId?: string, windowDays = 1) {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [predictions, setPredictions] = useState<Record<string, MyPrediction>>({});
@@ -35,30 +62,25 @@ export function useWorldCupFixtures(userId?: string, windowDays = 1) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + windowDays);
+    const fetchWindow = async (dayOffset: number) => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() + dayOffset);
+      const end = new Date(start);
+      end.setDate(end.getDate() + windowDays);
 
-    const { data: ms } = await supabase
-      .from("worldcup_matches")
-      .select("id, home_team, away_team, home_flag, away_flag, kickoff_at, status, home_score, away_score, is_featured")
-      .gte("kickoff_at", start.toISOString())
-      .lt("kickoff_at", end.toISOString())
-      .order("kickoff_at", { ascending: true });
+      const { data } = await supabase
+        .from("worldcup_matches")
+        .select("id, home_team, away_team, home_flag, away_flag, kickoff_at, status, home_score, away_score, is_featured")
+        .gte("kickoff_at", start.toISOString())
+        .lt("kickoff_at", end.toISOString())
+        .order("kickoff_at", { ascending: true });
 
-    const fx: Fixture[] = (ms ?? []).map((m) => ({
-      id: m.id,
-      homeTeam: m.home_team,
-      awayTeam: m.away_team,
-      homeFlag: m.home_flag,
-      awayFlag: m.away_flag,
-      kickoffAt: m.kickoff_at,
-      status: m.status,
-      homeScore: m.home_score,
-      awayScore: m.away_score,
-      isFeatured: m.is_featured,
-    }));
+      return (data ?? []).map(mapFixture);
+    };
+
+    const todayFixtures = await fetchWindow(0);
+    const fx = todayFixtures.some(isOpenFixture) ? todayFixtures : await fetchWindow(1);
     setFixtures(fx);
 
     if (userId && fx.length) {

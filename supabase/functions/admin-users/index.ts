@@ -309,6 +309,79 @@ const getSessionLeads = async (body: Record<string, unknown>) => {
   return json({ session: sessionResult.data, leads: leadsResult.data || [] });
 };
 
+const predictionWinnerPick = (
+  prediction: { bet_type: string | null; pred_outcome: string | null; pred_home: number | null; pred_away: number | null },
+  match: { home_team: string; away_team: string } | null,
+) => {
+  if (!match) return "Unknown";
+  if (prediction.bet_type === "result") {
+    if (prediction.pred_outcome === "home") return match.home_team;
+    if (prediction.pred_outcome === "away") return match.away_team;
+    if (prediction.pred_outcome === "draw") return "Draw";
+    return "Unknown";
+  }
+  if (prediction.pred_home === null || prediction.pred_away === null) return "Unknown";
+  if (prediction.pred_home > prediction.pred_away) return match.home_team;
+  if (prediction.pred_home < prediction.pred_away) return match.away_team;
+  return "Draw";
+};
+
+const listWorldCupPredictions = async () => {
+  const [authUsers, predictionsResult, matchesResult] = await Promise.all([
+    getAllAuthUsers(),
+    supabase
+      .from("worldcup_predictions")
+      .select("id, user_id, match_id, bet_type, pred_outcome, pred_home, pred_away, is_winner, prize, promo_code, rewarded_at, email_sent_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("worldcup_matches")
+      .select("id, home_team, away_team, kickoff_at, status, home_score, away_score")
+      .order("kickoff_at", { ascending: false })
+      .limit(500),
+  ]);
+
+  if (predictionsResult.error) throw predictionsResult.error;
+  if (matchesResult.error) throw matchesResult.error;
+
+  const usersById = new Map(authUsers.map((user) => [user.id, user]));
+  const matchesById = new Map((matchesResult.data || []).map((match) => [match.id, match]));
+
+  const predictions = (predictionsResult.data || []).map((prediction) => {
+    const match = matchesById.get(prediction.match_id) || null;
+    const user = usersById.get(prediction.user_id);
+    return {
+      id: prediction.id,
+      user_id: prediction.user_id,
+      user_email: user?.email || "",
+      match_id: prediction.match_id,
+      home_team: match?.home_team || "Unknown",
+      away_team: match?.away_team || "Unknown",
+      kickoff_at: match?.kickoff_at || null,
+      match_status: match?.status || "unknown",
+      actual_score:
+        match?.home_score !== null && match?.home_score !== undefined && match?.away_score !== null && match?.away_score !== undefined
+          ? `${match.home_score}-${match.away_score}`
+          : null,
+      bet_type: prediction.bet_type || "exact",
+      picked_winner: predictionWinnerPick(prediction, match),
+      predicted_score:
+        prediction.pred_home !== null && prediction.pred_home !== undefined && prediction.pred_away !== null && prediction.pred_away !== undefined
+          ? `${prediction.pred_home}-${prediction.pred_away}`
+          : null,
+      pred_outcome: prediction.pred_outcome,
+      is_winner: prediction.is_winner,
+      prize: prediction.prize,
+      promo_code: prediction.promo_code,
+      rewarded_at: prediction.rewarded_at,
+      email_sent_at: prediction.email_sent_at,
+      created_at: prediction.created_at,
+    };
+  });
+
+  return json({ predictions });
+};
+
 const createOrganization = async (callerId: string, isAdmin: boolean, body: Record<string, unknown>) => {
   const ownerUserId = isAdmin && body.ownerUserId ? String(body.ownerUserId) : callerId;
   const name = String(body.name || "").trim();
@@ -371,6 +444,7 @@ Deno.serve(async (req) => {
     if (action === "list_users") return json(await listUsers());
     if (action === "update_user") return await updateUser(user.id, body);
     if (action === "get_session_leads") return await getSessionLeads(body);
+    if (action === "list_worldcup_predictions") return await listWorldCupPredictions();
 
     return json({ error: "Unknown action" }, 400);
   } catch (error) {
