@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
-import { Trophy, Loader2, Share2, Minus, Plus, Check } from "lucide-react";
+import { Trophy, Loader2, Share2, Minus, Plus, Check, Users } from "lucide-react";
 import { useFeaturedMatch } from "@/hooks/useFeaturedMatch";
 import type { FeaturedMatch, MyPrediction } from "@/hooks/useFeaturedMatch";
 import { useWorldCupFixtures } from "@/hooks/useWorldCupFixtures";
@@ -595,15 +595,46 @@ const StepBtn = ({ onClick, children, ...rest }: { onClick: () => void; children
 
 // ── Live fixtures: the day's full slate, each match predictable ─────────────
 const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAuth?: () => void }) => {
-  const { fixtures, predictions, loading, submit } = useWorldCupFixtures(userId);
+  const { fixtures, predictions, entries, loading, submit } = useWorldCupFixtures(userId);
   const [modalMatch, setModalMatch] = useState<Fixture | null>(null);
   const [initialMarket, setInitialMarket] = useState<Market | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // A logged-out user is allowed to start the flow (they get 1 entry on sign-in).
+  const canPredict = !userId || entries.remaining > 0;
 
   const openPredict = (m: Fixture) => {
     setModalMatch(m);
     setInitialMarket(null);
     setModalOpen(true);
+  };
+
+  const handleInvite = async () => {
+    if (!userId) {
+      onRequireAuth?.();
+      return;
+    }
+    const base = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? `${window.location.origin}/app`
+      : "https://app.globaleads22.com";
+    const url = `${base}/?view=predictions&ref=${userId}`;
+    track("worldcup_invite_shared", {});
+    const navAny = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
+    try {
+      if (navAny.share) {
+        await navAny.share({
+          title: "GlobaLeads22 World Cup predictions",
+          text: "Predict a World Cup match and win a free month — make your pick:",
+          url,
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Invite link copied", description: "When a friend predicts, you earn another prediction." });
+    } catch {
+      await navigator.clipboard.writeText(url).catch(() => {});
+      toast({ title: "Invite link copied", description: "When a friend predicts, you earn another prediction." });
+    }
   };
 
   // After sign-in, finish a prediction the user locked in while logged out.
@@ -701,7 +732,33 @@ const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAut
           </div>
         </header>
 
-        <section className="wc-anim-rise mt-10" style={{ animationDelay: "120ms" }}>
+        {/* entries / invite */}
+        <div
+          className="wc-anim-rise mt-6 flex flex-col items-center gap-3 rounded-2xl border border-[rgba(232,251,82,0.25)] bg-[rgba(232,251,82,0.05)] px-5 py-4 text-center sm:flex-row sm:justify-between sm:text-left"
+          style={{ animationDelay: "60ms" }}
+        >
+          <div>
+            <p className="wc-display text-xl leading-none text-[#f3f5f8]">
+              {!userId
+                ? "1 prediction to start"
+                : entries.remaining > 0
+                  ? `${entries.remaining} prediction${entries.remaining === 1 ? "" : "s"} left`
+                  : "Out of predictions"}
+            </p>
+            <p className="mt-1.5 text-[13px] leading-5 text-[#98a0af]">
+              You get one shot. Invite friends — when they make a prediction, you earn another.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleInvite}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#e8fb52] px-4 py-2.5 font-display text-sm font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
+          >
+            <Users className="h-4 w-4" /> Invite a friend
+          </button>
+        </div>
+
+        <section className="wc-anim-rise mt-8" style={{ animationDelay: "120ms" }}>
           <h2 className="wc-display mb-4 text-2xl tracking-wide text-[#f3f5f8]">Today&apos;s matches</h2>
           {loading ? (
             <div className="flex justify-center py-10 text-[#98a0af]">
@@ -718,7 +775,9 @@ const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAut
                   key={f.id}
                   fixture={f}
                   prediction={predictions[f.id]}
+                  canPredict={canPredict}
                   onPredict={() => openPredict(f)}
+                  onInvite={handleInvite}
                   onShare={() => predictions[f.id] && handleShare(f, predictions[f.id])}
                 />
               ))}
@@ -739,12 +798,16 @@ const LiveFixtures = ({ userId, onRequireAuth }: { userId?: string; onRequireAut
 const FixtureRow = ({
   fixture,
   prediction,
+  canPredict,
   onPredict,
+  onInvite,
   onShare,
 }: {
   fixture: Fixture;
   prediction?: MyPrediction;
+  canPredict: boolean;
   onPredict: () => void;
+  onInvite: () => void;
   onShare: () => void;
 }) => {
   const kickoffMs = Date.parse(fixture.kickoffAt);
@@ -817,13 +880,21 @@ const FixtureRow = ({
               <Share2 className="h-4 w-4" /> Share
             </button>
           </div>
-        ) : open ? (
+        ) : open && canPredict ? (
           <button
             type="button"
             onClick={onPredict}
             className="flex w-full items-center justify-center rounded-xl bg-[#e8fb52] px-4 py-3 font-display text-sm font-bold text-[#08090c] transition-colors duration-150 hover:bg-white"
           >
             Make your prediction
+          </button>
+        ) : open ? (
+          <button
+            type="button"
+            onClick={onInvite}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[rgba(232,251,82,0.4)] bg-[rgba(232,251,82,0.06)] px-4 py-3 font-display text-sm font-bold text-[#e8fb52] transition-colors duration-150 hover:bg-[rgba(232,251,82,0.12)]"
+          >
+            <Users className="h-4 w-4" /> Invite a friend to earn a prediction
           </button>
         ) : (
           <div className="rounded-xl bg-[#14171d] px-4 py-3 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">

@@ -19,9 +19,18 @@ export interface Fixture {
 // Loads the current day's World Cup fixtures (local-midnight to local-midnight)
 // plus the signed-in user's prediction for each, and submits a bet against a
 // specific match.
+export interface Entries {
+  allowed: number;
+  used: number;
+  remaining: number;
+}
+
+const REF_KEY = "gl22:wc-ref";
+
 export function useWorldCupFixtures(userId?: string, windowDays = 1) {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [predictions, setPredictions] = useState<Record<string, MyPrediction>>({});
+  const [entries, setEntries] = useState<Entries>({ allowed: 1, used: 0, remaining: 1 });
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -73,6 +82,20 @@ export function useWorldCupFixtures(userId?: string, windowDays = 1) {
     } else {
       setPredictions({});
     }
+
+    // Entry allowance: 1 base + 1 per referred person who has predicted; used =
+    // the user's total predictions across all matches.
+    if (userId) {
+      const [{ count: refCount }, { count: usedCount }] = await Promise.all([
+        supabase.from("worldcup_entrants").select("user_id", { count: "exact", head: true }).eq("referred_by", userId),
+        supabase.from("worldcup_predictions").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      ]);
+      const allowed = 1 + (refCount ?? 0);
+      const used = usedCount ?? 0;
+      setEntries({ allowed, used, remaining: Math.max(0, allowed - used) });
+    } else {
+      setEntries({ allowed: 1, used: 0, remaining: 1 });
+    }
     setLoading(false);
   }, [userId, windowDays]);
 
@@ -83,13 +106,33 @@ export function useWorldCupFixtures(userId?: string, windowDays = 1) {
   const submit = useCallback(
     async (matchId: string, bet: Bet) => {
       if (!userId) return { ok: false, error: "Please sign in to predict." };
-      const row =
-        bet.type === "exact"
-          ? { user_id: userId, match_id: matchId, bet_type: "exact", pred_home: bet.home, pred_away: bet.away }
-          : { user_id: userId, match_id: matchId, bet_type: "result", pred_outcome: bet.outcome };
-      const { error } = await supabase.from("worldcup_predictions").insert(row);
-      if (error) {
-        return { ok: false, error: error.code === "23505" ? "You already predicted this match." : error.message };
+      let ref: string | null = null;
+      try {
+        ref = window.localStorage.getItem(REF_KEY);
+      } catch {
+        ref = null;
+      }
+      // Server-side gated insert (enforces the one-entry allowance + referrals).
+      const { data, error } = await supabase.functions.invoke("submit-prediction", {
+        body: { matchId, bet, ref: ref || undefined },
+      });
+      if (error || (data && data.error)) {
+        // Edge function returns a JSON error body even on non-2xx.
+        let msg = data?.error;
+        if (!msg && error) {
+          try {
+            const ctx = await (error as { context?: Response }).context?.json?.();
+            msg = ctx?.error;
+          } catch {
+            msg = undefined;
+          }
+        }
+        return { ok: false, error: msg || "Could not submit your prediction." };
+      }
+      try {
+        window.localStorage.removeItem(REF_KEY);
+      } catch {
+        /* ignore */
       }
       await load();
       return { ok: true };
@@ -97,5 +140,5 @@ export function useWorldCupFixtures(userId?: string, windowDays = 1) {
     [userId, load],
   );
 
-  return { fixtures, predictions, loading, submit, refetch: load };
+  return { fixtures, predictions, entries, loading, submit, refetch: load };
 }

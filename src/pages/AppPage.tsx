@@ -224,6 +224,12 @@ const AppPage = () => {
       setViewMode("predictions");
     }
 
+    // Capture a World Cup referral code so it can be attributed on first predict.
+    const ref = params.get("ref");
+    if (ref) {
+      window.localStorage.setItem("gl22:wc-ref", ref);
+    }
+
     if (checkoutParam === "success" || checkoutParam === "subscription_success") {
       void confirmCheckoutReturn(
         checkoutParam === "subscription_success" ? "subscription" : "topup",
