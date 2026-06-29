@@ -122,6 +122,7 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
   const [organizations, setOrganizations] = useState<OrganizationRow[]>([]);
   const [providerStatuses, setProviderStatuses] = useState<ProviderAccountStatus[]>([]);
   const [worldCupPredictions, setWorldCupPredictions] = useState<WorldCupPredictionRow[]>([]);
+  const [paymentsLoadFailed, setPaymentsLoadFailed] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -134,20 +135,26 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
     setLoading(true);
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [usage, credits, sessions, payments, adminUsers, providerStatus, worldCup] = await Promise.all([
+    const [usage, credits, sessions, payments, adminUsers, providerStatus] = await Promise.all([
       supabase.from("api_usage_events").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("credit_transactions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(1000),
       supabase.from("search_sessions").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.from("stripe_payments").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500),
       supabase.functions.invoke("admin-users", { body: { action: "list_users" } }),
       supabase.functions.invoke("admin-provider-status", { body: {} }),
-      supabase.functions.invoke("admin-users", { body: { action: "list_worldcup_predictions" } }),
     ]);
 
     if (!usage.error) setUsageEvents(usage.data || []);
     if (!credits.error) setCreditTransactions(credits.data || []);
     if (!sessions.error) setSearchSessions(sessions.data || []);
-    if (!payments.error) setStripePayments(payments.data || []);
+    if (!payments.error) {
+      setPaymentsLoadFailed(false);
+      setStripePayments(payments.data || []);
+    } else {
+      setPaymentsLoadFailed(true);
+      setStripePayments([]);
+      console.warn("Admin stripe payments failed", payments.error);
+    }
     if (!adminUsers.error && adminUsers.data) {
       setUsers(adminUsers.data.users || []);
       setOrganizations(adminUsers.data.organizations || []);
@@ -160,10 +167,18 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
     } else if (providerStatus.error) {
       toast({ title: "Provider status failed", description: providerStatus.error.message, variant: "destructive" });
     }
-    if (!worldCup.error && worldCup.data) {
-      setWorldCupPredictions(worldCup.data.predictions || []);
-    } else if (worldCup.error) {
-      toast({ title: "World Cup predictions failed", description: worldCup.error.message, variant: "destructive" });
+
+    try {
+      const worldCup = await supabase.functions.invoke("admin-users", { body: { action: "list_worldcup_predictions" } });
+      if (!worldCup.error && worldCup.data) {
+        setWorldCupPredictions(worldCup.data.predictions || []);
+      } else {
+        setWorldCupPredictions([]);
+        if (worldCup.error) console.warn("World Cup predictions failed", worldCup.error);
+      }
+    } catch (error) {
+      setWorldCupPredictions([]);
+      console.warn("World Cup predictions failed", error);
     }
     setLoading(false);
   };
@@ -173,8 +188,8 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
   }, []);
 
   const metrics = useMemo(() => {
-    const revenue = sum(stripePayments, payment => payment.net_usd);
-    const grossRevenue = sum(stripePayments, payment => payment.gross_usd);
+    const revenue = paymentsLoadFailed ? sum(users, user => user.net_revenue_usd) : sum(stripePayments, payment => payment.net_usd);
+    const grossRevenue = paymentsLoadFailed ? sum(users, user => user.gross_revenue_usd) : sum(stripePayments, payment => payment.gross_usd);
     const vendorCost = sum(usageEvents, event => event.estimated_cost_usd);
     const creditsSold = sum(creditTransactions.filter(tx => tx.type === "purchase" || tx.type === "subscription_grant"), tx => tx.amount);
     const creditsSpent = Math.abs(sum(creditTransactions.filter(tx => tx.type === "spend"), tx => tx.amount));
@@ -195,7 +210,7 @@ const AdminDashboard = ({ onBackToSearch, onUserCreditsChanged }: AdminDashboard
       totalUsers: users.length,
       paidUsers: users.filter(user => user.plan !== "free").length,
     };
-  }, [creditTransactions, searchSessions, stripePayments, usageEvents, users]);
+  }, [creditTransactions, paymentsLoadFailed, searchSessions, stripePayments, usageEvents, users]);
 
   const filteredUsers = useMemo(() => {
     const needle = query.trim().toLowerCase();
