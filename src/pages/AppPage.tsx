@@ -28,7 +28,6 @@ import AdminDashboard from "@/components/app/AdminDashboard";
 import SavedSearches from "@/components/app/SavedSearches";
 import SettingsCredits from "@/components/app/SettingsCredits";
 import EmailAutomation from "@/components/app/EmailAutomation";
-import WorldCupPredictions from "@/components/app/WorldCupPredictions";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import GlobaLeadsLogo from "@/components/brand/GlobaLeadsLogo";
 import { Button } from "@/components/ui/button";
@@ -218,17 +217,6 @@ const AppPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkoutParam = params.get("checkout");
-
-    if (params.get("view") === "predictions" || window.localStorage.getItem("gl22:wc-return") === "1") {
-      window.localStorage.removeItem("gl22:wc-return");
-      setViewMode("predictions");
-    }
-
-    // Capture a World Cup referral code so it can be attributed on first predict.
-    const ref = params.get("ref");
-    if (ref) {
-      window.localStorage.setItem("gl22:wc-ref", ref);
-    }
 
     if (checkoutParam === "success" || checkoutParam === "subscription_success") {
       void confirmCheckoutReturn(
@@ -592,17 +580,6 @@ const AppPage = () => {
                 onUserCreditsChanged={() => {
                   refetchCredits();
                   entitlements.refetch();
-                }}
-              />
-            ) : viewMode === "predictions" ? (
-              <WorldCupPredictions
-                userId={user?.id}
-                demoMode={isDemoPreview}
-                onRequireAuth={() => {
-                  // Flag so we return to the predictions view after sign-in
-                  // (incl. a Google OAuth full-page redirect to the base URL).
-                  window.localStorage.setItem("gl22:wc-return", "1");
-                  setAuthOpen(true);
                 }}
               />
             ) : null}

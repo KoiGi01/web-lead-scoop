@@ -14,7 +14,6 @@ import {
   Plus,
   Settings,
   ShieldCheck,
-  Trophy,
   UserRound,
   Users,
   Zap,
@@ -37,8 +36,7 @@ export type AppSidebarView =
   | "follow-ups"
   | "saved-searches"
   | "settings"
-  | "admin"
-  | "predictions";
+  | "admin";
 
 interface NavItem {
   label: string;
@@ -47,7 +45,6 @@ interface NavItem {
   accent?: boolean;
   badge?: number;
   badgeTone?: "accent" | "alert";
-  badgeLabel?: string;
 }
 
 interface AppSidebarProps {
@@ -107,7 +104,6 @@ const AppSidebar = ({
 
   const workspace: NavItem[] = [
     { label: "Home", view: "home", icon: Home },
-    { label: "World Cup", view: "predictions", icon: Trophy, accent: true, badgeLabel: "PROMO" },
     { label: "New scan", view: "search", icon: Plus, accent: true },
     { label: "Prospects", view: "lead-inbox", icon: Users, badge: prospectsCount, badgeTone: "alert" },
     { label: "Pipeline", view: "pipeline", icon: KanbanSquare, badge: pipelineCount, badgeTone: "alert" },
@@ -126,13 +122,12 @@ const AppSidebar = ({
     .join("")
     .toUpperCase();
 
-  const renderItem = ({ label, view, icon: Icon, accent, badge, badgeTone = "accent", badgeLabel }: NavItem) => {
+  const renderItem = ({ label, view, icon: Icon, accent, badge, badgeTone = "accent" }: NavItem) => {
     const active = activeView === view;
     const hasNumericBadge = typeof badge === "number" && badge > 0;
-    const hasBadge = hasNumericBadge || Boolean(badgeLabel);
-    const badgeText = hasNumericBadge ? (badge! > 99 ? "99+" : String(badge)) : badgeLabel || "";
-    const badgeDescription = badgeLabel ? badgeLabel : badgeTone === "alert" ? `${badgeText} unseen leads` : `${badgeText} items`;
-    const base = "group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium transition-colors";
+    const badgeText = hasNumericBadge ? (badge! > 99 ? "99+" : String(badge)) : "";
+    const badgeDescription = badgeTone === "alert" ? `${badgeText} unseen leads` : `${badgeText} items`;
+    const base = "group relative flex w-full min-w-0 items-center gap-3 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium transition-colors";
     const state = active
       ? "bg-[#14171d] text-[#f3f5f8] shadow-[inset_0_0_0_1px_rgba(233,238,247,0.13)]"
       : accent
@@ -142,8 +137,8 @@ const AppSidebar = ({
       <button
         key={label}
         type="button"
-        title={collapsed ? (hasBadge ? `${label}: ${badgeDescription}` : label) : undefined}
-        aria-label={hasBadge ? `${label}, ${badgeDescription}` : label}
+        title={collapsed ? (hasNumericBadge ? `${label}: ${badgeDescription}` : label) : undefined}
+        aria-label={hasNumericBadge ? `${label}, ${badgeDescription}` : label}
         onClick={() => (view === "admin" && onViewAdmin ? onViewAdmin() : onNavigate(view))}
         className={`${base} ${state}`}
       >
@@ -153,7 +148,7 @@ const AppSidebar = ({
           }`}
         />
         <span className={`truncate ${labelFade}`}>{label}</span>
-        {hasBadge && !collapsed && (
+        {hasNumericBadge && !collapsed && (
           <span
             className={`ml-auto rounded-full px-1.5 py-px font-mono text-[10px] font-bold ${
               badgeTone === "alert"
@@ -174,9 +169,6 @@ const AppSidebar = ({
           >
             {badgeText}
           </span>
-        )}
-        {Boolean(badgeLabel) && collapsed && (
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#e8fb52] shadow-[0_0_0_1px_#0b0d11,0_0_8px_rgba(232,251,82,0.65)] animate-pulse" />
         )}
       </button>
     );
@@ -215,11 +207,19 @@ const AppSidebar = ({
       </div>
 
       {/* nav */}
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden px-3 py-3">
-        <p className={`whitespace-nowrap px-2.5 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Workspace</p>
-        {workspace.map(renderItem)}
-        <p className={`whitespace-nowrap px-2.5 pb-1.5 pt-4 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Library</p>
-        {library.map(renderItem)}
+      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-3 py-3">
+        <div>
+          <p className={`mb-2 whitespace-nowrap px-2.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Workspace</p>
+          <div className="flex flex-col gap-1.5">
+            {workspace.map(renderItem)}
+          </div>
+        </div>
+        <div>
+          <p className={`mb-2 whitespace-nowrap px-2.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#5b6472] ${labelFade}`}>Library</p>
+          <div className="flex flex-col gap-1.5">
+            {library.map(renderItem)}
+          </div>
+        </div>
       </nav>
 
       {/* credits */}
@@ -256,12 +256,12 @@ const AppSidebar = ({
         <div className="flex-shrink-0 px-3 pb-2">
           <a
             href={reportBugHref}
-            className="flex items-center gap-2.5 rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
+            className="flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
           >
             <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
-            <div className={`min-w-0 ${labelFade}`}>
+            <div className={`min-w-0 flex-1 ${labelFade}`}>
               <div className="whitespace-nowrap text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
-              <div className="whitespace-nowrap font-mono text-[9px] uppercase tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
+              <div className="whitespace-normal break-words font-mono text-[9px] uppercase leading-[1.35] tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
             </div>
           </a>
         </div>
