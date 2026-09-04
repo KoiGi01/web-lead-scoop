@@ -256,10 +256,12 @@ const AppSidebar = ({
         <div className="flex-shrink-0 px-3 pb-2">
           <a
             href={reportBugHref}
-            className="flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1]"
+            aria-label="Report a bug"
+            title={collapsed ? "Report a bug" : undefined}
+            className={`flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1] ${collapsed ? "justify-center" : ""}`}
           >
             <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
-            <div className={`min-w-0 flex-1 ${labelFade}`}>
+            <div className={collapsed ? "hidden" : `min-w-0 flex-1 ${labelFade}`}>
               <div className="whitespace-nowrap text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
               <div className="whitespace-normal break-words font-mono text-[9px] uppercase leading-[1.35] tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
             </div>
