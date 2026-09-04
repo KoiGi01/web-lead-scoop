@@ -258,10 +258,10 @@ const AppSidebar = ({
             href={reportBugHref}
             aria-label="Report a bug"
             title={collapsed ? "Report a bug" : undefined}
-            className={`flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] py-2 transition-colors hover:bg-[#e8fb52]/[0.1] ${collapsed ? "justify-center" : ""}`}
+            className={`relative flex w-full min-w-0 items-center overflow-hidden rounded-[10px] border border-[#e8fb52]/25 bg-[#e8fb52]/[0.05] px-[11px] transition-[height,background-color] duration-300 hover:bg-[#e8fb52]/[0.1] ${collapsed ? "h-[33px]" : "h-[57px]"}`}
           >
             <Bug className="h-[15px] w-[15px] flex-shrink-0 text-[#e8fb52]" />
-            <div className={collapsed ? "hidden" : `min-w-0 flex-1 ${labelFade}`}>
+            <div className={`absolute left-[36px] top-2 w-[156px] overflow-hidden transition-opacity duration-150 ${collapsed ? "opacity-0" : "opacity-100 delay-150"}`}>
               <div className="whitespace-nowrap text-[12px] font-semibold leading-tight text-[#f3f5f8]">Report a bug</div>
               <div className="whitespace-normal break-words font-mono text-[9px] uppercase leading-[1.35] tracking-wide text-[#e8fb52]/80">Eligible fixes may earn credits</div>
             </div>
